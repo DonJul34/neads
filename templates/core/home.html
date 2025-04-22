@@ -1,0 +1,93 @@
+{% extends 'base.html' %}
+
+{% block title %}NEADS - Accueil{% endblock %}
+
+{% block content %}
+<div class="text-center py-5">
+    <h1 class="display-4 fw-bold mb-4">Bienvenue sur NEADS</h1>
+    <p class="lead mb-5">La plateforme de gestion des créateurs de contenu UGC</p>
+    
+    {% if user.is_authenticated %}
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="d-grid gap-3">
+                <a href="{% url 'gallery_view' %}" class="btn btn-primary btn-lg">
+                    <i class="fas fa-images me-2"></i> Voir les créateurs
+                </a>
+                <a href="{% url 'map_view' %}" class="btn btn-outline-primary btn-lg">
+                    <i class="fas fa-map-marker-alt me-2"></i> Explorer la carte
+                </a>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="alert alert-info mb-4">
+                <i class="fas fa-info-circle me-2"></i> Vous devez être connecté pour accéder à notre catalogue de créateurs.
+            </div>
+            <div class="d-grid gap-3">
+                <a href="{% url 'login' %}" class="btn btn-primary btn-lg">
+                    <i class="fas fa-sign-in-alt me-2"></i> Se connecter
+                </a>
+                <a href="{% url 'temp_login_request' %}" class="btn btn-outline-primary btn-lg">
+                    <i class="fas fa-user-plus me-2"></i> Demander un accès
+                </a>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<div class="row mt-5 g-4">
+    <div class="col-md-4">
+        <div class="card h-100">
+            <div class="card-body text-center">
+                <div class="display-6 text-primary mb-3">
+                    <i class="fas fa-user-circle"></i>
+                </div>
+                <h3 class="card-title h5">Créateurs certifiés</h3>
+                <p class="card-text">Des créateurs de contenu vérifiés pour vos campagnes marketing.</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card h-100">
+            <div class="card-body text-center">
+                <div class="display-6 text-primary mb-3">
+                    <i class="fas fa-star"></i>
+                </div>
+                <h3 class="card-title h5">Notation & Évaluation</h3>
+                <p class="card-text">Évaluez les créateurs et consultez les avis des autres clients.</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card h-100">
+            <div class="card-body text-center">
+                <div class="display-6 text-primary mb-3">
+                    <i class="fas fa-map-marked-alt"></i>
+                </div>
+                <h3 class="card-title h5">Recherche géolocalisée</h3>
+                <p class="card-text">Trouvez des créateurs près de chez vous ou dans des régions spécifiques.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if not user.is_authenticated %}
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card border-0 shadow-sm">
+            <div class="card-body p-4 text-center">
+                <h3 class="h4 mb-3">Accès contrôlé</h3>
+                <p class="mb-0">
+                    NEADS est une plateforme à accès restreint. Pour obtenir un compte, contactez un administrateur ou
+                    <a href="{% url 'temp_login_request' %}">demandez un accès temporaire</a>.
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %} 

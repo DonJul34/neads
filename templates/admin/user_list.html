@@ -1,0 +1,272 @@
+{% extends 'admin/base.html' %}
+
+{% block admin_title %}Gestion des utilisateurs{% endblock %}
+{% block admin_heading %}Gestion des utilisateurs{% endblock %}
+
+{% block admin_actions %}
+<a href="{% url 'admin_user_create' %}" class="btn btn-primary">
+    <i class="fas fa-user-plus me-1"></i> Ajouter un utilisateur
+</a>
+{% endblock %}
+
+{% block admin_content %}
+<!-- Filtres -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-3 align-items-end">
+            <div class="col-md-6">
+                <label for="search-input" class="form-label">Rechercher</label>
+                <div class="input-group">
+                    <input type="text" class="form-control" id="search-input" name="q" 
+                           placeholder="Nom, email..." value="{{ query|default:'' }}">
+                    <button class="btn btn-outline-primary" type="submit">
+                        <i class="fas fa-search"></i>
+                    </button>
+                </div>
+            </div>
+            
+            <div class="col-md-4">
+                <label for="role-filter" class="form-label">Type d'utilisateur</label>
+                <select class="form-select" id="role-filter" name="role" onchange="this.form.submit()">
+                    <option value="">Tous les types</option>
+                    {% for role_code, role_name in role_choices %}
+                    <option value="{{ role_code }}" {% if role_filter == role_code %}selected{% endif %}>
+                        {{ role_name }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div class="col-md-2">
+                <button type="reset" class="btn btn-outline-secondary w-100" 
+                        onclick="window.location='{% url 'admin_user_list' %}'">
+                    <i class="fas fa-times me-1"></i> Effacer
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Liste des utilisateurs -->
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="card-title mb-0">Utilisateurs ({{ total_users }})</h5>
+        <a href="{% url 'admin_send_password' %}" class="btn btn-sm btn-outline-secondary">
+            <i class="fas fa-key me-1"></i> Envoyer un mot de passe temporaire
+        </a>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-striped table-hover">
+                <thead>
+                    <tr>
+                        <th>Nom complet</th>
+                        <th>Email</th>
+                        <th>Rôle</th>
+                        <th>Date d'inscription</th>
+                        <th>Statut</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for user in users %}
+                    <tr>
+                        <td>
+                            {% if user.first_name or user.last_name %}
+                                {{ user.get_full_name }}
+                            {% else %}
+                                <span class="text-muted">Non renseigné</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ user.email }}</td>
+                        <td>
+                            <span class="badge bg-{{ user.role }}">
+                                {{ user.get_role_display }}
+                            </span>
+                        </td>
+                        <td>{{ user.date_joined|date:"d/m/Y" }}</td>
+                        <td>
+                            <div class="form-check form-switch">
+                                <input class="form-check-input toggle-status" type="checkbox" 
+                                       id="status-{{ user.id }}" data-user-id="{{ user.id }}"
+                                       {% if user.is_active %}checked{% endif %}
+                                       {% if user == request.user %}disabled{% endif %}>
+                                <label class="form-check-label" for="status-{{ user.id }}">
+                                    {% if user.is_active %}
+                                        <span class="text-success">Actif</span>
+                                    {% else %}
+                                        <span class="text-danger">Inactif</span>
+                                    {% endif %}
+                                </label>
+                            </div>
+                        </td>
+                        <td>
+                            <div class="btn-group" role="group" aria-label="Actions">
+                                <a href="{% url 'admin_user_edit' user.id %}" class="btn btn-sm btn-primary" 
+                                   data-bs-toggle="tooltip" title="Modifier">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                
+                                {% if user.role == 'creator' and user.creator_profile %}
+                                <a href="{% url 'creator_detail' user.creator_profile.id %}" class="btn btn-sm btn-info" 
+                                   data-bs-toggle="tooltip" title="Voir profil créateur">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                                {% endif %}
+                                
+                                <button type="button" class="btn btn-sm btn-secondary reset-password-btn" 
+                                        data-user-id="{{ user.id }}" data-user-email="{{ user.email }}"
+                                        data-bs-toggle="tooltip" title="Réinitialiser mot de passe">
+                                    <i class="fas fa-key"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6" class="text-center py-4">
+                            <div class="alert alert-info mb-0">
+                                <i class="fas fa-info-circle me-2"></i> Aucun utilisateur trouvé.
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- Pagination -->
+        {% if users.has_other_pages %}
+        <nav aria-label="Pagination" class="mt-4">
+            <ul class="pagination justify-content-center">
+                {% if users.has_previous %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ users.previous_page_number }}{% if role_filter %}&role={{ role_filter }}{% endif %}{% if query %}&q={{ query }}{% endif %}" aria-label="Précédent">
+                        <i class="fas fa-chevron-left"></i>
+                    </a>
+                </li>
+                {% else %}
+                <li class="page-item disabled">
+                    <span class="page-link">
+                        <i class="fas fa-chevron-left"></i>
+                    </span>
+                </li>
+                {% endif %}
+                
+                {% for i in users.paginator.page_range %}
+                    {% if users.number == i %}
+                    <li class="page-item active">
+                        <span class="page-link">{{ i }}</span>
+                    </li>
+                    {% else %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ i }}{% if role_filter %}&role={{ role_filter }}{% endif %}{% if query %}&q={{ query }}{% endif %}">
+                            {{ i }}
+                        </a>
+                    </li>
+                    {% endif %}
+                {% endfor %}
+                
+                {% if users.has_next %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ users.next_page_number }}{% if role_filter %}&role={{ role_filter }}{% endif %}{% if query %}&q={{ query }}{% endif %}" aria-label="Suivant">
+                        <i class="fas fa-chevron-right"></i>
+                    </a>
+                </li>
+                {% else %}
+                <li class="page-item disabled">
+                    <span class="page-link">
+                        <i class="fas fa-chevron-right"></i>
+                    </span>
+                </li>
+                {% endif %}
+            </ul>
+        </nav>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block admin_js %}
+<script>
+    $(document).ready(function() {
+        // Initialiser les tooltips
+        const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+        tooltipTriggerList.map(function(tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl);
+        });
+        
+        // Toggle statut utilisateur (actif/inactif)
+        $('.toggle-status').change(function() {
+            const userId = $(this).data('user-id');
+            const isChecked = $(this).prop('checked');
+            const statusLabel = $(this).next('label');
+            
+            // Appel AJAX pour changer le statut
+            $.ajax({
+                url: `/admin/users/${userId}/toggle-status/`,
+                type: 'POST',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRFToken': $('input[name=csrfmiddlewaretoken]').val()
+                },
+                success: function(response) {
+                    if (response.success) {
+                        if (response.is_active) {
+                            statusLabel.html('<span class="text-success">Actif</span>');
+                        } else {
+                            statusLabel.html('<span class="text-danger">Inactif</span>');
+                        }
+                        
+                        // Notification
+                        const alert = `<div class="alert alert-success alert-dismissible fade show">
+                            ${response.message}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>`;
+                        
+                        $('.card-body').prepend(alert);
+                        
+                        // Auto-hide après 3 secondes
+                        setTimeout(function() {
+                            $('.alert').alert('close');
+                        }, 3000);
+                    } else {
+                        // Remettre le switch à son état précédent
+                        $(this).prop('checked', !isChecked);
+                        
+                        // Notification d'erreur
+                        const alert = `<div class="alert alert-danger alert-dismissible fade show">
+                            ${response.message}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>`;
+                        
+                        $('.card-body').prepend(alert);
+                    }
+                }.bind(this),
+                error: function() {
+                    // Remettre le switch à son état précédent
+                    $(this).prop('checked', !isChecked);
+                    
+                    // Notification d'erreur
+                    const alert = `<div class="alert alert-danger alert-dismissible fade show">
+                        Une erreur est survenue lors de la modification du statut.
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>`;
+                    
+                    $('.card-body').prepend(alert);
+                }.bind(this)
+            });
+        });
+        
+        // Bouton de réinitialisation de mot de passe
+        $('.reset-password-btn').click(function() {
+            const userId = $(this).data('user-id');
+            const userEmail = $(this).data('user-email');
+            
+            if (confirm(`Envoyer un email de réinitialisation de mot de passe à ${userEmail} ?`)) {
+                window.location.href = `/admin/users/send-password/?email=${userEmail}`;
+            }
+        });
+    });
+</script>
+{% endblock %} 

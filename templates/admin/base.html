@@ -1,0 +1,117 @@
+{% extends 'base.html' %}
+
+{% block title %}NEADS Admin - {% block admin_title %}Tableau de bord{% endblock %}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .admin-sidebar {
+        min-height: calc(100vh - 60px);
+        border-right: 1px solid #e9ecef;
+        background-color: #f8f9fa;
+    }
+    
+    .admin-sidebar .nav-link {
+        padding: 0.5rem 1rem;
+        border-radius: 0.25rem;
+        margin-bottom: 0.25rem;
+    }
+    
+    .admin-sidebar .nav-link.active {
+        background-color: #007bff;
+        color: white;
+    }
+    
+    .admin-sidebar .nav-link:hover {
+        background-color: #e9ecef;
+    }
+    
+    .admin-sidebar .nav-link.active:hover {
+        background-color: #0069d9;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row">
+        <!-- Sidebar de navigation -->
+        <div class="col-md-3 col-lg-2 d-none d-md-block admin-sidebar">
+            <h5 class="mb-3 p-2 border-bottom">Administration</h5>
+            <div class="nav flex-column">
+                <a href="{% url 'admin_dashboard' %}" class="nav-link {% if request.resolver_match.url_name == 'admin_dashboard' %}active{% endif %}">
+                    <i class="fas fa-tachometer-alt me-2"></i> Tableau de bord
+                </a>
+                
+                <!-- Gestion des utilisateurs -->
+                <h6 class="mt-3 mb-2 text-muted px-3">Utilisateurs</h6>
+                <a href="{% url 'admin_user_list' %}" class="nav-link {% if request.resolver_match.url_name == 'admin_user_list' %}active{% endif %}">
+                    <i class="fas fa-users me-2"></i> Tous les utilisateurs
+                </a>
+                <a href="{% url 'admin_user_list' %}?role=creator" class="nav-link {% if request.resolver_match.url_name == 'admin_user_list' and request.GET.role == 'creator' %}active{% endif %}">
+                    <i class="fas fa-photo-video me-2"></i> Créateurs
+                </a>
+                <a href="{% url 'admin_user_list' %}?role=client" class="nav-link {% if request.resolver_match.url_name == 'admin_user_list' and request.GET.role == 'client' %}active{% endif %}">
+                    <i class="fas fa-building me-2"></i> Clients
+                </a>
+                <a href="{% url 'admin_user_list' %}?role=consultant" class="nav-link {% if request.resolver_match.url_name == 'admin_user_list' and request.GET.role == 'consultant' %}active{% endif %}">
+                    <i class="fas fa-briefcase me-2"></i> Consultants
+                </a>
+                <a href="{% url 'admin_user_create' %}" class="nav-link {% if request.resolver_match.url_name == 'admin_user_create' %}active{% endif %}">
+                    <i class="fas fa-user-plus me-2"></i> Ajouter un utilisateur
+                </a>
+                
+                <!-- Gestion des créateurs -->
+                <h6 class="mt-3 mb-2 text-muted px-3">Créateurs</h6>
+                <a href="{% url 'gallery_view' %}" class="nav-link">
+                    <i class="fas fa-images me-2"></i> Galerie
+                </a>
+                <a href="{% url 'map_view' %}" class="nav-link">
+                    <i class="fas fa-map-marked-alt me-2"></i> Carte
+                </a>
+                
+                <!-- Paramètres -->
+                <h6 class="mt-3 mb-2 text-muted px-3">Paramètres</h6>
+                <a href="#" class="nav-link">
+                    <i class="fas fa-cog me-2"></i> Configuration
+                </a>
+            </div>
+        </div>
+        
+        <!-- Contenu principal -->
+        <main class="col-md-9 col-lg-10 ms-sm-auto px-md-4">
+            <!-- Titre de la page -->
+            <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+                <h1 class="h2">{% block admin_heading %}Tableau de bord{% endblock %}</h1>
+                <div class="btn-toolbar mb-2 mb-md-0">
+                    {% block admin_actions %}{% endblock %}
+                </div>
+            </div>
+            
+            <!-- Messages -->
+            {% if messages %}
+                {% for message in messages %}
+                <div class="alert alert-{{ message.tags }} alert-dismissible fade show">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+                {% endfor %}
+            {% endif %}
+            
+            <!-- Contenu spécifique -->
+            {% block admin_content %}{% endblock %}
+        </main>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    $(document).ready(function() {
+        // Auto-hide les messages après 5 secondes
+        setTimeout(function() {
+            $('.alert').alert('close');
+        }, 5000);
+    });
+</script>
+{% block admin_js %}{% endblock %}
+{% endblock %} 

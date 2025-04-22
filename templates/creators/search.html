@@ -1,0 +1,332 @@
+{% extends 'base.html' %}
+
+{% block title %}NEADS - Recherche de Créateurs{% endblock %}
+
+{% block extra_css %}
+<!-- Styles dédiés à la recherche -->
+<link rel="stylesheet" href="/static/css/search.css">
+<link rel="stylesheet" href="/static/css/search-responsive.css">
+{% endblock %}
+
+{% block content %}
+<!-- En-tête de recherche -->
+<div class="search-header">
+    <div class="container">
+        <h1 class="h2 mb-4">Recherche de Créateurs</h1>
+        
+        <form id="main-search-form" method="get" class="mb-3">
+            <div class="input-group">
+                <input type="text" class="form-control main-search-input" 
+                       name="query" value="{{ search_query }}" 
+                       placeholder="Recherchez un créateur par nom, prénom...">
+                <button class="btn btn-primary main-search-button" type="submit">
+                    <i class="fas fa-search me-2"></i> Rechercher
+                </button>
+            </div>
+        </form>
+        
+        <p class="mb-0">
+            <a class="btn btn-sm btn-outline-secondary" data-bs-toggle="collapse" href="#advancedFilters" role="button">
+                <i class="fas fa-sliders-h me-1"></i> Filtres avancés
+            </a>
+            {% if is_search %}
+                <a href="{% url 'search_view' %}" class="btn btn-sm btn-outline-danger ms-2">
+                    <i class="fas fa-times me-1"></i> Réinitialiser
+                </a>
+            {% endif %}
+        </p>
+    </div>
+</div>
+
+<div class="container">
+    <!-- Conteneur pour les filtres actifs (rempli par JS) -->
+    <div id="active-filters-container" class="mb-3" style="display: none;"></div>
+    
+    <!-- Filtres avancés (collapsed par défaut) -->
+    <div class="collapse mb-4" id="advancedFilters">
+        <div class="card border-0 shadow-sm">
+            <div class="card-body">
+                <h2 class="h5 mb-3">Filtres avancés</h2>
+                
+                <form id="filter-form" method="get">
+                    <!-- Recherche par texte (caché car déjà dans la barre principale) -->
+                    <input type="hidden" name="query" value="{{ search_query }}">
+                    
+                    <div class="row">
+                        <!-- Filtres par domaine -->
+                        <div class="col-md-4">
+                            <div class="filter-group">
+                                <p class="filter-header">Domaines</p>
+                                <div class="scrollable-checkboxes" style="max-height: 150px; overflow-y: auto;">
+                                    {% for domain in domains %}
+                                        <div class="form-check">
+                                            <input class="form-check-input domain-checkbox" type="checkbox" 
+                                                name="domains" value="{{ domain.id }}" id="domain_{{ domain.id }}"
+                                                {% if domain.id|stringformat:"i" in request.GET.domains %}checked{% endif %}>
+                                            <label class="form-check-label" for="domain_{{ domain.id }}">
+                                                {{ domain.name }}
+                                            </label>
+                                        </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Filtres par caractéristiques -->
+                        <div class="col-md-4">
+                            <div class="filter-group">
+                                <p class="filter-header">Caractéristiques</p>
+                                
+                                <div class="mb-2">
+                                    <label for="{{ form.gender.id_for_label }}" class="form-label small">Genre</label>
+                                    {{ form.gender }}
+                                </div>
+                                
+                                <div class="mb-2">
+                                    <label for="{{ form.content_type.id_for_label }}" class="form-label small">Type de contenu</label>
+                                    {{ form.content_type }}
+                                </div>
+                                
+                                <div class="mb-2">
+                                    <label class="form-label small">Âge</label>
+                                    <div class="row">
+                                        <div class="col-6">
+                                            {{ form.min_age }}
+                                        </div>
+                                        <div class="col-6">
+                                            {{ form.max_age }}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Filtres supplémentaires -->
+                        <div class="col-md-4">
+                            <!-- Filtres géographiques -->
+                            <div class="filter-group">
+                                <p class="filter-header">Localisation</p>
+                                
+                                <div class="mb-2">
+                                    <label for="{{ form.country.id_for_label }}" class="form-label small">Pays</label>
+                                    {{ form.country }}
+                                </div>
+                                
+                                <div class="mb-2">
+                                    <label for="{{ form.city.id_for_label }}" class="form-label small">Ville</label>
+                                    {{ form.city }}
+                                </div>
+                            </div>
+                            
+                            <!-- Autres filtres -->
+                            <div class="filter-group">
+                                <p class="filter-header">Options additionnelles</p>
+                                
+                                <div class="form-check mb-2">
+                                    {{ form.can_invoice }}
+                                    <label class="form-check-label" for="{{ form.can_invoice.id_for_label }}">
+                                        Peut facturer
+                                    </label>
+                                </div>
+                                
+                                <div class="form-check mb-2">
+                                    {{ form.verified_only }}
+                                    <label class="form-check-label" for="{{ form.verified_only.id_for_label }}">
+                                        Vérifiés uniquement
+                                    </label>
+                                </div>
+                                
+                                <div class="mb-2">
+                                    <label for="{{ form.min_rating.id_for_label }}" class="form-label small">Note minimum</label>
+                                    {{ form.min_rating }}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="d-flex justify-content-end mt-3">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-filter me-1"></i> Appliquer les filtres
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    {% if is_search %}
+        <!-- Résultats de recherche -->
+        <div class="mb-4">
+            <div class="d-flex justify-content-between align-items-center">
+                <h2 class="h4">Résultats de recherche</h2>
+                <p class="text-muted mb-0"><span id="total-count">{{ total_creators }}</span> créateur{{ total_creators|pluralize }} trouvé{{ total_creators|pluralize }}</p>
+            </div>
+            <hr>
+        </div>
+        
+        <div id="search-results">
+            {% if creators %}
+                <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4 creators-grid">
+                    {% for creator in creators %}
+                    <div class="col-md-6 col-lg-4 mb-4 creator-card" 
+                        data-id="{{ creator.id }}" 
+                        data-lat="{{ creator.location.latitude|default:'null' }}" 
+                        data-lng="{{ creator.location.longitude|default:'null' }}"
+                        data-rating="{{ creator.average_rating|default:'0' }}"
+                        data-name="{{ creator.first_name }} {{ creator.last_name }}">
+                        <div class="card h-100">
+                            <div class="card-img-top position-relative">
+                                {% if creator.media_set.filter.exists %}
+                                    {% with media=creator.media_set.first %}
+                                        {% if media.file and media.file.name and media.file.url %}
+                                            <img src="{{ media.file.url }}" alt="{{ creator.first_name }} {{ creator.last_name }}" class="img-fluid card-image">
+                                        {% else %}
+                                            <img src="{% static 'images/placeholder.jpg' %}" alt="Pas d'image disponible" class="img-fluid card-image">
+                                        {% endif %}
+                                    {% endwith %}
+                                {% else %}
+                                    <img src="{% static 'images/placeholder.jpg' %}" alt="Pas d'image disponible" class="img-fluid card-image">
+                                {% endif %}
+                            </div>
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <h3 class="card-title h5 mb-1">{{ creator.full_name }}</h3>
+                                    {% if creator.verified_by_neads %}
+                                        <span class="verified-icon" data-bs-toggle="tooltip" title="Vérifié par NEADS">
+                                            <i class="fas fa-check-circle"></i>
+                                        </span>
+                                    {% endif %}
+                                </div>
+                                
+                                <p class="card-text text-muted small mb-2">
+                                    {{ creator.age }} ans - {{ creator.get_gender_display }}
+                                    {% if creator.location %}
+                                        <br>{{ creator.location }}
+                                    {% endif %}
+                                </p>
+                                
+                                <div class="mb-2">
+                                    <span class="star-rating">
+                                        {% with ''|center:creator.average_rating as range %}
+                                            {% for _ in range %}★{% endfor %}
+                                        {% endwith %}
+                                        {% with ''|center:5|slice:creator.average_rating as range %}
+                                            {% for _ in range %}☆{% endfor %}
+                                        {% endwith %}
+                                    </span>
+                                    <small class="text-muted">({{ creator.total_ratings }})</small>
+                                </div>
+                                
+                                <div class="domain-badges mb-3">
+                                    {% for domain in creator.domains.all %}
+                                        <span class="domain-badge">{{ domain.name }}</span>
+                                    {% endfor %}
+                                </div>
+                                
+                                <a href="{% url 'creator_detail' creator.id %}" class="btn btn-sm btn-outline-primary stretched-link">
+                                    Voir le profil
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <!-- Aucun résultat -->
+                <div class="empty-state">
+                    <div class="search-icon">
+                        <i class="fas fa-search"></i>
+                    </div>
+                    <h3>Aucun créateur ne correspond à vos critères</h3>
+                    <p class="text-muted">Essayez d'élargir votre recherche ou de modifier vos filtres.</p>
+                    <a href="{% url 'search_view' %}" class="btn btn-outline-primary mt-2">
+                        <i class="fas fa-redo me-1"></i> Réinitialiser la recherche
+                    </a>
+                </div>
+            {% endif %}
+        </div>
+        
+        <!-- Pagination -->
+        <div id="pagination-container" class="mt-4">
+            {% if creators.paginator.num_pages > 1 %}
+            <nav aria-label="Pagination des résultats" class="mt-5">
+                <ul class="pagination justify-content-center">
+                    {% if creators.has_previous %}
+                        <li class="page-item">
+                            <a class="page-link" href="?{{ request.GET.urlencode|slice:'0:-1' }}page={{ creators.previous_page_number }}" aria-label="Précédent">
+                                <span aria-hidden="true">&laquo;</span>
+                            </a>
+                        </li>
+                    {% else %}
+                        <li class="page-item disabled">
+                            <span class="page-link">&laquo;</span>
+                        </li>
+                    {% endif %}
+                    
+                    {% for i in creators.paginator.page_range %}
+                        {% if creators.number == i %}
+                            <li class="page-item active"><span class="page-link">{{ i }}</span></li>
+                        {% else %}
+                            <li class="page-item">
+                                <a class="page-link" href="?{{ request.GET.urlencode|slice:'0:-1' }}page={{ i }}">{{ i }}</a>
+                            </li>
+                        {% endif %}
+                    {% endfor %}
+                    
+                    {% if creators.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="?{{ request.GET.urlencode|slice:'0:-1' }}page={{ creators.next_page_number }}" aria-label="Suivant">
+                                <span aria-hidden="true">&raquo;</span>
+                            </a>
+                        </li>
+                    {% else %}
+                        <li class="page-item disabled">
+                            <span class="page-link">&raquo;</span>
+                        </li>
+                    {% endif %}
+                </ul>
+            </nav>
+            {% endif %}
+        </div>
+        
+    {% else %}
+        <!-- État initial (pas encore de recherche) -->
+        <div class="empty-state">
+            <div class="search-icon">
+                <i class="fas fa-user-friends"></i>
+            </div>
+            <h3>Trouvez le créateur idéal pour votre projet</h3>
+            <p class="text-muted">Utilisez la barre de recherche ci-dessus pour trouver des créateurs par nom, ou explorez avec les filtres avancés.</p>
+            <div class="mt-4">
+                <a href="{% url 'gallery_view' %}" class="btn btn-outline-primary">
+                    <i class="fas fa-th-large me-1"></i> Voir tous les créateurs
+                </a>
+                <a href="{% url 'map_view' %}" class="btn btn-outline-secondary ms-2">
+                    <i class="fas fa-map-marker-alt me-1"></i> Explorer la carte
+                </a>
+            </div>
+        </div>
+    {% endif %}
+</div>
+
+<!-- Loader pour AJAX -->
+<div class="loader">
+    <div class="spinner-border" role="status">
+        <span class="visually-hidden">Chargement...</span>
+    </div>
+    <p class="mt-2">Chargement des résultats...</p>
+</div>
+
+<!-- Bouton de filtres mobile -->
+<button class="btn btn-primary d-md-none d-block mobile-filters-toggle" id="mobile-filters-toggle" type="button" data-bs-toggle="collapse" data-bs-target="#advancedFilters">
+    <i class="fas fa-filter"></i>
+</button>
+{% endblock %}
+
+{% block extra_js %}
+<!-- Scripts pour la page de recherche -->
+<script src="/static/js/search/filters-manager.js"></script>
+<script src="/static/js/search/results-renderer.js"></script>
+<script src="/static/js/search/search.js"></script>
+<script src="/static/js/search/app.js"></script>
+{% endblock %} 

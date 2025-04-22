@@ -1,0 +1,135 @@
+{% extends 'admin/base.html' %}
+{% load crispy_forms_tags %}
+
+{% block admin_title %}{{ title }}{% endblock %}
+{% block admin_heading %}{{ title }}{% endblock %}
+
+{% block admin_actions %}
+<a href="{% url 'admin_user_list' %}" class="btn btn-secondary">
+    <i class="fas fa-arrow-left me-1"></i> Retour à la liste
+</a>
+{% endblock %}
+
+{% block admin_content %}
+<div class="card">
+    <div class="card-body">
+        <form method="post">
+            {% csrf_token %}
+            
+            <div class="row">
+                <!-- Informations de base -->
+                <div class="col-md-6">
+                    <h5 class="mb-3">Informations de base</h5>
+                    
+                    <div class="mb-3">
+                        {{ form.email|as_crispy_field }}
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            {{ form.first_name|as_crispy_field }}
+                        </div>
+                        <div class="col-md-6">
+                            {{ form.last_name|as_crispy_field }}
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        {{ form.role|as_crispy_field }}
+                    </div>
+                    
+                    {% if form.instance.pk %}
+                    <div class="mb-3">
+                        {{ form.is_active|as_crispy_field }}
+                    </div>
+                    {% endif %}
+                    
+                    {% if not form.instance.pk %}
+                    <div class="mb-3">
+                        {{ form.password1|as_crispy_field }}
+                    </div>
+                    
+                    <div class="mb-3">
+                        {{ form.password2|as_crispy_field }}
+                    </div>
+                    
+                    <div class="mb-3 form-check">
+                        <input class="form-check-input" type="checkbox" id="send_credentials" name="send_credentials" checked>
+                        <label class="form-check-label" for="send_credentials">
+                            Envoyer les identifiants par email
+                        </label>
+                        <div class="form-text">
+                            Un email sera envoyé avec un lien pour définir un mot de passe.
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+                
+                <!-- Informations complémentaires -->
+                <div class="col-md-6">
+                    <h5 class="mb-3">Informations complémentaires</h5>
+                    
+                    <div class="mb-3">
+                        {{ form.phone_number|as_crispy_field }}
+                    </div>
+                    
+                    <div class="mb-3">
+                        {{ form.company_name|as_crispy_field }}
+                    </div>
+                    
+                    <div class="mb-3">
+                        {{ form.notes|as_crispy_field }}
+                    </div>
+                    
+                    {% if has_creator_profile %}
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i>
+                        Cet utilisateur possède un profil de créateur.
+                        <a href="{% url 'creator_detail' creator_id %}" class="alert-link">Voir le profil</a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <div class="mt-4 text-end">
+                <a href="{% url 'admin_user_list' %}" class="btn btn-outline-secondary me-2">Annuler</a>
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-save me-1"></i> Enregistrer
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block admin_js %}
+<script>
+    // Afficher/masquer les champs spécifiques selon le rôle sélectionné
+    $(document).ready(function() {
+        const roleField = $('#id_role');
+        
+        function updateFormFields() {
+            const selectedRole = roleField.val();
+            
+            if (selectedRole === 'creator') {
+                // Afficher une note concernant les profils de créateur
+                if (!$('#creator-note').length) {
+                    roleField.after('<div id="creator-note" class="form-text text-info mt-1">' +
+                        '<i class="fas fa-info-circle me-1"></i> ' +
+                        'Un profil de créateur sera automatiquement créé pour cet utilisateur.' +
+                        '</div>');
+                }
+            } else {
+                // Masquer la note
+                $('#creator-note').remove();
+            }
+        }
+        
+        // Au chargement de la page
+        updateFormFields();
+        
+        // Au changement de rôle
+        roleField.change(updateFormFields);
+    });
+</script>
+{% endblock %} 

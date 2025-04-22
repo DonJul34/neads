@@ -1,0 +1,270 @@
+{% extends 'base.html' %}
+
+{% block title %}NEADS - Découvrir de nouveaux créateurs{% endblock %}
+
+{% block extra_css %}
+<style>
+    .search-header {
+        background-color: #f8f9fa;
+        padding: 30px 0;
+        margin-bottom: 30px;
+        border-bottom: 1px solid #e9ecef;
+    }
+    
+    .result-card {
+        transition: transform 0.2s ease;
+        height: 100%;
+    }
+    
+    .result-card:hover {
+        transform: translateY(-5px);
+    }
+    
+    .profile-image {
+        width: 100%;
+        height: 200px;
+        object-fit: cover;
+        border-radius: 8px 8px 0 0;
+    }
+    
+    .platform-badge {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        padding: 5px 10px;
+        border-radius: 30px;
+        font-size: 0.8rem;
+        font-weight: 600;
+        background-color: rgba(0, 0, 0, 0.7);
+        color: white;
+    }
+    
+    .instagram-badge {
+        background: linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%);
+    }
+    
+    .tiktok-badge {
+        background-color: #000;
+    }
+    
+    .youtube-badge {
+        background-color: #FF0000;
+    }
+    
+    .metrics {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 15px;
+    }
+    
+    .metric {
+        text-align: center;
+        flex: 1;
+        padding: 5px;
+        border-right: 1px solid #e9ecef;
+    }
+    
+    .metric:last-child {
+        border-right: none;
+    }
+    
+    .metric-value {
+        font-weight: 700;
+        font-size: 1.1rem;
+    }
+    
+    .metric-label {
+        font-size: 0.8rem;
+        color: #6c757d;
+    }
+    
+    .domain-match {
+        background-color: #d1e7dd;
+        color: #0f5132;
+        padding: 2px 8px;
+        border-radius: 4px;
+        font-size: 0.8rem;
+        display: inline-block;
+        margin-bottom: 5px;
+    }
+    
+    .score-indicator {
+        height: 5px;
+        background-color: #e9ecef;
+        border-radius: 2px;
+        margin-bottom: 15px;
+    }
+    
+    .score-indicator-value {
+        height: 100%;
+        background-color: #3b82f6;
+        border-radius: 2px;
+    }
+    
+    .high-score {
+        background-color: #10b981;
+    }
+    
+    .medium-score {
+        background-color: #f59e0b;
+    }
+    
+    .empty-state {
+        text-align: center;
+        padding: 60px 20px;
+    }
+    
+    .empty-icon {
+        font-size: 3rem;
+        color: #a1a1aa;
+        margin-bottom: 20px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- En-tête de la recherche -->
+<div class="search-header">
+    <div class="container">
+        <h1 class="h2 mb-4">Découvrir de nouveaux créateurs</h1>
+        
+        <form id="discover-form" method="get" class="mb-3">
+            <div class="input-group">
+                <input type="text" class="form-control" 
+                       name="query" value="{{ query }}" 
+                       placeholder="Rechercher un type de créateur, un domaine, un sujet...">
+                <button class="btn btn-primary" type="submit">
+                    <i class="fas fa-search me-2"></i> Découvrir
+                </button>
+            </div>
+            <small class="text-muted mt-2">Exemple: "influenceur beauté", "créateur lifestyle", "gaming"...</small>
+        </form>
+    </div>
+</div>
+
+<div class="container">
+    {% if query %}
+        {% if error %}
+            <div class="alert alert-danger">
+                {{ error }}
+            </div>
+        {% endif %}
+        
+        {% if results %}
+            <div class="mb-4">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h2 class="h4">Résultats pour "{{ query }}"</h2>
+                    <p class="text-muted mb-0">{{ results|length }} créateur{{ results|length|pluralize }} trouvé{{ results|length|pluralize }}</p>
+                </div>
+                <hr>
+            </div>
+            
+            <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+                {% for result in results %}
+                <div class="col">
+                    <div class="card result-card shadow-sm">
+                        <div class="position-relative">
+                            <img src="{{ result.profile_image }}" class="profile-image" alt="{{ result.name }}">
+                            <span class="platform-badge {{ result.platform|lower }}-badge">
+                                {{ result.platform }}
+                            </span>
+                        </div>
+                        
+                        <div class="card-body">
+                            <h3 class="card-title h5 mb-1">{{ result.name }}</h3>
+                            <p class="text-muted small mb-2">{{ result.location }}</p>
+                            
+                            <div class="metrics mb-3">
+                                <div class="metric">
+                                    <div class="metric-value">{{ result.followers }}</div>
+                                    <div class="metric-label">Abonnés</div>
+                                </div>
+                                <div class="metric">
+                                    <div class="metric-value">{{ result.engagement_rate }}</div>
+                                    <div class="metric-label">Engagement</div>
+                                </div>
+                                <div class="metric">
+                                    <div class="metric-value">{{ result.relevance_score }}</div>
+                                    <div class="metric-label">Score</div>
+                                </div>
+                            </div>
+                            
+                            {% if result.domain_match %}
+                            <span class="domain-match">
+                                <i class="fas fa-check-circle me-1"></i> Match parfait
+                            </span>
+                            {% endif %}
+                            
+                            <p class="card-text mb-3">{{ result.description }}</p>
+                            
+                            <div class="score-indicator">
+                                <div class="score-indicator-value 
+                                    {% if result.relevance_score > 0.8 %}high-score
+                                    {% elif result.relevance_score > 0.6 %}medium-score{% endif %}" 
+                                    style="width: {{ result.relevance_score|floatformat:2|multiply:100 }}%">
+                                </div>
+                            </div>
+                            
+                            <div class="d-flex justify-content-between align-items-center">
+                                <a href="{{ result.profile_url }}" target="_blank" class="btn btn-sm btn-outline-primary">
+                                    <i class="fas fa-external-link-alt me-1"></i> Voir le profil
+                                </a>
+                                <button class="btn btn-sm btn-outline-success import-creator" data-name="{{ result.name }}">
+                                    <i class="fas fa-plus-circle me-1"></i> Ajouter à NEADS
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="empty-state">
+                <div class="empty-icon">
+                    <i class="fas fa-search"></i>
+                </div>
+                <h3>Aucun créateur trouvé pour "{{ query }}"</h3>
+                <p class="text-muted">Essayez d'autres termes de recherche ou explorez des domaines spécifiques.</p>
+            </div>
+        {% endif %}
+    {% else %}
+        <div class="empty-state">
+            <div class="empty-icon">
+                <i class="fas fa-compass"></i>
+            </div>
+            <h3>Découvrez de nouveaux créateurs</h3>
+            <p class="text-muted">Utilisez la barre de recherche ci-dessus pour trouver des créateurs qui ne sont pas encore sur NEADS.</p>
+            <p>Vous pouvez rechercher par domaine, sujet ou type de contenu.</p>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Gérer les boutons d'import de créateurs
+        const importButtons = document.querySelectorAll('.import-creator');
+        
+        importButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                const creatorName = this.getAttribute('data-name');
+                
+                // Animation du bouton pendant le "chargement"
+                this.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Import...';
+                this.disabled = true;
+                
+                // Simuler un délai de traitement (à remplacer par un vrai appel API)
+                setTimeout(() => {
+                    alert(`Le créateur "${creatorName}" serait importé dans NEADS.\nCette fonctionnalité sera bientôt disponible.`);
+                    
+                    // Rétablir le bouton
+                    this.innerHTML = '<i class="fas fa-check-circle me-1"></i> Ajouté';
+                    this.classList.remove('btn-outline-success');
+                    this.classList.add('btn-success');
+                }, 1500);
+            });
+        });
+    });
+</script>
+{% endblock %} 
