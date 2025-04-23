@@ -1,0 +1,178 @@
+{% extends "base.html" %}
+
+{% block title %}Liste des créateurs{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row mb-4">
+        <div class="col">
+            <h1 class="h2 mb-0">Liste des créateurs</h1>
+        </div>
+        <div class="col-auto">
+            <a href="{% url 'creator_add' %}" class="btn btn-primary">
+                <i class="fas fa-plus me-1"></i> Ajouter un créateur
+            </a>
+        </div>
+    </div>
+    
+    <div class="card shadow-sm border-0">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="bg-light">
+                        <tr>
+                            <th>Nom</th>
+                            <th>Email</th>
+                            <th>Localisation</th>
+                            <th>Note</th>
+                            <th>Vérification</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for creator in creators %}
+                        <tr>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    {% if creator.profile_image %}
+                                    <img src="{{ creator.profile_image.url }}" alt="{{ creator.full_name }}" class="rounded-circle me-2" style="width: 32px; height: 32px;">
+                                    {% else %}
+                                    <div class="bg-secondary rounded-circle me-2 d-flex align-items-center justify-content-center" style="width: 32px; height: 32px; color: white;">
+                                        <i class="fas fa-user"></i>
+                                    </div>
+                                    {% endif %}
+                                    <div>
+                                        <a href="{% url 'creator_detail' creator.id %}" class="text-decoration-none">
+                                            {{ creator.full_name }}
+                                        </a>
+                                        {% if creator.verified_by_neads %}
+                                        <span class="ms-1 text-primary" title="Vérifié par NEADS">
+                                            <i class="fas fa-check-circle"></i>
+                                        </span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </td>
+                            <td>{{ creator.email }}</td>
+                            <td>
+                                {% if creator.location %}
+                                {{ creator.location.city }}{% if creator.location.country %}, {{ creator.location.country }}{% endif %}
+                                {% else %}
+                                <span class="text-muted">Non renseigné</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <span class="me-2">{{ creator.average_rating|floatformat:1 }}</span>
+                                    <div class="star-rating small">
+                                        {% for i in "12345" %}
+                                            {% if forloop.counter <= creator.average_rating %}
+                                                <i class="fas fa-star text-warning"></i>
+                                            {% elif forloop.counter <= creator.average_rating|add:0.5 %}
+                                                <i class="fas fa-star-half-alt text-warning"></i>
+                                            {% else %}
+                                                <i class="far fa-star text-warning"></i>
+                                            {% endif %}
+                                        {% endfor %}
+                                    </div>
+                                    <span class="ms-1 text-muted">({{ creator.total_ratings }})</span>
+                                </div>
+                            </td>
+                            <td>
+                                {% if creator.verified_by_neads %}
+                                <span class="badge bg-success">Vérifié</span>
+                                {% else %}
+                                <span class="badge bg-secondary">Non vérifié</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="btn-group">
+                                    <a href="{% url 'creator_detail' creator.id %}" class="btn btn-sm btn-outline-primary" title="Voir">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                    <a href="{% url 'creator_edit' creator.id %}" class="btn btn-sm btn-outline-secondary" title="Modifier">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    <button type="button" class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#deleteModal{{ creator.id }}" title="Supprimer">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
+                                
+                                <!-- Modal de suppression -->
+                                <div class="modal fade" id="deleteModal{{ creator.id }}" tabindex="-1" aria-labelledby="deleteModalLabel{{ creator.id }}" aria-hidden="true">
+                                    <div class="modal-dialog">
+                                        <div class="modal-content">
+                                            <div class="modal-header">
+                                                <h5 class="modal-title" id="deleteModalLabel{{ creator.id }}">Confirmer la suppression</h5>
+                                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
+                                            </div>
+                                            <div class="modal-body">
+                                                <p>Êtes-vous sûr de vouloir supprimer le profil de <strong>{{ creator.full_name }}</strong> ?</p>
+                                                <p class="text-danger">Cette action est irréversible et supprimera toutes les données associées à ce créateur.</p>
+                                            </div>
+                                            <div class="modal-footer">
+                                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                                                <form method="post" action="{% url 'delete_creator' creator.id %}">
+                                                    {% csrf_token %}
+                                                    <button type="submit" class="btn btn-danger">Supprimer définitivement</button>
+                                                </form>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="6" class="text-center py-4">
+                                <p class="text-muted mb-0">Aucun créateur trouvé</p>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    
+    {% if is_paginated %}
+    <nav class="mt-4">
+        <ul class="pagination justify-content-center">
+            {% if page_obj.has_previous %}
+            <li class="page-item">
+                <a class="page-link" href="?page=1" aria-label="Première">
+                    <span aria-hidden="true">&laquo;&laquo;</span>
+                </a>
+            </li>
+            <li class="page-item">
+                <a class="page-link" href="?page={{ page_obj.previous_page_number }}" aria-label="Précédente">
+                    <span aria-hidden="true">&laquo;</span>
+                </a>
+            </li>
+            {% endif %}
+            
+            {% for i in paginator.page_range %}
+                {% if page_obj.number == i %}
+                <li class="page-item active"><span class="page-link">{{ i }}</span></li>
+                {% elif i > page_obj.number|add:'-3' and i < page_obj.number|add:'3' %}
+                <li class="page-item"><a class="page-link" href="?page={{ i }}">{{ i }}</a></li>
+                {% endif %}
+            {% endfor %}
+            
+            {% if page_obj.has_next %}
+            <li class="page-item">
+                <a class="page-link" href="?page={{ page_obj.next_page_number }}" aria-label="Suivante">
+                    <span aria-hidden="true">&raquo;</span>
+                </a>
+            </li>
+            <li class="page-item">
+                <a class="page-link" href="?page={{ paginator.num_pages }}" aria-label="Dernière">
+                    <span aria-hidden="true">&raquo;&raquo;</span>
+                </a>
+            </li>
+            {% endif %}
+        </ul>
+    </nav>
+    {% endif %}
+</div>
+{% endblock %} 

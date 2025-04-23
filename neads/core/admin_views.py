@@ -12,7 +12,7 @@ from .models import User, UserProfile
 from .forms import AdminUserCreationForm, AdminUserEditForm, SendTempPasswordForm
 from .decorators import role_required
 
-from neads.creators.models import Creator
+from neads.creators.models import Creator, Domain, Location
 
 
 @login_required
@@ -108,14 +108,40 @@ def user_create(request):
             # Créer automatiquement un profil Creator si rôle = creator
             if user.role == 'creator':
                 if not hasattr(user, 'creator_profile'):
-                    Creator.objects.create(
-                        user=user,
-                        first_name=user.first_name,
-                        last_name=user.last_name,
-                        email=user.email,
-                        age=25,  # Valeur par défaut
-                        gender='O',  # Valeur par défaut
-                    )
+                    try:
+                        # Obtenir le premier domaine disponible
+                        from neads.creators.models import Domain, Location, Creator
+                        
+                        # Créer d'abord une localisation par défaut
+                        location = Location.objects.create(
+                            city="Paris",
+                            country="France",
+                            postal_code="75000"
+                        )
+                        
+                        # Créer le profil du créateur
+                        creator = Creator.objects.create(
+                            user=user,
+                            first_name=user.first_name,
+                            last_name=user.last_name,
+                            email=user.email,
+                            age=25,  # Valeur par défaut
+                            gender='O',  # Valeur par défaut
+                            verified_by_neads=False,  # Mode brouillon par défaut
+                            location=location,
+                            bio="Créateur en attente de configuration",
+                            equipment="Smartphone",
+                            content_types="video",
+                        )
+                        
+                        # Ajouter au moins un domaine par défaut
+                        default_domain = Domain.objects.first()
+                        if default_domain:
+                            creator.domains.add(default_domain)
+                        
+                        messages.info(request, f"Un profil de créateur en mode brouillon a été créé pour {user.get_full_name()}. Le profil devra être complété avant d'être visible publiquement.")
+                    except Exception as e:
+                        messages.error(request, f"Erreur lors de la création du profil créateur: {str(e)}")
             
             messages.success(request, f"L'utilisateur {user.get_full_name()} a été créé avec succès.")
             
@@ -175,14 +201,40 @@ def user_edit(request, user_id):
             if original_role != 'creator' and user.role == 'creator':
                 # Créer un profil Creator si n'existe pas
                 if not hasattr(user, 'creator_profile'):
-                    Creator.objects.create(
-                        user=user,
-                        first_name=user.first_name,
-                        last_name=user.last_name,
-                        email=user.email,
-                        age=25,  # Valeur par défaut
-                        gender='O',  # Valeur par défaut
-                    )
+                    try:
+                        # Obtenir le premier domaine disponible
+                        from neads.creators.models import Domain, Location, Creator
+                        
+                        # Créer d'abord une localisation par défaut
+                        location = Location.objects.create(
+                            city="Paris",
+                            country="France",
+                            postal_code="75000"
+                        )
+                        
+                        # Créer le profil du créateur
+                        creator = Creator.objects.create(
+                            user=user,
+                            first_name=user.first_name,
+                            last_name=user.last_name,
+                            email=user.email,
+                            age=25,  # Valeur par défaut
+                            gender='O',  # Valeur par défaut
+                            verified_by_neads=False,  # Mode brouillon par défaut
+                            location=location,
+                            bio="Créateur en attente de configuration",
+                            equipment="Smartphone",
+                            content_types="video",
+                        )
+                        
+                        # Ajouter au moins un domaine par défaut
+                        default_domain = Domain.objects.first()
+                        if default_domain:
+                            creator.domains.add(default_domain)
+                        
+                        messages.info(request, f"Un profil de créateur en mode brouillon a été créé pour {user.get_full_name()}. Le profil devra être complété avant d'être visible publiquement.")
+                    except Exception as e:
+                        messages.error(request, f"Erreur lors de la création du profil créateur: {str(e)}")
             
             messages.success(request, f"L'utilisateur {user.get_full_name()} a été mis à jour avec succès.")
             return redirect('admin_user_list')

@@ -130,8 +130,8 @@
                             </button>
                             <ul class="dropdown-menu dropdown-menu-end">
                                 <li><a class="dropdown-item" href="{% url 'profile' %}">Mon profil</a></li>
-                                {% if user.has_role == 'creator' %}
-                                    <li><a class="dropdown-item" href="{% url 'creator_detail' user.creator_profile.id %}">Ma fiche créateur</a></li>
+                                {% if user.role == 'creator' and user.creator_profile %}
+                                    <li><a class="dropdown-item" href="{% url 'creator_detail' creator_id=user.creator_profile.id %}">Ma fiche créateur</a></li>
                                 {% endif %}
                                 {% if user.is_staff %}
                                     <li><a class="dropdown-item" href="/admin/" target="_blank">Administration</a></li>

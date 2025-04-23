@@ -102,7 +102,8 @@ class Creator(models.Model):
         super().save(*args, **kwargs)
     
     def update_ratings(self):
-        ratings = self.ratings.filter(is_verified=True)
+        # Prendre en compte tous les avis (plus de filtre is_verified)
+        ratings = self.ratings.all()
         if ratings.exists():
             avg = ratings.aggregate(models.Avg('rating'))['rating__avg']
             count = ratings.count()
@@ -165,6 +166,9 @@ class Rating(models.Model):
     # Vérification (pour les avis clients)
     is_verified = models.BooleanField(default=False)
     verified_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='verified_ratings')
+    
+    # Pour marquer si l'utilisateur déclare avoir eu une expérience avec le créateur
+    has_experience = models.BooleanField(default=False, help_text="L'utilisateur a eu une expérience réelle avec ce créateur")
     
     class Meta:
         unique_together = ('creator', 'user')

@@ -1,0 +1,418 @@
+{% extends "base.html" %}
+{% load creator_filters %}
+
+{% block title %}Ajouter des médias pour {{ creator.full_name }}{% endblock %}
+
+{% block extra_head %}
+<style>
+    .upload-area {
+        border: 2px dashed #ddd;
+        border-radius: 8px;
+        padding: 25px;
+        text-align: center;
+        margin-bottom: 20px;
+        background-color: #f9f9f9;
+        transition: all 0.3s;
+    }
+    .upload-area:hover {
+        border-color: #007bff;
+        background-color: #f0f8ff;
+    }
+    .upload-limits {
+        background-color: #f8f9fa;
+        border-radius: 8px;
+        padding: 15px;
+        margin-bottom: 20px;
+    }
+    .upload-preview {
+        max-width: 100%;
+        max-height: 200px;
+        margin-top: 15px;
+        border-radius: 4px;
+    }
+    .file-input-container {
+        display: none;
+    }
+    .file-input-container.active {
+        display: block;
+    }
+    .file-requirements {
+        margin-top: 10px;
+        padding: 8px 12px;
+        background-color: #e9f7fc;
+        border-radius: 5px;
+        border-left: 3px solid #0dcaf0;
+    }
+    .form-error-alert {
+        margin-top: 15px;
+        padding: 10px 15px;
+        background-color: #fff0f0;
+        border-left: 3px solid #dc3545;
+        border-radius: 5px;
+        color: #842029;
+    }
+    .form-global-errors {
+        margin-bottom: 20px;
+        padding: 15px;
+        background-color: #fff0f0;
+        border-radius: 5px;
+        border: 1px solid #f5c2c7;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row">
+        <div class="col-lg-8 mx-auto">
+            <div class="card shadow-sm border-0">
+                <div class="card-body p-4">
+                    <h1 class="h3 mb-4">Ajouter des médias pour {{ creator.full_name }}</h1>
+                    
+                    <div class="upload-limits mb-4">
+                        <h5 class="mb-3">Limites de téléchargement :</h5>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="d-flex justify-content-between">
+                                    <span>Images :</span>
+                                    <span>{{ image_count }} / 10</span>
+                                </div>
+                                <div class="progress mt-1 mb-3">
+                                    <div class="progress-bar bg-info" role="progressbar" style="width: {{ image_count|floatformat:0|mul:10 }}%" 
+                                        aria-valuenow="{{ image_count }}" aria-valuemin="0" aria-valuemax="10"></div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="d-flex justify-content-between">
+                                    <span>Vidéos :</span>
+                                    <span>{{ video_count }} / 10</span>
+                                </div>
+                                <div class="progress mt-1 mb-3">
+                                    <div class="progress-bar bg-info" role="progressbar" style="width: {{ video_count|floatformat:0|mul:10 }}%" 
+                                        aria-valuenow="{{ video_count }}" aria-valuemin="0" aria-valuemax="10"></div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="small text-muted">
+                            <p class="mb-0">• Les images doivent être au format JPG, PNG ou GIF (max. 5 Mo)</p>
+                            <p class="mb-0">• Les vidéos doivent être au format MP4 (max. 50 Mo)</p>
+                            <p class="mb-0">• Les miniatures doivent être au format JPG, PNG ou GIF (max. 5 Mo)</p>
+                            <p class="mb-0">• Maximum 10 images et 10 vidéos par créateur</p>
+                        </div>
+                    </div>
+                    
+                    {% if form.non_field_errors %}
+                    <div class="form-global-errors">
+                        <h6 class="mb-2"><i class="fas fa-exclamation-triangle me-2"></i>Erreurs de validation</h6>
+                        <ul class="mb-0 ps-3">
+                            {% for error in form.non_field_errors %}
+                                <li>{{ error }}</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                    {% endif %}
+                    
+                    <form method="post" enctype="multipart/form-data" id="upload-form">
+                        {% csrf_token %}
+                        
+                        <div class="mb-3">
+                            <label for="{{ form.media_type.id_for_label }}" class="form-label">{{ form.media_type.label }}</label>
+                            {{ form.media_type }}
+                            {% if form.media_type.help_text %}
+                                <div class="form-text">{{ form.media_type.help_text }}</div>
+                            {% endif %}
+                            {% if form.media_type.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.media_type.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="file-input-container" id="image-upload-container">
+                            <div class="upload-area" id="image-drop-area">
+                                <i class="fas fa-cloud-upload-alt fa-3x mb-3 text-muted"></i>
+                                <p>Glissez vos images ici ou cliquez pour choisir</p>
+                                {{ form.file }}
+                                <button type="button" class="btn btn-outline-primary" id="image-select-btn">Sélectionner des images</button>
+                                {% if form.file.errors %}
+                                    <div class="form-error-alert">
+                                        {% for error in form.file.errors %}
+                                            <div><i class="fas fa-exclamation-circle me-2"></i>{{ error }}</div>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                                <div id="image-preview" class="mt-3"></div>
+                            </div>
+                            <div class="file-requirements">
+                                <div><strong>Exigences pour les images:</strong></div>
+                                <div class="small">
+                                    <i class="fas fa-check-circle text-success me-1"></i> Formats acceptés: JPG, PNG, GIF<br>
+                                    <i class="fas fa-check-circle text-success me-1"></i> Taille maximale: 5 Mo<br>
+                                    <i class="fas fa-check-circle text-success me-1"></i> Résolution recommandée: minimum 800x600 pixels
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="file-input-container" id="video-upload-container">
+                            <div class="upload-area" id="video-drop-area">
+                                <i class="fas fa-cloud-upload-alt fa-3x mb-3 text-muted"></i>
+                                <p>Glissez vos vidéos ici ou cliquez pour choisir</p>
+                                {{ form.video_file }}
+                                <button type="button" class="btn btn-outline-primary" id="video-select-btn">Sélectionner des vidéos</button>
+                                {% if form.video_file.errors %}
+                                    <div class="form-error-alert">
+                                        {% for error in form.video_file.errors %}
+                                            <div><i class="fas fa-exclamation-circle me-2"></i>{{ error }}</div>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                                <div id="video-preview" class="mt-3"></div>
+                            </div>
+                            
+                            <div class="file-requirements mb-4">
+                                <div><strong>Exigences pour les vidéos:</strong></div>
+                                <div class="small">
+                                    <i class="fas fa-check-circle text-success me-1"></i> Format accepté: MP4<br>
+                                    <i class="fas fa-check-circle text-success me-1"></i> Taille maximale: 50 Mo<br>
+                                </div>
+                            </div>
+                            
+                            <div class="mt-3">
+                                <label for="{{ form.thumbnail.id_for_label }}" class="form-label">{{ form.thumbnail.label }} <span class="text-danger">*</span></label>
+                                {{ form.thumbnail }}
+                                <div class="form-text">Une miniature est requise pour les vidéos</div>
+                                {% if form.thumbnail.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {% for error in form.thumbnail.errors %}
+                                            {{ error }}
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                                <div class="file-requirements mt-2">
+                                    <div class="small">
+                                        <i class="fas fa-check-circle text-success me-1"></i> Formats acceptés: JPG, PNG, GIF<br>
+                                        <i class="fas fa-check-circle text-success me-1"></i> Taille maximale: 5 Mo<br>
+                                        <i class="fas fa-check-circle text-success me-1"></i> Résolution recommandée: 16:9
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="{{ form.title.id_for_label }}" class="form-label">{{ form.title.label }} <span class="text-danger">*</span></label>
+                            {{ form.title }}
+                            {% if form.title.help_text %}
+                                <div class="form-text">{{ form.title.help_text }}</div>
+                            {% endif %}
+                            {% if form.title.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.title.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="{{ form.description.id_for_label }}" class="form-label">{{ form.description.label }}</label>
+                            {{ form.description }}
+                            {% if form.description.help_text %}
+                                <div class="form-text">{{ form.description.help_text }}</div>
+                            {% endif %}
+                            {% if form.description.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.description.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="d-flex justify-content-between">
+                            <a href="{% url 'creator_detail' creator.id %}" class="btn btn-outline-secondary">Retour au profil</a>
+                            <button type="submit" class="btn btn-primary">Télécharger</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const mediaTypeSelect = document.getElementById('id_media_type');
+        const imageContainer = document.getElementById('image-upload-container');
+        const videoContainer = document.getElementById('video-upload-container');
+        const imageInput = document.getElementById('id_file');
+        const videoInput = document.getElementById('id_video_file');
+        const thumbnailInput = document.getElementById('id_thumbnail');
+        const imageSelectBtn = document.getElementById('image-select-btn');
+        const videoSelectBtn = document.getElementById('video-select-btn');
+        const imagePreview = document.getElementById('image-preview');
+        const videoPreview = document.getElementById('video-preview');
+        
+        function updateFileInputs() {
+            const mediaType = mediaTypeSelect.value;
+            if (mediaType === 'image') {
+                imageContainer.classList.add('active');
+                videoContainer.classList.remove('active');
+            } else if (mediaType === 'video') {
+                imageContainer.classList.remove('active');
+                videoContainer.classList.add('active');
+            }
+        }
+        
+        // Initial update
+        updateFileInputs();
+        
+        // Update on change
+        mediaTypeSelect.addEventListener('change', updateFileInputs);
+        
+        // Image upload handling
+        imageSelectBtn.addEventListener('click', function() {
+            imageInput.click();
+        });
+        
+        imageInput.addEventListener('change', function() {
+            if (this.files.length > 0) {
+                const file = this.files[0];
+                // Validate file size
+                if (file.size > 5 * 1024 * 1024) {
+                    alert('Le fichier est trop volumineux. La taille maximale est de 5 Mo.');
+                    this.value = '';
+                    imagePreview.innerHTML = '';
+                    return;
+                }
+                
+                // Validate file type
+                const fileType = file.type.toLowerCase();
+                if (!fileType.match(/^image\/(jpeg|jpg|png|gif)$/)) {
+                    alert('Format de fichier non supporté. Veuillez sélectionner une image au format JPG, PNG ou GIF.');
+                    this.value = '';
+                    imagePreview.innerHTML = '';
+                    return;
+                }
+                
+                displayPreview(file, imagePreview, 'image');
+            }
+        });
+        
+        // Video upload handling
+        videoSelectBtn.addEventListener('click', function() {
+            videoInput.click();
+        });
+        
+        videoInput.addEventListener('change', function() {
+            if (this.files.length > 0) {
+                const file = this.files[0];
+                // Validate file size
+                if (file.size > 50 * 1024 * 1024) {
+                    alert('Le fichier est trop volumineux. La taille maximale est de 50 Mo.');
+                    this.value = '';
+                    videoPreview.innerHTML = '';
+                    return;
+                }
+                
+                // Validate file type
+                const fileType = file.type.toLowerCase();
+                if (!fileType.match(/^video\/mp4$/)) {
+                    alert('Format de fichier non supporté. Veuillez sélectionner une vidéo au format MP4.');
+                    this.value = '';
+                    videoPreview.innerHTML = '';
+                    return;
+                }
+                
+                displayPreview(file, videoPreview, 'video');
+            }
+        });
+        
+        // Thumbnail validation
+        thumbnailInput.addEventListener('change', function() {
+            if (this.files.length > 0) {
+                const file = this.files[0];
+                // Validate file size
+                if (file.size > 5 * 1024 * 1024) {
+                    alert('La miniature est trop volumineuse. La taille maximale est de 5 Mo.');
+                    this.value = '';
+                    return;
+                }
+                
+                // Validate file type
+                const fileType = file.type.toLowerCase();
+                if (!fileType.match(/^image\/(jpeg|jpg|png|gif)$/)) {
+                    alert('Format de miniature non supporté. Veuillez sélectionner une image au format JPG, PNG ou GIF.');
+                    this.value = '';
+                    return;
+                }
+            }
+        });
+        
+        function displayPreview(file, previewElement, type) {
+            previewElement.innerHTML = '';
+            
+            if (!file) return;
+            
+            if (type === 'image') {
+                const img = document.createElement('img');
+                img.classList.add('upload-preview');
+                img.file = file;
+                previewElement.appendChild(img);
+                
+                const reader = new FileReader();
+                reader.onload = (function(aImg) { 
+                    return function(e) { 
+                        aImg.src = e.target.result; 
+                    }; 
+                })(img);
+                reader.readAsDataURL(file);
+                
+            } else if (type === 'video') {
+                const fileInfo = document.createElement('div');
+                fileInfo.innerHTML = `<i class="fas fa-film me-2"></i> ${file.name} (${formatFileSize(file.size)})`;
+                fileInfo.classList.add('py-2', 'px-3', 'bg-light', 'rounded');
+                previewElement.appendChild(fileInfo);
+            }
+        }
+        
+        function formatFileSize(bytes) {
+            if (bytes < 1024) return bytes + ' bytes';
+            else if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB';
+            else return (bytes / 1048576).toFixed(1) + ' MB';
+        }
+        
+        // Form validation before submit
+        document.getElementById('upload-form').addEventListener('submit', function(e) {
+            const mediaType = mediaTypeSelect.value;
+            let isValid = true;
+            let errorMessage = '';
+            
+            if (mediaType === 'image') {
+                if (!imageInput.files || imageInput.files.length === 0) {
+                    isValid = false;
+                    errorMessage = 'Veuillez sélectionner une image à télécharger.';
+                }
+            } else if (mediaType === 'video') {
+                if (!videoInput.files || videoInput.files.length === 0) {
+                    isValid = false;
+                    errorMessage = 'Veuillez sélectionner une vidéo à télécharger.';
+                } else if (!thumbnailInput.files || thumbnailInput.files.length === 0) {
+                    isValid = false;
+                    errorMessage = 'Une miniature est requise pour les vidéos.';
+                }
+            }
+            
+            if (!isValid) {
+                alert(errorMessage);
+                e.preventDefault();
+                return false;
+            }
+        });
+    });
+</script>
+{% endblock %} 

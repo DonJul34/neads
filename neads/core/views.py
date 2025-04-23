@@ -37,7 +37,21 @@ def login_view(request):
                     
                     # Redirection après connexion en fonction du rôle
                     if user.has_role('creator'):
-                        return redirect('creator_detail', creator_id=user.creator_profile.id)
+                        try:
+                            # Vérifier si le profil de créateur existe
+                            if hasattr(user, 'creator_profile') and user.creator_profile:
+                                # Vérifier si le profil est complet
+                                if not user.creator_profile.bio or not user.creator_profile.domains.exists():
+                                    messages.warning(request, "Votre profil de créateur n'est pas complet. Veuillez le compléter pour être visible dans la galerie.")
+                                return redirect('creator_detail', creator_id=user.creator_profile.id)
+                            else:
+                                # Rediriger vers la page de création de profil si pas de profil de créateur
+                                messages.warning(request, "Votre profil de créateur n'est pas encore configuré. Veuillez le créer pour être visible dans la galerie.")
+                                return redirect('creator_add')
+                        except Exception as e:
+                            # En cas d'erreur, rediriger vers la page de création de profil
+                            messages.error(request, f"Erreur d'accès au profil de créateur: {str(e)}")
+                            return redirect('creator_add')
                     else:
                         return redirect('gallery_view')
                 else:
@@ -115,7 +129,18 @@ def temporary_login(request, token, email):
             
             # Redirection après connexion
             if user.has_role('creator'):
-                return redirect('creator_detail', creator_id=user.creator_profile.id)
+                try:
+                    # Vérifier si le profil de créateur existe
+                    if hasattr(user, 'creator_profile') and user.creator_profile:
+                        return redirect('creator_detail', creator_id=user.creator_profile.id)
+                    else:
+                        # Rediriger vers la page d'accueil si pas de profil de créateur
+                        messages.warning(request, "Votre profil de créateur n'est pas encore configuré.")
+                        return redirect('gallery_view')
+                except Exception as e:
+                    # En cas d'erreur, rediriger vers la page d'accueil
+                    messages.error(request, f"Erreur d'accès au profil de créateur: {str(e)}")
+                    return redirect('gallery_view')
             else:
                 return redirect('gallery_view')
         else:

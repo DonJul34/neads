@@ -142,6 +142,40 @@
         border-radius: 0.25rem;
         font-size: 0.8rem;
     }
+    
+    /* Styles pour la notation interactive */
+    .interactive-stars {
+        display: flex;
+        align-items: center;
+    }
+    
+    .interactive-stars .fa-star {
+        transition: color 0.2s ease, transform 0.1s ease;
+    }
+    
+    .interactive-stars .fa-star:hover {
+        transform: scale(1.2);
+    }
+    
+    .interactive-stars .fa-star.active {
+        color: #ffc107 !important;
+    }
+    
+    .selected-rating {
+        font-weight: bold;
+        color: #495057;
+        transition: color 0.2s ease;
+    }
+    
+    #comment-textarea {
+        border: 1px solid #ced4da;
+        transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+    }
+    
+    #comment-textarea:focus {
+        border-color: #80bdff;
+        box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+    }
 </style>
 {% endblock %}
 
@@ -152,6 +186,48 @@
     <div class="verified-badge">
         <i class="fas fa-check-circle me-1"></i> Vérifié par NEADS
     </div>
+    {% endif %}
+    
+    <!-- Panneau d'administration pour les admins et créateurs -->
+    {% if user.is_authenticated %}
+        {% if user.role == 'admin' %}
+        <div class="admin-panel position-absolute top-0 end-0 p-3 bg-light border rounded shadow-sm" style="z-index: 999; margin-top: 50px;">
+            <h6 class="fw-bold mb-2">Actions d'administration</h6>
+            <div class="btn-group-vertical w-100">
+                <a href="{% url 'creator_edit' creator.id %}" class="btn btn-sm btn-outline-primary mb-1">
+                    <i class="fas fa-edit me-1"></i> Modifier le profil
+                </a>
+                <a href="{% url 'upload_media' creator.id %}" class="btn btn-sm btn-outline-primary mb-1">
+                    <i class="fas fa-photo-video me-1"></i> Gérer les médias
+                </a>
+                <button type="button" class="btn btn-sm btn-outline-warning mb-1" data-bs-toggle="modal" data-bs-target="#toggleVerificationModal">
+                    {% if creator.verified_by_neads %}
+                    <i class="fas fa-times-circle me-1"></i> Retirer vérification
+                    {% else %}
+                    <i class="fas fa-check-circle me-1"></i> Vérifier le profil
+                    {% endif %}
+                </button>
+                <button type="button" class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#deleteCreatorModal">
+                    <i class="fas fa-trash-alt me-1"></i> Supprimer le profil
+                </button>
+            </div>
+        </div>
+        {% elif user.role == 'creator' and user.creator_profile and user.creator_profile.id == creator.id %}
+        <div class="admin-panel position-absolute top-0 end-0 p-3 bg-light border rounded shadow-sm" style="z-index: 999; margin-top: 50px;">
+            <h6 class="fw-bold mb-2">Gérer mon profil</h6>
+            <div class="btn-group-vertical w-100">
+                <a href="{% url 'creator_edit' creator.id %}" class="btn btn-sm btn-outline-primary mb-1">
+                    <i class="fas fa-edit me-1"></i> Modifier mon profil
+                </a>
+                <a href="{% url 'upload_media' creator.id %}" class="btn btn-sm btn-outline-primary mb-1">
+                    <i class="fas fa-photo-video me-1"></i> Gérer mes médias
+                </a>
+                <button type="button" class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#deleteCreatorModal">
+                    <i class="fas fa-trash-alt me-1"></i> Supprimer mon profil
+                </button>
+            </div>
+        </div>
+        {% endif %}
     {% endif %}
     
     <div class="row align-items-center">
@@ -378,8 +454,9 @@
                     </div>
                 </div>
                 
-                <!-- Formulaire de notation -->
-                {% if user.is_authenticated and user.has_role == 'consultant' or user.has_role == 'client' %}
+                <!-- Formulaire de notation avec étoiles interactives -->
+                {% if user.is_authenticated %}
+                    {% if user.role == 'consultant' or user.role == 'admin' %}
                     <div class="card bg-light mb-4">
                         <div class="card-body">
                             <h3 class="h5 mb-3">{% if user_rating %}Modifier votre avis{% else %}Laisser un avis{% endif %}</h3>
@@ -387,65 +464,135 @@
                             <form method="post" action="{% url 'rate_creator' creator.id %}">
                                 {% csrf_token %}
                                 
-                                <div class="mb-3">
-                                    <label class="form-label">Notation</label>
-                                    <div class="d-flex">
-                                        {% for choice in form.rating.field.choices %}
-                                            <div class="form-check me-3">
-                                                <input class="form-check-input" type="radio" name="rating" id="rating_{{ choice.0 }}" value="{{ choice.0 }}" 
-                                                    {% if user_rating and user_rating.rating == choice.0 %}checked{% endif %}>
-                                                <label class="form-check-label" for="rating_{{ choice.0 }}">
-                                                    {{ choice.0 }} <i class="fas fa-star text-warning"></i>
-                                                </label>
-                                            </div>
-                                        {% endfor %}
+                                <div class="mb-4">
+                                    <label class="form-label fw-bold">Votre note :</label>
+                                    <div class="star-rating-input d-flex align-items-center">
+                                        <div class="interactive-stars me-3" id="star-rating">
+                                            {% for i in "12345" %}
+                                                <i class="fas fa-star fs-2 {% if user_rating and forloop.counter <= user_rating.rating %}active{% endif %}" 
+                                                   data-rating="{{ forloop.counter }}" style="cursor: pointer; color: #ccc; margin-right: 5px;"></i>
+                                            {% endfor %}
+                                        </div>
+                                        <span class="selected-rating fs-4" id="rating-value">
+                                            {% if user_rating %}{{ user_rating.rating }}{% else %}0{% endif %}/5
+                                        </span>
+                                        <input type="hidden" name="rating" id="rating-input" value="{% if user_rating %}{{ user_rating.rating }}{% endif %}">
                                     </div>
                                 </div>
                                 
                                 <div class="mb-3">
-                                    <label for="{{ form.comment.id_for_label }}" class="form-label">Commentaire (facultatif)</label>
-                                    {{ form.comment }}
+                                    <label for="comment-textarea" class="form-label fw-bold">Votre commentaire :</label>
+                                    <textarea id="comment-textarea" name="comment" class="form-control" rows="4" 
+                                              placeholder="Partagez votre expérience avec ce créateur...">{% if user_rating %}{{ user_rating.comment }}{% endif %}</textarea>
+                                </div>
+                                
+                                <div class="mb-4">
+                                    <div class="form-check">
+                                        <input type="checkbox" class="form-check-input" name="has_experience" id="has-experience-checkbox" 
+                                               {% if user_rating and user_rating.has_experience %}checked{% endif %} required>
+                                        <label class="form-check-label" for="has-experience-checkbox">
+                                            J'ai déjà travaillé avec ce créateur
+                                        </label>
+                                        <div class="alert alert-info mt-2">
+                                            <i class="fas fa-info-circle"></i> En cochant cette case, vous confirmez avoir eu une expérience professionnelle avec ce créateur. 
+                                            Votre avis sera publié immédiatement et visible par tous les utilisateurs.
+                                        </div>
+                                    </div>
                                 </div>
                                 
                                 <div class="d-flex justify-content-end">
-                                    <button type="submit" class="btn btn-primary">
-                                        {% if user_rating %}Mettre à jour{% else %}Envoyer{% endif %}
+                                    <button type="submit" class="btn btn-primary" id="submit-rating" {% if not user_rating %}disabled{% endif %}>
+                                        {% if user_rating %}Mettre à jour mon avis{% else %}Envoyer mon avis{% endif %}
                                     </button>
                                 </div>
                             </form>
                         </div>
                     </div>
+                    {% endif %}
                 {% endif %}
                 
                 <!-- Affichage des avis -->
                 {% if ratings %}
                     <h3 class="h5 mb-3">Avis des clients</h3>
                     
-                    {% for rating in ratings %}
-                        <div class="card mb-3">
-                            <div class="card-body">
-                                <div class="d-flex justify-content-between align-items-center mb-2">
-                                    <div>
-                                        <span class="fw-bold">{{ rating.user.get_full_name|default:rating.user.email }}</span>
-                                        <span class="text-muted ms-2">{{ rating.created_at|date:"d/m/Y" }}</span>
-                                    </div>
-                                    <div class="star-rating">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Utilisateur</th>
+                                    <th>Note</th>
+                                    <th>Commentaire</th>
+                                    <th>Date</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for rating in ratings %}
+                                <tr>
+                                    <td>{{ rating.user.get_full_name|default:rating.user.email }}</td>
+                                    <td>
                                         {% for i in "12345" %}
                                             {% if forloop.counter <= rating.rating %}
-                                                <i class="fas fa-star"></i>
+                                                <i class="fas fa-star text-warning"></i>
                                             {% else %}
                                                 <i class="far fa-star"></i>
                                             {% endif %}
                                         {% endfor %}
-                                    </div>
-                                </div>
-                                
-                                {% if rating.comment %}
-                                    <p class="mb-0">{{ rating.comment }}</p>
-                                {% endif %}
-                            </div>
-                        </div>
-                    {% endfor %}
+                                        ({{ rating.rating }})
+                                    </td>
+                                    <td>{{ rating.comment|default:"Pas de commentaire" }}</td>
+                                    <td>{{ rating.created_at|date:"d/m/Y" }}</td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            {% if rating.has_experience %}
+                                                <span class="badge bg-success me-2" title="L'utilisateur déclare avoir travaillé avec ce créateur">Expérience confirmée</span>
+                                            {% endif %}
+                                            
+                                            {% if is_admin %}
+                                                <button class="btn btn-sm btn-danger" data-bs-toggle="modal" data-bs-target="#deleteRatingModal-{{ rating.id }}">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                                
+                                                <!-- Modal de suppression -->
+                                                <div class="modal fade" id="deleteRatingModal-{{ rating.id }}" tabindex="-1" aria-hidden="true">
+                                                    <div class="modal-dialog">
+                                                        <div class="modal-content">
+                                                            <div class="modal-header">
+                                                                <h5 class="modal-title">Supprimer cet avis</h5>
+                                                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                                            </div>
+                                                            <form action="{% url 'delete_rating' rating.id %}" method="post">
+                                                                {% csrf_token %}
+                                                                <div class="modal-body">
+                                                                    <p>Êtes-vous sûr de vouloir supprimer l'avis de <strong>{{ rating.user.get_full_name|default:rating.user.email }}</strong> ?</p>
+                                                                    
+                                                                    <div class="mb-3">
+                                                                        <label for="reason-{{ rating.id }}" class="form-label">Raison de la suppression :</label>
+                                                                        <select name="reason" id="reason-{{ rating.id }}" class="form-select">
+                                                                            <option value="Avis sans expérience réelle">Avis sans expérience réelle</option>
+                                                                            <option value="Contenu inapproprié">Contenu inapproprié</option>
+                                                                            <option value="Avis trompeur ou faux">Avis trompeur ou faux</option>
+                                                                            <option value="À la demande du créateur">À la demande du créateur</option>
+                                                                            <option value="Autre">Autre</option>
+                                                                        </select>
+                                                                    </div>
+                                                                </div>
+                                                                <div class="modal-footer">
+                                                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                                                                    <button type="submit" class="btn btn-danger">Supprimer</button>
+                                                                </div>
+                                                            </form>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
                 {% else %}
                     <div class="alert alert-light text-center">
                         Aucun avis pour le moment.
@@ -453,88 +600,215 @@
                 {% endif %}
             </div>
         </div>
-    </div>
-    
-    <!-- Colonne latérale -->
-    <div class="col-lg-4">
-        <!-- Section Coordonnées et contact -->
-        <div class="card border-0 shadow-sm mb-4" id="contact">
-            <div class="card-body p-4">
-                <h2 class="h4 mb-3">Identité & Coordonnées</h2>
-                
-                {% if creator.location %}
-                    <div class="contact-item">
-                        <i class="fas fa-map-marker-alt"></i>
-                        <span>{{ creator.location }}</span>
-                    </div>
-                {% endif %}
-                
-                {% if user.is_authenticated and user.has_role == 'consultant' or user.has_role == 'admin' %}
-                    <!-- Informations de contact visibles uniquement pour consultants/admins -->
-                    <div class="contact-item">
-                        <i class="fas fa-envelope"></i>
-                        <span>{{ creator.email }}</span>
-                    </div>
+        
+        <!-- Colonne latérale -->
+        <div class="col-lg-4">
+            <!-- Section Coordonnées et contact -->
+            <div class="card border-0 shadow-sm mb-4" id="contact">
+                <div class="card-body p-4">
+                    <h2 class="h4 mb-3">Identité & Coordonnées</h2>
                     
-                    {% if creator.phone %}
+                    {% if creator.location %}
                         <div class="contact-item">
-                            <i class="fas fa-phone"></i>
-                            <span>{{ creator.phone }}</span>
+                            <i class="fas fa-map-marker-alt"></i>
+                            <span>{{ creator.location }}</span>
                         </div>
                     {% endif %}
                     
-                    <div class="d-grid gap-2 mt-3">
-                        <a href="mailto:{{ creator.email }}" class="btn btn-primary">
-                            <i class="fas fa-envelope me-1"></i> Contacter directement
-                        </a>
-                        <button class="btn btn-outline-primary" onclick="downloadVCard()">
-                            <i class="fas fa-address-card me-1"></i> Télécharger VCard
-                        </button>
-                    </div>
-                {% else %}
-                    <!-- Pour les clients, formulaire de contact sécurisé -->
-                    <p class="text-muted mb-3">
-                        Pour contacter ce créateur, veuillez remplir le formulaire ci-dessous.
-                        <br>Votre demande sera transmise de façon sécurisée.
-                    </p>
-                    
-                    <form id="secure-contact-form">
-                        <div class="mb-3">
-                            <label class="form-label">Sujet</label>
-                            <select class="form-select">
-                                <option>Demande de collaboration</option>
-                                <option>Question sur disponibilité</option>
-                                <option>Demande de devis</option>
-                                <option>Autre</option>
-                            </select>
+                    {% if user.is_authenticated %}
+                        {% if user.role == 'consultant' or user.role == 'admin' %}
+                        <!-- Informations de contact visibles uniquement pour consultants/admins -->
+                        <div class="contact-item">
+                            <i class="fas fa-envelope"></i>
+                            <span>{{ creator.email }}</span>
                         </div>
                         
-                        <div class="mb-3">
-                            <label class="form-label">Message</label>
-                            <textarea class="form-control" rows="4" placeholder="Votre message..."></textarea>
-                        </div>
+                        {% if creator.phone %}
+                            <div class="contact-item">
+                                <i class="fas fa-phone"></i>
+                                <span>{{ creator.phone }}</span>
+                            </div>
+                        {% endif %}
                         
-                        <div class="d-grid">
-                            <button type="submit" class="btn btn-primary">
-                                <i class="fas fa-paper-plane me-1"></i> Envoyer
+                        <div class="d-grid gap-2 mt-3">
+                            <a href="mailto:{{ creator.email }}" class="btn btn-primary">
+                                <i class="fas fa-envelope me-1"></i> Contacter directement
+                            </a>
+                            <button class="btn btn-outline-primary" onclick="downloadVCard()">
+                                <i class="fas fa-address-card me-1"></i> Télécharger VCard
                             </button>
                         </div>
-                    </form>
-                {% endif %}
-            </div>
-        </div>
-        
-        <!-- Section Carte -->
-        {% if creator.location and creator.location.latitude and creator.location.longitude %}
-            <div class="card border-0 shadow-sm mb-4">
-                <div class="card-body p-4">
-                    <h2 class="h4 mb-3">Localisation</h2>
-                    <div id="creator-map"></div>
+                        {% elif user.role == 'client' %}
+                        <!-- Pour les clients, information sans contact -->
+                        <p class="text-muted mb-3">
+                            En tant que client, vous n'avez pas accès aux coordonnées directes des créateurs.
+                            <br>Veuillez contacter un consultant pour plus d'informations.
+                        </p>
+                        {% endif %}
+                    {% endif %}
                 </div>
             </div>
-        {% endif %}
+            
+            <!-- Section Carte -->
+            {% if creator.location and creator.location.latitude and creator.location.longitude %}
+                <div class="card border-0 shadow-sm mb-4">
+                    <div class="card-body p-4">
+                        <h2 class="h4 mb-3">Localisation</h2>
+                        <div id="creator-map"></div>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
     </div>
 </div>
+
+<!-- Modals pour les actions administrateur -->
+{% if user.is_authenticated and user.role == 'admin' %}
+<!-- Modal de vérification -->
+<div class="modal fade" id="toggleVerificationModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    {% if creator.verified_by_neads %}
+                    Retirer la vérification
+                    {% else %}
+                    Vérifier le profil
+                    {% endif %}
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>
+                    {% if creator.verified_by_neads %}
+                    Êtes-vous sûr de vouloir retirer la vérification de ce profil ? 
+                    Cela pourrait affecter la visibilité et la crédibilité de ce créateur.
+                    {% else %}
+                    Êtes-vous sûr de vouloir vérifier ce profil ? 
+                    Cela donnera au créateur un badge de vérification et une meilleure visibilité.
+                    {% endif %}
+                </p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                <form method="post" action="{% url 'toggle_verification' creator.id %}">
+                    {% csrf_token %}
+                    <button type="submit" class="btn {% if creator.verified_by_neads %}btn-warning{% else %}btn-success{% endif %}">
+                        {% if creator.verified_by_neads %}
+                        Retirer la vérification
+                        {% else %}
+                        Vérifier le profil
+                        {% endif %}
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Modal de suppression -->
+{% if user.is_authenticated %}
+    {% if user.role == 'admin' or user.role == 'creator' and user.creator_profile and user.creator_profile.id == creator.id %}
+    <div class="modal fade" id="deleteCreatorModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">{% if user.role == 'admin' %}Supprimer ce profil{% else %}Supprimer mon profil{% endif %}</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="alert alert-danger">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        Attention ! Cette action est irréversible.
+                    </div>
+                    <p>
+                        {% if user.role == 'admin' %}
+                        Êtes-vous absolument sûr de vouloir supprimer le profil de <strong>{{ creator.full_name }}</strong> ?
+                        {% else %}
+                        Êtes-vous absolument sûr de vouloir supprimer votre profil ?
+                        {% endif %}
+                        Cette action supprimera :
+                    </p>
+                    <ul>
+                        <li>Toutes les informations du profil</li>
+                        <li>Toutes les images et vidéos</li>
+                        <li>Tous les avis associés</li>
+                        <li>Toutes les interactions (favoris, etc.)</li>
+                    </ul>
+                    <div class="mb-3">
+                        <label for="confirmDelete" class="form-label">Pour confirmer, tapez {% if user.role == 'admin' %}le nom du créateur{% else %}votre nom{% endif %} :</label>
+                        <input type="text" class="form-control" id="confirmDelete" placeholder="{{ creator.full_name }}">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                    <form method="post" action="{% url 'delete_creator' creator.id %}" id="deleteCreatorForm">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-danger" id="deleteCreatorBtn" disabled>
+                            Supprimer définitivement
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+{% endif %}
+
+<!-- Section pour la gestion des avis (pour les admins) -->
+{% if user.is_authenticated and user.role == 'admin' and ratings %}
+<div class="rating-management mt-4">
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body p-4">
+            <h2 class="h4 mb-3">Gestion des avis</h2>
+            
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Utilisateur</th>
+                            <th>Note</th>
+                            <th>Commentaire</th>
+                            <th>Date</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for rating in ratings %}
+                        <tr>
+                            <td>{{ rating.user.get_full_name|default:rating.user.email }}</td>
+                            <td>
+                                {% for i in "12345" %}
+                                    {% if forloop.counter <= rating.rating %}
+                                        <i class="fas fa-star text-warning"></i>
+                                    {% else %}
+                                        <i class="far fa-star"></i>
+                                    {% endif %}
+                                {% endfor %}
+                                ({{ rating.rating }})
+                            </td>
+                            <td>{{ rating.comment|default:"Pas de commentaire" }}</td>
+                            <td>{{ rating.created_at|date:"d/m/Y" }}</td>
+                            <td>
+                                <form method="post" action="{% url 'delete_rating' rating.id %}" class="d-inline" 
+                                      onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer cet avis ?');">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-sm btn-outline-danger">
+                                        <i class="fas fa-trash-alt"></i>
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
 {% endblock %}
 
 {% block extra_js %}
@@ -579,5 +853,112 @@
         document.body.removeChild(element);
     }
 </script>
+{% endif %}
+
+{% if user.is_authenticated %}
+    {% if user.role == 'admin' %}
+    <script>
+        // Script pour activer/désactiver le bouton de suppression
+        document.addEventListener('DOMContentLoaded', function() {
+            const confirmInput = document.getElementById('confirmDelete');
+            const deleteBtn = document.getElementById('deleteCreatorBtn');
+            const creatorName = "{{ creator.full_name }}";
+            
+            confirmInput.addEventListener('input', function() {
+                deleteBtn.disabled = confirmInput.value !== creatorName;
+            });
+        });
+    </script>
+    {% elif user.role == 'creator' and user.creator_profile and user.creator_profile.id == creator.id %}
+    <script>
+        // Script pour activer/désactiver le bouton de suppression
+        document.addEventListener('DOMContentLoaded', function() {
+            const confirmInput = document.getElementById('confirmDelete');
+            const deleteBtn = document.getElementById('deleteCreatorBtn');
+            const creatorName = "{{ creator.full_name }}";
+            
+            confirmInput.addEventListener('input', function() {
+                deleteBtn.disabled = confirmInput.value !== creatorName;
+            });
+        });
+    </script>
+    {% endif %}
+{% endif %}
+
+<!-- Script pour gérer les étoiles interactives de notation -->
+{% if user.is_authenticated %}
+    {% if user.role == 'consultant' or user.role == 'admin' %}
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const stars = document.querySelectorAll('#star-rating .fa-star');
+            const ratingInput = document.getElementById('rating-input');
+            const ratingValue = document.getElementById('rating-value');
+            const submitButton = document.getElementById('submit-rating');
+            const hasExperienceCheckbox = document.getElementById('has-experience-checkbox');
+            
+            // Fonction pour mettre à jour l'affichage des étoiles
+            function updateStars(rating) {
+                stars.forEach((star, index) => {
+                    if (index < rating) {
+                        star.style.color = '#ffc107'; // Jaune Bootstrap
+                        star.classList.add('active');
+                    } else {
+                        star.style.color = '#ccc';
+                        star.classList.remove('active');
+                    }
+                });
+                
+                // Mettre à jour le texte et l'input hidden
+                ratingValue.textContent = rating + '/5';
+                ratingInput.value = rating;
+                
+                // Activer/désactiver le bouton d'envoi
+                submitButton.disabled = rating === 0;
+            }
+            
+            // Gérer les clics sur les étoiles
+            stars.forEach(star => {
+                // Au survol
+                star.addEventListener('mouseenter', function() {
+                    const rating = parseInt(this.getAttribute('data-rating'));
+                    stars.forEach((s, index) => {
+                        if (index < rating) {
+                            s.style.color = '#ffc107';
+                        }
+                    });
+                });
+                
+                // Sortie du survol
+                star.addEventListener('mouseleave', function() {
+                    const currentRating = parseInt(ratingInput.value) || 0;
+                    stars.forEach((s, index) => {
+                        if (!s.classList.contains('active')) {
+                            s.style.color = '#ccc';
+                        }
+                    });
+                });
+                
+                // Au clic
+                star.addEventListener('click', function() {
+                    const rating = parseInt(this.getAttribute('data-rating'));
+                    updateStars(rating);
+                });
+            });
+            
+            // Initialiser l'affichage des étoiles
+            const initialRating = parseInt(ratingInput.value) || 0;
+            updateStars(initialRating);
+            
+            // Gérer le changement de la case à cocher
+            hasExperienceCheckbox.addEventListener('change', function() {
+                if (!ratingInput.value || ratingInput.value === '0') {
+                    submitButton.disabled = true;
+                } else {
+                    submitButton.disabled = !this.checked;
+                }
+            });
+        });
+    </script>
+    {% endif %}
 {% endif %}
 {% endblock %} 

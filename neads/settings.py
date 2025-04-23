@@ -41,6 +41,8 @@ INSTALLED_APPS = [
     # Applications tierces
     'rest_framework',
     'corsheaders',
+    'crispy_forms',
+    'crispy_bootstrap5',
     # Applications projet
     'neads.core.apps.CoreConfig',
     'neads.creators.apps.CreatorsConfig',
@@ -56,6 +58,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'neads.core.middleware.CreatorRedirectMiddleware',
 ]
 
 ROOT_URLCONF = 'neads.urls'
@@ -164,6 +167,52 @@ CORS_ALLOWED_ORIGINS = [
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
+# Crispy Forms settings
+CRISPY_ALLOWED_TEMPLATE_PACKS = "bootstrap5"
+CRISPY_TEMPLATE_PACK = "bootstrap5"
+
 # Configuration email (pour les connexions temporaires)
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'  # En développement
 DEFAULT_FROM_EMAIL = 'no-reply@neads.com'
+
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'verbose': {
+            'format': '{levelname} {asctime} {module} {process:d} {thread:d} {message}',
+            'style': '{',
+        },
+        'simple': {
+            'format': '{levelname} {message}',
+            'style': '{',
+        },
+    },
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+            'formatter': 'verbose',
+        },
+    },
+    'root': {
+        'handlers': ['console'],
+        'level': 'INFO',
+    },
+    'loggers': {
+        'django': {
+            'handlers': ['console'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+        'neads.creators': {
+            'handlers': ['console'],
+            'level': 'DEBUG',
+            'propagate': False,
+        },
+        'neads.core.middleware': {
+            'handlers': ['console'],
+            'level': 'DEBUG',
+            'propagate': False,
+        },
+    },
+}

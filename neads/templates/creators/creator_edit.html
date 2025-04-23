@@ -1,190 +1,243 @@
 {% extends "base.html" %}
 
-{% block title %}Éditer le profil - {{ creator.full_name }}{% endblock %}
+{% block title %}
+    {% if is_new %}Créer un profil{% else %}Éditer le profil - {{ creator.full_name }}{% endif %}
+{% endblock %}
 
 {% block content %}
-<div class="container py-5">
-    <div class="row">
-        <div class="col-12 mb-4">
-            <h1 class="display-5 mb-3">Modifier le profil - {{ creator.full_name }}</h1>
-            <a href="{% url 'creator_detail' creator_id=creator.id %}" class="btn btn-secondary mb-4">
-                <i class="fas fa-arrow-left me-2"></i> Retour au profil
-            </a>
+<div class="container py-4">
+    <h1 class="text-center mb-4">Modifier mon profil créateur</h1>
+    
+    {% if messages %}
+    <div class="row justify-content-center mb-4">
+        <div class="col-md-10">
+            {% for message in messages %}
+            <div class="alert alert-{{ message.tags }}" role="alert">
+                {{ message }}
+            </div>
+            {% endfor %}
         </div>
-        
-        <div class="col-12">
-            <div class="card shadow">
-                <div class="card-body p-4">
-                    <form method="post" class="row g-3">
-                        {% csrf_token %}
-                        
-                        <div class="col-12 mb-3">
-                            <h3>Informations personnelles</h3>
-                            <hr>
-                        </div>
-                        
+    </div>
+    {% endif %}
+    
+    <div class="row justify-content-center">
+        <div class="col-md-10">
+            <div class="alert alert-info">
+                <i class="fas fa-info-circle me-2"></i>
+                Complétez votre profil pour augmenter vos chances d'être contacté par nos clients.
+                Un profil complet apparaît en priorité dans les résultats de recherche.
+            </div>
+            
+            <form method="post" enctype="multipart/form-data">
+                {% csrf_token %}
+                
+                <!-- Informations Personnelles -->
+                <div class="form-container">
+                    <h3 class="section-title">Informations Personnelles</h3>
+                    <div class="row">
                         <div class="col-md-6 mb-3">
-                            <label for="{{ form.first_name.id_for_label }}" class="form-label">Prénom</label>
-                            {{ form.first_name }}
-                            {% if form.first_name.errors %}
-                                <div class="text-danger">{{ form.first_name.errors }}</div>
+                            <label for="{{ creator_form.first_name.id_for_label }}" class="form-label">Prénom*</label>
+                            {{ creator_form.first_name }}
+                            {% if creator_form.first_name.errors %}
+                            <div class="invalid-feedback">
+                                {{ creator_form.first_name.errors }}
+                            </div>
                             {% endif %}
                         </div>
-                        
                         <div class="col-md-6 mb-3">
-                            <label for="{{ form.last_name.id_for_label }}" class="form-label">Nom</label>
-                            {{ form.last_name }}
-                            {% if form.last_name.errors %}
-                                <div class="text-danger">{{ form.last_name.errors }}</div>
+                            <label for="{{ creator_form.last_name.id_for_label }}" class="form-label">Nom*</label>
+                            {{ creator_form.last_name }}
+                            {% if creator_form.last_name.errors %}
+                            <div class="invalid-feedback">
+                                {{ creator_form.last_name.errors }}
+                            </div>
                             {% endif %}
                         </div>
-                        
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ creator_form.age.id_for_label }}" class="form-label">Âge*</label>
+                            {{ creator_form.age }}
+                            <div class="help-text">{{ creator_form.age.help_text }}</div>
+                            {% if creator_form.age.errors %}
+                            <div class="invalid-feedback">
+                                {{ creator_form.age.errors }}
+                            </div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ creator_form.gender.id_for_label }}" class="form-label">Genre*</label>
+                            {{ creator_form.gender }}
+                            {% if creator_form.gender.errors %}
+                            <div class="invalid-feedback">
+                                {{ creator_form.gender.errors }}
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    {% if creator_form.birth_date %}
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ creator_form.birth_date.id_for_label }}" class="form-label">Date de naissance</label>
+                            {{ creator_form.birth_date }}
+                            {% if creator_form.birth_date.errors %}
+                            <div class="invalid-feedback">
+                                {{ creator_form.birth_date.errors }}
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+                
+                <!-- Localisation -->
+                <div class="form-container">
+                    <h3 class="section-title">Localisation</h3>
+                    <div class="row">
                         <div class="col-md-4 mb-3">
-                            <label for="{{ form.age.id_for_label }}" class="form-label">Âge</label>
-                            {{ form.age }}
-                            {% if form.age.errors %}
-                                <div class="text-danger">{{ form.age.errors }}</div>
-                            {% endif %}
-                        </div>
-                        
-                        <div class="col-md-4 mb-3">
-                            <label for="{{ form.gender.id_for_label }}" class="form-label">Genre</label>
-                            {{ form.gender }}
-                            {% if form.gender.errors %}
-                                <div class="text-danger">{{ form.gender.errors }}</div>
-                            {% endif %}
-                        </div>
-                        
-                        <div class="col-12 mt-4 mb-3">
-                            <h3>Localisation</h3>
-                            <hr>
-                        </div>
-                        
-                        <div class="col-md-6 mb-3">
                             <label for="{{ location_form.city.id_for_label }}" class="form-label">Ville</label>
                             {{ location_form.city }}
                             {% if location_form.city.errors %}
-                                <div class="text-danger">{{ location_form.city.errors }}</div>
+                            <div class="invalid-feedback">
+                                {{ location_form.city.errors }}
+                            </div>
                             {% endif %}
                         </div>
-                        
-                        <div class="col-md-6 mb-3">
+                        <div class="col-md-4 mb-3">
                             <label for="{{ location_form.country.id_for_label }}" class="form-label">Pays</label>
                             {{ location_form.country }}
                             {% if location_form.country.errors %}
-                                <div class="text-danger">{{ location_form.country.errors }}</div>
+                            <div class="invalid-feedback">
+                                {{ location_form.country.errors }}
+                            </div>
                             {% endif %}
                         </div>
-                        
-                        <div class="col-md-6 mb-3">
-                            <label for="{{ location_form.postal_code.id_for_label }}" class="form-label">Code postal</label>
+                        <div class="col-md-4 mb-3">
+                            <label for="{{ location_form.postal_code.id_for_label }}" class="form-label">Code Postal</label>
                             {{ location_form.postal_code }}
                             {% if location_form.postal_code.errors %}
-                                <div class="text-danger">{{ location_form.postal_code.errors }}</div>
-                            {% endif %}
-                        </div>
-                        
-                        <div class="col-12 mt-4 mb-3">
-                            <h3>Contact</h3>
-                            <hr>
-                        </div>
-                        
-                        <div class="col-md-6 mb-3">
-                            <label for="{{ form.email.id_for_label }}" class="form-label">Email</label>
-                            {{ form.email }}
-                            {% if form.email.errors %}
-                                <div class="text-danger">{{ form.email.errors }}</div>
-                            {% endif %}
-                        </div>
-                        
-                        <div class="col-md-6 mb-3">
-                            <label for="{{ form.phone.id_for_label }}" class="form-label">Téléphone</label>
-                            {{ form.phone }}
-                            {% if form.phone.errors %}
-                                <div class="text-danger">{{ form.phone.errors }}</div>
-                            {% endif %}
-                        </div>
-                        
-                        <div class="col-12 mt-4 mb-3">
-                            <h3>Domaines d'expertise</h3>
-                            <hr>
-                        </div>
-                        
-                        <div class="col-12 mb-3">
-                            <div class="domain-selection">
-                                {{ form.domains }}
-                                {% if form.domains.errors %}
-                                    <div class="text-danger">{{ form.domains.errors }}</div>
-                                {% endif %}
+                            <div class="invalid-feedback">
+                                {{ location_form.postal_code.errors }}
                             </div>
-                        </div>
-                        
-                        <div class="col-12 mt-4 mb-3">
-                            <h3>Informations professionnelles</h3>
-                            <hr>
-                        </div>
-                        
-                        <div class="col-12 mb-3">
-                            <label for="{{ form.bio.id_for_label }}" class="form-label">Biographie</label>
-                            {{ form.bio }}
-                            {% if form.bio.errors %}
-                                <div class="text-danger">{{ form.bio.errors }}</div>
                             {% endif %}
                         </div>
-                        
-                        <div class="col-md-6 mb-3">
-                            <label for="{{ form.equipment.id_for_label }}" class="form-label">Équipement</label>
-                            {{ form.equipment }}
-                            {% if form.equipment.errors %}
-                                <div class="text-danger">{{ form.equipment.errors }}</div>
-                            {% endif %}
-                        </div>
-                        
-                        <div class="col-md-6 mb-3">
-                            <label for="{{ form.delivery_time.id_for_label }}" class="form-label">Délai de livraison</label>
-                            {{ form.delivery_time }}
-                            {% if form.delivery_time.errors %}
-                                <div class="text-danger">{{ form.delivery_time.errors }}</div>
-                            {% endif %}
-                        </div>
-                        
-                        <div class="col-md-6 mb-3">
-                            <label for="{{ form.content_types.id_for_label }}" class="form-label">Types de contenu</label>
-                            {{ form.content_types }}
-                            {% if form.content_types.errors %}
-                                <div class="text-danger">{{ form.content_types.errors }}</div>
-                            {% endif %}
-                        </div>
-                        
-                        <div class="col-md-6 mb-3">
-                            <div class="form-check mt-4">
-                                {{ form.mobility }}
-                                <label class="form-check-label" for="{{ form.mobility.id_for_label }}">
-                                    Mobilité
-                                </label>
-                            </div>
-                            <div class="form-check">
-                                {{ form.can_invoice }}
-                                <label class="form-check-label" for="{{ form.can_invoice.id_for_label }}">
-                                    Peut facturer
-                                </label>
-                            </div>
-                        </div>
-                        
-                        <div class="col-12 mb-3">
-                            <label for="{{ form.previous_clients.id_for_label }}" class="form-label">Clients précédents</label>
-                            {{ form.previous_clients }}
-                            {% if form.previous_clients.errors %}
-                                <div class="text-danger">{{ form.previous_clients.errors }}</div>
-                            {% endif %}
-                        </div>
-                        
-                        <div class="col-12 text-center mt-4">
-                            <button type="submit" class="btn btn-primary btn-lg">Enregistrer les modifications</button>
-                        </div>
-                    </form>
+                    </div>
                 </div>
-            </div>
+                
+                <!-- Contact -->
+                <div class="form-container">
+                    <h3 class="section-title">Contact</h3>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ creator_form.email.id_for_label }}" class="form-label">Email*</label>
+                            {{ creator_form.email }}
+                            {% if creator_form.email.errors %}
+                            <div class="invalid-feedback">
+                                {{ creator_form.email.errors }}
+                            </div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ creator_form.phone.id_for_label }}" class="form-label">Téléphone</label>
+                            {{ creator_form.phone }}
+                            {% if creator_form.phone.errors %}
+                            <div class="invalid-feedback">
+                                {{ creator_form.phone.errors }}
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Domaines d'expertise -->
+                <div class="form-container">
+                    <h3 class="section-title">Domaines d'expertise</h3>
+                    <p class="mb-3">Sélectionnez les domaines dans lesquels vous êtes spécialisé :</p>
+                    
+                    <div class="domains-container">
+                        {% for domain in creator_form.domains %}
+                        <div class="domain-item">
+                            {{ domain }}
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% if creator_form.domains.errors %}
+                    <div class="invalid-feedback">
+                        {{ creator_form.domains.errors }}
+                    </div>
+                    {% endif %}
+                </div>
+                
+                <!-- Informations professionnelles -->
+                <div class="form-container">
+                    <h3 class="section-title">Informations professionnelles</h3>
+                    
+                    <div class="mb-3">
+                        <label for="{{ creator_form.bio.id_for_label }}" class="form-label">Biographie</label>
+                        {{ creator_form.bio }}
+                        {% if creator_form.bio.errors %}
+                        <div class="invalid-feedback">
+                            {{ creator_form.bio.errors }}
+                        </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="{{ creator_form.equipment.id_for_label }}" class="form-label">Équipement</label>
+                        {{ creator_form.equipment }}
+                        {% if creator_form.equipment.errors %}
+                        <div class="invalid-feedback">
+                            {{ creator_form.equipment.errors }}
+                        </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="{{ creator_form.content_types.id_for_label }}" class="form-label">Types de contenu</label>
+                        {{ creator_form.content_types }}
+                        {% if creator_form.content_types.errors %}
+                        <div class="invalid-feedback">
+                            {{ creator_form.content_types.errors }}
+                        </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="{{ creator_form.previous_clients.id_for_label }}" class="form-label">Clients précédents</label>
+                        {{ creator_form.previous_clients }}
+                        {% if creator_form.previous_clients.errors %}
+                        <div class="invalid-feedback">
+                            {{ creator_form.previous_clients.errors }}
+                        </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <div class="form-check">
+                                {{ creator_form.mobility }}
+                                <label class="form-check-label" for="{{ creator_form.mobility.id_for_label }}">
+                                    Je suis mobile pour des projets
+                                </label>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <div class="form-check">
+                                {{ creator_form.can_invoice }}
+                                <label class="form-check-label" for="{{ creator_form.can_invoice.id_for_label }}">
+                                    Je peux facturer mes prestations
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="text-center mt-4 mb-5">
+                    <button type="submit" class="btn btn-primary btn-lg">Enregistrer les modifications</button>
+                </div>
+            </form>
         </div>
     </div>
 </div>
@@ -192,27 +245,89 @@
 
 {% block extra_css %}
 <style>
-    /* Styles pour les checkbox de domaines */
-    .domain-selection {
+    .form-container {
+        background-color: #fff;
+        border-radius: 10px;
+        box-shadow: 0 0 15px rgba(0,0,0,0.1);
+        padding: 30px;
+        margin-bottom: 30px;
+    }
+    
+    .section-title {
+        border-bottom: 2px solid #2C3E50;
+        padding-bottom: 10px;
+        margin-bottom: 20px;
+        color: #2C3E50;
+        font-weight: 600;
+    }
+    
+    .form-label {
+        font-weight: 500;
+        color: #34495E;
+    }
+    
+    .form-control, .form-select {
+        border-radius: 5px;
+        border: 1px solid #ddd;
+        padding: 10px;
+        font-size: 0.9rem;
+    }
+    
+    .form-control:focus, .form-select:focus {
+        border-color: #5D9CEC;
+        box-shadow: 0 0 0 0.25rem rgba(93, 156, 236, 0.25);
+    }
+    
+    .btn-primary {
+        background-color: #3498DB;
+        border-color: #3498DB;
+        padding: 10px 25px;
+        font-weight: 500;
+        transition: all 0.3s;
+    }
+    
+    .btn-primary:hover {
+        background-color: #2980B9;
+        border-color: #2980B9;
+    }
+    
+    .domains-container {
         display: grid;
         grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
         gap: 10px;
+        margin-top: 10px;
     }
     
-    .domain-selection .form-check {
-        margin-bottom: 10px;
+    .domain-item {
+        display: flex;
+        align-items: center;
+        margin-bottom: 8px;
     }
     
-    /* Ajustements généraux du formulaire */
-    textarea {
-        min-height: 120px;
+    .domain-item input[type="checkbox"] {
+        margin-right: 8px;
     }
     
-    input, select, textarea {
-        width: 100%;
-        padding: 8px 12px;
-        border: 1px solid #ced4da;
-        border-radius: 4px;
+    .alert-info {
+        background-color: #D1ECF1;
+        border-color: #B8DAFF;
+        color: #0C5460;
+    }
+    
+    .help-text {
+        font-size: 0.8rem;
+        color: #6c757d;
+        margin-top: 5px;
+    }
+    
+    /* Style pour les erreurs de formulaire */
+    .is-invalid {
+        border-color: #dc3545;
+    }
+    
+    .invalid-feedback {
+        display: block;
+        color: #dc3545;
     }
 </style>
 {% endblock %} 

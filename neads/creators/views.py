@@ -5,15 +5,43 @@ from django.views.decorators.http import require_POST
 from django.core.paginator import Paginator
 from django.db.models import Q, Count
 from django.views.decorators.csrf import csrf_exempt
+from django.contrib import messages
+from django.utils import timezone
+from django.core.mail import send_mail
+from django.conf import settings
+from functools import wraps
 
 from neads.core.models import User
 from .models import Creator, Media, Rating, Domain, Favorite, Location
-from .forms import CreatorForm, MediaUploadForm, RatingForm, CreatorSearchForm, FavoriteForm, LocationForm
+from .forms import CreatorSearchForm, RatingForm, FavoriteForm, CreatorForm, LocationForm, MediaUploadForm
 
 import json
 import requests
 from typing import Dict, List, Any
 from math import radians, cos, sin, asin, sqrt
+import logging
+
+logger = logging.getLogger(__name__)
+
+
+# Custom decorator to check user roles
+def role_required(allowed_roles):
+    """
+    Decorator to restrict views based on user roles.
+    Takes a list of allowed roles as argument.
+    """
+    def decorator(view_func):
+        @wraps(view_func)
+        def wrapper(request, *args, **kwargs):
+            if not request.user.is_authenticated:
+                return redirect('login')
+            
+            if request.user.role not in allowed_roles:
+                return HttpResponseForbidden("Vous n'avez pas les permissions nécessaires pour accéder à cette page.")
+            
+            return view_func(request, *args, **kwargs)
+        return wrapper
+    return decorator
 
 
 # Fonction utilitaire pour vérifier si un fichier media est valide
@@ -23,11 +51,24 @@ def has_valid_file(media_obj):
     Évite les erreurs lorsqu'on tente d'accéder à media.file.url dans les templates.
     """
     try:
-        return (media_obj is not None and 
-                hasattr(media_obj, 'file') and 
-                media_obj.file and 
-                media_obj.file.name and 
-                hasattr(media_obj.file, 'url'))
+        if media_obj is None:
+            return False
+            
+        if media_obj.media_type == 'image':
+            return (hasattr(media_obj, 'file') and 
+                    media_obj.file and 
+                    media_obj.file.name and 
+                    hasattr(media_obj.file, 'url'))
+        elif media_obj.media_type == 'video':
+            return (hasattr(media_obj, 'video_file') and 
+                    media_obj.video_file and 
+                    media_obj.video_file.name and 
+                    hasattr(media_obj.video_file, 'url') and
+                    hasattr(media_obj, 'thumbnail') and
+                    media_obj.thumbnail and
+                    media_obj.thumbnail.name and
+                    hasattr(media_obj.thumbnail, 'url'))
+        return False
     except (ValueError, AttributeError):
         return False
 
@@ -37,6 +78,18 @@ def gallery_view(request):
     """
     Vue principale de la galerie des créateurs avec filtres.
     """
+    # Vérifier si l'utilisateur est un créateur
+    if request.user.has_role('creator'):
+        try:
+            if hasattr(request.user, 'creator_profile') and request.user.creator_profile:
+                return redirect('creator_detail', creator_id=request.user.creator_profile.id)
+            else:
+                messages.warning(request, "Votre profil de créateur n'est pas encore configuré. Veuillez le créer pour être visible dans la galerie.")
+                return redirect('creator_add')
+        except Exception as e:
+            messages.error(request, f"Erreur d'accès au profil de créateur: {str(e)}")
+            return redirect('creator_add')
+
     creators = Creator.objects.all().order_by('-average_rating', 'full_name')
     form = CreatorSearchForm(request.GET)
     
@@ -147,6 +200,7 @@ def creator_detail(request, creator_id):
     Accès différenciés selon le rôle de l'utilisateur.
     """
     creator = get_object_or_404(Creator, id=creator_id)
+    logger.info(f"Vue creator_detail: Accès au profil {creator_id} par {request.user.email} (role: {request.user.role})")
     
     # Vérifier les restrictions d'accès pour les créateurs
     # Un créateur ne peut voir que sa propre fiche
@@ -154,10 +208,12 @@ def creator_detail(request, creator_id):
         try:
             # Vérifier si l'utilisateur est lié au profil créateur consulté
             if not hasattr(request.user, 'creator_profile') or request.user.creator_profile.id != creator_id:
+                logger.warning(f"Vue creator_detail: Tentative d'accès non autorisée au profil {creator_id} par {request.user.email}")
                 return HttpResponseForbidden("Vous n'êtes pas autorisé à consulter ce profil.")
+            logger.info(f"Vue creator_detail: Accès autorisé au profil {creator_id} par son propriétaire")
         except Exception as e:
             # Journaliser l'erreur et renvoyer une erreur d'accès
-            print(f"Erreur de vérification d'accès créateur: {str(e)}")
+            logger.error(f"Vue creator_detail: Erreur de vérification d'accès créateur: {str(e)}")
             return HttpResponseForbidden("Vous n'avez pas accès à ce profil.")
     
     # Charger médias triés par type et ordre
@@ -175,8 +231,8 @@ def creator_detail(request, creator_id):
         if has_valid_file(video):
             valid_videos.append(video)
     
-    # Informations de notation
-    ratings = creator.ratings.filter(is_verified=True).order_by('-created_at')
+    # Informations de notation - afficher tous les avis, plus uniquement ceux vérifiés
+    ratings = creator.ratings.all().order_by('-created_at')
     rating_breakdown = {
         5: ratings.filter(rating=5).count(),
         4: ratings.filter(rating=4).count(),
@@ -196,9 +252,20 @@ def creator_detail(request, creator_id):
     rating_form = None
     favorite_form = None
     
-    # Les consultants et admins peuvent noter les créateurs
-    if request.user.role in ['admin', 'consultant']:
+    # Les consultants, admins et clients peuvent noter les créateurs
+    if request.user.role in ['admin', 'consultant', 'client']:
         rating_form = RatingForm(instance=user_rating)
+        # Si c'est un client, le message d'avertissement est plus visible
+        if request.user.role == 'client':
+            rating_form.fields['has_experience'].help_text = """
+                <div class="alert alert-warning mt-2">
+                    <i class="fas fa-exclamation-triangle"></i> Pour garantir la qualité des avis, vous devez obligatoirement avoir travaillé avec ce créateur pour le noter.
+                    Les avis non vérifiés ou suspectés d'être infondés pourront être supprimés.
+                </div>
+            """
+    
+    # Seuls les consultants et admins peuvent ajouter aux favoris
+    if request.user.role in ['admin', 'consultant']:
         favorite_form = FavoriteForm()
     
     # Déterminer si l'utilisateur peut modifier la fiche
@@ -218,6 +285,12 @@ def creator_detail(request, creator_id):
     else:
         last_name_masked = creator.last_name
     
+    # Déterminer si l'utilisateur peut gérer les avis
+    can_manage_reviews = request.user.role in ['admin', 'consultant']
+    
+    # Déterminer si l'utilisateur peut vérifier le profil
+    can_verify_profile = request.user.role in ['admin']
+    
     context = {
         'creator': creator,
         'images': valid_images,
@@ -236,6 +309,8 @@ def creator_detail(request, creator_id):
         'is_admin': request.user.role == 'admin',
         'is_consultant': request.user.role == 'consultant',
         'last_name_masked': last_name_masked,
+        'can_manage_reviews': can_manage_reviews,
+        'can_verify_profile': can_verify_profile,
     }
     
     return render(request, 'creators/creator_detail.html', context)
@@ -247,34 +322,142 @@ def creator_edit(request, creator_id):
     Vue pour éditer les informations d'un créateur.
     """
     creator = get_object_or_404(Creator, id=creator_id)
+    logger.info(f"Début de l'édition du créateur {creator_id} par {request.user.email}")
     
-    # Vérifier les permissions (propriétaire ou staff)
-    if not (request.user == creator.user or request.user.is_staff):
+    # Vérifier les permissions (propriétaire, staff ou admin/consultant)
+    if not (request.user == creator.user or request.user.is_staff or request.user.role in ['admin', 'consultant']):
+        logger.warning(f"Tentative d'accès non autorisée au créateur {creator_id} par {request.user.email}")
         return HttpResponseForbidden("Vous n'avez pas les droits pour modifier ce profil.")
     
     # Si le créateur a déjà une localisation, l'utiliser, sinon en créer une nouvelle
     location = creator.location
     if location is None:
         location = Location()
+        logger.info(f"Création d'une nouvelle localisation pour le créateur {creator_id}")
     
     if request.method == 'POST':
+        logger.info(f"Reception d'une requête POST pour l'édition du créateur {creator_id}")
         form = CreatorForm(request.POST, instance=creator)
         location_form = LocationForm(request.POST, instance=location)
         
         # Vérifier si les deux formulaires sont valides
         if form.is_valid() and location_form.is_valid():
-            # Sauvegarder la localisation d'abord
-            location = location_form.save()
-            
-            # Puis sauvegarder le créateur avec la référence à la localisation
-            creator = form.save(commit=False)
-            creator.location = location
-            creator.save()
-            
-            # Enregistrer les relations ManyToMany
-            form.save_m2m()
-            
-            return redirect('creator_detail', creator_id=creator.id)
+            try:
+                logger.info(f"Formulaires valides pour le créateur {creator_id}")
+                
+                # Récupérer les anciennes valeurs pour comparaison
+                old_values = {
+                    'creator': {field: getattr(creator, field) for field in form.changed_data},
+                    'location': {field: getattr(location, field) for field in location_form.changed_data}
+                }
+                logger.debug(f"Anciennes valeurs du créateur {creator_id}: {old_values}")
+                
+                # Sauvegarder la localisation d'abord
+                location = location_form.save()
+                logger.info(f"Localisation sauvegardée pour le créateur {creator_id}")
+                
+                # Vérifier si les coordonnées géographiques sont manquantes mais que la ville est renseignée
+                if (not location.latitude or not location.longitude) and location.city:
+                    logger.info(f"Tentative de géocodage pour la ville: {location.city}")
+                    
+                    # Cette logique serait normalement gérée côté client par JavaScript,
+                    # mais on ajoute une vérification de secours côté serveur
+                    try:
+                        import requests
+                        response = requests.get(
+                            'https://nominatim.openstreetmap.org/search',
+                            params={
+                                'q': location.city,
+                                'format': 'json',
+                                'limit': 1
+                            },
+                            headers={'User-Agent': 'NEADS/1.0'}
+                        )
+                        data = response.json()
+                        
+                        if data and len(data) > 0:
+                            location.latitude = float(data[0]['lat'])
+                            location.longitude = float(data[0]['lon'])
+                            
+                            # Si on a un pays dans la réponse, le récupérer
+                            if 'address' in data[0] and 'country' in data[0]['address']:
+                                location.country = data[0]['address']['country']
+                            
+                            # Si on a un code postal, le récupérer
+                            if 'address' in data[0] and 'postcode' in data[0]['address']:
+                                location.postal_code = data[0]['address']['postcode']
+                                
+                            location.save()
+                            logger.info(f"Géocodage réussi pour {location.city}: {location.latitude}, {location.longitude}")
+                    except Exception as e:
+                        logger.warning(f"Échec du géocodage pour {location.city}: {str(e)}")
+                
+                # Puis sauvegarder le créateur avec la référence à la localisation
+                creator = form.save(commit=False)
+                creator.location = location
+                creator.save()
+                logger.info(f"Créateur {creator_id} sauvegardé avec succès")
+                
+                # Enregistrer les relations ManyToMany (domaines)
+                form.save_m2m()
+                logger.info(f"Relations ManyToMany sauvegardées pour le créateur {creator_id}")
+                
+                # Mettre à jour le timestamp de dernière activité
+                creator.last_activity = timezone.now()
+                creator.save()
+                
+                # Préparer le récapitulatif des modifications
+                changes = []
+                
+                # Vérifier les changements dans les informations du créateur
+                for field in form.changed_data:
+                    if field != 'domains':  # On gère les domaines séparément
+                        old_value = old_values['creator'].get(field)
+                        new_value = getattr(creator, field)
+                        if old_value != new_value:
+                            changes.append(f"{field}: {old_value} → {new_value}")
+                
+                # Vérifier les changements dans la localisation
+                for field in location_form.changed_data:
+                    old_value = old_values['location'].get(field)
+                    new_value = getattr(location, field)
+                    if old_value != new_value:
+                        changes.append(f"location.{field}: {old_value} → {new_value}")
+                
+                # Vérifier les changements dans les domaines
+                if 'domains' in form.changed_data:
+                    old_domains = set(creator.domains.all().values_list('id', flat=True))
+                    new_domains = set(form.cleaned_data['domains'].values_list('id', flat=True))
+                    added = new_domains - old_domains
+                    removed = old_domains - new_domains
+                    if added:
+                        added_names = Domain.objects.filter(id__in=added).values_list('name', flat=True)
+                        changes.append(f"domaines ajoutés: {', '.join(added_names)}")
+                    if removed:
+                        removed_names = Domain.objects.filter(id__in=removed).values_list('name', flat=True)
+                        changes.append(f"domaines supprimés: {', '.join(removed_names)}")
+                
+                # Journaliser les modifications
+                logger.info(
+                    f"Modification du profil créateur {creator_id} par {request.user.email}:\n"
+                    f"Changements effectués:\n" + "\n".join(f"- {change}" for change in changes)
+                )
+                
+                # Message de succès avec récapitulatif
+                if changes:
+                    messages.success(request, "Le profil a été mis à jour avec succès. Modifications effectuées:\n" + "\n".join(f"- {change}" for change in changes))
+                else:
+                    messages.info(request, "Aucune modification n'a été effectuée.")
+                
+                return redirect('creator_detail', creator_id=creator.id)
+            except Exception as e:
+                logger.error(f"Erreur lors de la sauvegarde du créateur {creator_id}: {str(e)}", exc_info=True)
+                messages.error(request, f"Une erreur est survenue lors de la sauvegarde: {str(e)}")
+        else:
+            logger.warning(f"Formulaires invalides pour le créateur {creator_id}")
+            logger.warning(f"Erreurs du formulaire créateur: {form.errors}")
+            logger.warning(f"Erreurs du formulaire localisation: {location_form.errors}")
+            messages.error(request, "Veuillez corriger les erreurs dans le formulaire.")
     else:
         form = CreatorForm(instance=creator)
         location_form = LocationForm(instance=location)
@@ -296,8 +479,8 @@ def rate_creator(request, creator_id):
     """
     creator = get_object_or_404(Creator, id=creator_id)
     
-    # Vérifier les permissions (seuls les consultants/clients peuvent noter)
-    if not (request.user.has_role('consultant') or request.user.has_role('client')):
+    # Vérifier les permissions (seuls les consultants/clients/admins peuvent noter)
+    if not (request.user.has_role('consultant') or request.user.has_role('client') or request.user.has_role('admin')):
         return HttpResponseForbidden("Vous n'avez pas les droits pour noter un créateur.")
     
     # Récupérer ou créer la note
@@ -307,18 +490,34 @@ def rate_creator(request, creator_id):
         rating = Rating(creator=creator, user=request.user)
     
     form = RatingForm(request.POST, instance=rating)
+    
+    # Pour les administrateurs et consultants, on rend le champ has_experience facultatif
+    if request.user.has_role('admin') or request.user.has_role('consultant'):
+        form.fields['has_experience'].required = False
+    
     if form.is_valid():
         rating = form.save(commit=False)
         
-        # Auto-vérifier les notations des consultants
-        if request.user.has_role('consultant'):
-            rating.is_verified = True
+        # Tous les avis sont automatiquement vérifiés pour apparaître immédiatement
+        rating.is_verified = True
+        
+        # Si c'est un admin ou consultant qui vérifie
+        if request.user.has_role('consultant') or request.user.has_role('admin'):
             rating.verified_by = request.user
+            # Si le champ n'est pas rempli par un admin/consultant, on le met à True par défaut
+            if not rating.has_experience:
+                rating.has_experience = True
             
         rating.save()
         
         # Recalculer la note moyenne
         creator.update_ratings()
+        
+        # Message de succès simple
+        messages.success(request, "Votre avis a été publié avec succès !")
+        
+        # Ajouter un message de journalisation
+        logger.info(f"Nouvelle note de {request.user.email} pour le créateur {creator.id} : {rating.rating}/5 (has_experience: {rating.has_experience}, is_verified: {rating.is_verified})")
         
         if request.headers.get('x-requested-with') == 'XMLHttpRequest':
             return JsonResponse({
@@ -332,7 +531,8 @@ def rate_creator(request, creator_id):
     # En cas d'erreur du formulaire
     if request.headers.get('x-requested-with') == 'XMLHttpRequest':
         return JsonResponse({'success': False, 'errors': form.errors}, status=400)
-        
+    
+    messages.error(request, "Veuillez corriger les erreurs dans le formulaire.")
     return redirect('creator_detail', creator_id=creator.id)
 
 
@@ -435,27 +635,42 @@ def media_upload(request, creator_id):
     # Vérifier les permissions
     if not (request.user.has_role('admin') or request.user.has_role('consultant') or 
             (request.user.has_role('creator') and request.user.creator_profile == creator)):
+        logger.warning(f"Tentative d'accès non autorisée à media_upload par {request.user} pour le créateur {creator}")
         return HttpResponseForbidden("Vous n'avez pas les droits pour modifier ce créateur.")
+    
+    logger.info(f"Début de l'upload de média par {request.user} pour le créateur {creator}")
     
     if request.method == 'POST':
         form = MediaUploadForm(request.POST, request.FILES)
         if form.is_valid():
-            media = form.save(commit=False)
-            media.creator = creator
-            
-            # Auto-valider les uploads des consultants/admins
-            if request.user.has_role('admin') or request.user.has_role('consultant'):
-                media.is_verified = True
+            try:
+                media = form.save(commit=False)
+                media.creator = creator
                 
-            media.save()
-            
+                # Auto-valider les uploads des consultants/admins
+                if request.user.has_role('admin') or request.user.has_role('consultant'):
+                    media.is_verified = True
+                    logger.info(f"Media auto-validé par {request.user} (admin/consultant)")
+                
+                media.save()
+                logger.info(f"Media {media.id} sauvegardé avec succès pour le créateur {creator}")
+                
+                if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+                    return JsonResponse({'success': True, 'media_id': media.id})
+                    
+                return redirect('creator_detail', creator_id=creator.id)
+                
+            except Exception as e:
+                logger.error(f"Erreur lors de la sauvegarde du média pour {creator}: {str(e)}")
+                if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+                    return JsonResponse({'success': False, 'errors': {'general': 'Une erreur est survenue lors de la sauvegarde.'}}, status=500)
+                messages.error(request, "Une erreur est survenue lors de la sauvegarde du média.")
+                
+        else:
+            logger.warning(f"Formulaire invalide pour l'upload de média par {request.user}: {form.errors}")
             if request.headers.get('x-requested-with') == 'XMLHttpRequest':
-                return JsonResponse({'success': True, 'media_id': media.id})
-                
-            return redirect('creator_detail', creator_id=creator.id)
-            
-        if request.headers.get('x-requested-with') == 'XMLHttpRequest':
-            return JsonResponse({'success': False, 'errors': form.errors}, status=400)
+                return JsonResponse({'success': False, 'errors': form.errors}, status=400)
+            messages.error(request, "Veuillez corriger les erreurs dans le formulaire.")
     else:
         form = MediaUploadForm()
     
@@ -825,3 +1040,264 @@ def api_map_search(request):
             creators_data.append(creator_data)
     
     return JsonResponse({'creators': creators_data, 'total': len(creators_data)})
+
+
+@login_required
+@role_required(['admin'])
+def toggle_verification(request, creator_id):
+    """
+    Vue permettant aux administrateurs de vérifier ou dé-vérifier un profil créateur.
+    Seuls les administrateurs peuvent utiliser cette fonctionnalité.
+    """
+    try:
+        creator = get_object_or_404(Creator, id=creator_id)
+        
+        # Inverser l'état de vérification
+        creator.verified_by_neads = not creator.verified_by_neads
+        
+        # Si le profil est vérifié, enregistrer l'admin qui a fait la vérification
+        if creator.verified_by_neads:
+            creator.verified_by = request.user
+            creator.verified_at = timezone.now()
+            
+            # Envoyer une notification au créateur (optionnel)
+            try:
+                # Envoyer un email de notification
+                subject = "Votre profil NEADS est maintenant vérifié"
+                message = f"Félicitations ! Votre profil sur NEADS a été vérifié par notre équipe. Cela augmentera votre visibilité sur la plateforme."
+                send_mail(subject, message, settings.DEFAULT_FROM_EMAIL, [creator.user.email])
+                
+                messages.success(request, f"Le profil de {creator.full_name} a été vérifié et une notification a été envoyée.")
+            except Exception as e:
+                logger.error(f"Erreur lors de l'envoi de l'email de vérification: {str(e)}")
+                messages.success(request, f"Le profil de {creator.full_name} a été vérifié, mais l'email de notification n'a pas pu être envoyé.")
+        else:
+            creator.verified_by = None
+            creator.verified_at = None
+            messages.success(request, f"La vérification du profil de {creator.full_name} a été retirée.")
+        
+        creator.save()
+        
+        # Journaliser l'action
+        logger.info(f"Admin {request.user.email} a {'vérifié' if creator.verified_by_neads else 'retiré la vérification de'} le profil du créateur {creator.full_name} (ID: {creator.id})")
+        
+        return redirect('creator_detail', creator_id=creator.id)
+    except Exception as e:
+        logger.error(f"Erreur lors de la modification de l'état de vérification: {str(e)}")
+        messages.error(request, "Une erreur est survenue. Veuillez réessayer.")
+        return redirect('creator_detail', creator_id=creator_id)
+
+@login_required
+@role_required(['admin'])
+def delete_creator(request, creator_id):
+    """
+    Vue permettant aux administrateurs de supprimer un profil créateur complet.
+    Cette action est irréversible et supprime toutes les données associées.
+    """
+    try:
+        creator = get_object_or_404(Creator, id=creator_id)
+        creator_name = creator.full_name
+        user = creator.user
+        
+        if request.method == 'POST':
+            # Journaliser la suppression
+            logger.warning(f"Admin {request.user.email} a supprimé le profil du créateur {creator_name} (ID: {creator_id})")
+            
+            # Supprimer les médias associés
+            media_count = Media.objects.filter(creator=creator).count()
+            Media.objects.filter(creator=creator).delete()
+            
+            # Supprimer les évaluations
+            rating_count = Rating.objects.filter(creator=creator).count()
+            Rating.objects.filter(creator=creator).delete()
+            
+            # Supprimer les favoris
+            favorite_count = Favorite.objects.filter(creator=creator).count()
+            Favorite.objects.filter(creator=creator).delete()
+            
+            # Supprimer la localisation si elle existe
+            if creator.location:
+                creator.location.delete()
+            
+            # Supprimer le créateur
+            creator.delete()
+            
+            # Message récapitulatif
+            messages.success(
+                request, 
+                f"Le profil de {creator_name} a été supprimé avec succès. "
+                f"({media_count} médias, {rating_count} avis et {favorite_count} favoris supprimés)"
+            )
+            
+            # Rediriger vers la liste des créateurs
+            return redirect('creators_list')
+        
+        # Si ce n'est pas une requête POST, rediriger vers la page de détail
+        return redirect('creator_detail', creator_id=creator_id)
+    except Exception as e:
+        logger.error(f"Erreur lors de la suppression du créateur: {str(e)}")
+        messages.error(request, "Une erreur est survenue lors de la suppression du créateur.")
+        return redirect('creator_detail', creator_id=creator_id)
+
+@login_required
+@role_required(['admin'])
+def delete_rating(request, rating_id):
+    """
+    Vue pour supprimer une notation d'un créateur
+    """
+    rating = get_object_or_404(Rating, id=rating_id)
+    creator = rating.creator
+    user = rating.user
+    
+    # Enregistrer la raison de suppression si fournie
+    reason = request.POST.get('reason', 'Non précisée')
+    has_experience = rating.has_experience
+    
+    # Journaliser la suppression
+    logger.warning(
+        f"Suppression d'un avis par {request.user.email} :\n"
+        f"- Créateur : {creator.full_name} (ID: {creator.id})\n"
+        f"- Auteur de l'avis : {user.email} (ID: {user.id})\n"
+        f"- Note : {rating.rating}/5\n"
+        f"- A déclaré avoir eu une expérience : {'Oui' if has_experience else 'Non'}\n"
+        f"- Raison de la suppression : {reason}"
+    )
+    
+    # Supprimer la notation
+    rating.delete()
+    
+    # Mettre à jour la note moyenne du créateur
+    creator.update_ratings()
+    
+    # Envoyer un message à l'utilisateur dont l'avis a été supprimé
+    if not has_experience:
+        message = (
+            f"Votre avis sur le créateur {creator.full_name} a été supprimé car vous n'avez pas "
+            f"déclaré avoir eu une expérience réelle avec ce créateur. Les avis doivent être basés "
+            f"sur une expérience vérifiable pour garantir la qualité de notre plateforme."
+        )
+    else:
+        message = (
+            f"Votre avis sur le créateur {creator.full_name} a été supprimé par un administrateur. "
+            f"Raison: {reason}"
+        )
+    
+    # Ajouter la notification à l'utilisateur concerné
+    # (Cette partie dépend de votre système de notification)
+    
+    messages.success(request, f"L'avis a été supprimé et l'utilisateur {user.email} a été informé.")
+    
+    if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+        return JsonResponse({'success': True})
+        
+    return redirect('creator_detail', creator_id=creator.id)
+
+@login_required
+@role_required(['admin', 'consultant'])
+def creators_list(request):
+    """
+    Vue pour l'administration des créateurs - liste avec actions avancées.
+    Réservée aux administrateurs et consultants.
+    """
+    creators = Creator.objects.all().order_by('-created_at')
+    
+    # Filtres
+    query = request.GET.get('q')
+    if query:
+        creators = creators.filter(
+            Q(first_name__icontains=query) | 
+            Q(last_name__icontains=query) | 
+            Q(email__icontains=query)
+        )
+    
+    verification = request.GET.get('verified')
+    if verification == 'yes':
+        creators = creators.filter(verified_by_neads=True)
+    elif verification == 'no':
+        creators = creators.filter(verified_by_neads=False)
+    
+    # Pagination
+    paginator = Paginator(creators, 20)  # 20 créateurs par page
+    page_number = request.GET.get('page', 1)
+    page_obj = paginator.get_page(page_number)
+    
+    context = {
+        'creators': page_obj,
+        'total_creators': paginator.count,
+        'q': query,
+        'verification': verification,
+        'is_paginated': paginator.num_pages > 1,
+        'page_obj': page_obj,
+        'paginator': paginator,
+    }
+    
+    return render(request, 'creators/creators_list.html', context)
+
+@login_required
+def creator_add(request):
+    """
+    Vue pour ajouter un nouveau créateur.
+    """
+    logger.info(f"Vue creator_add: Accès par {request.user.email} (role: {request.user.role})")
+    
+    # Vérifier si l'utilisateur a déjà un profil créateur
+    if request.user.has_role('creator') and hasattr(request.user, 'creator_profile') and request.user.creator_profile:
+        logger.info(f"Vue creator_add: L'utilisateur a déjà un profil créateur, redirection vers son profil")
+        return redirect('creator_detail', creator_id=request.user.creator_profile.id)
+    
+    if request.method == 'POST':
+        logger.info(f"Vue creator_add: Réception d'un formulaire POST")
+        form = CreatorForm(request.POST)
+        location_form = LocationForm(request.POST)
+        
+        if form.is_valid() and location_form.is_valid():
+            logger.info(f"Vue creator_add: Formulaires valides")
+            # Sauvegarder la localisation d'abord
+            location = location_form.save()
+            
+            # Puis sauvegarder le créateur avec la référence à la localisation
+            creator = form.save(commit=False)
+            creator.location = location
+            
+            # Si c'est un créateur qui crée son profil, associer son compte utilisateur
+            if request.user.has_role('creator'):
+                logger.info(f"Vue creator_add: Association du profil au compte utilisateur créateur")
+                creator.user = request.user
+            
+            creator.save()
+            
+            # Enregistrer les relations ManyToMany
+            form.save_m2m()
+            
+            logger.info(f"Vue creator_add: Profil créateur créé avec succès (ID: {creator.id})")
+            messages.success(request, f"Le profil a été créé avec succès.")
+            return redirect('creator_detail', creator_id=creator.id)
+        else:
+            logger.warning(f"Vue creator_add: Formulaires invalides")
+            logger.warning(f"Erreurs form: {form.errors}")
+            logger.warning(f"Erreurs location_form: {location_form.errors}")
+    else:
+        # Initialiser les formulaires avec des données par défaut pour le créateur
+        initial_data = {}
+        if request.user.has_role('creator'):
+            initial_data = {
+                'first_name': request.user.first_name,
+                'last_name': request.user.last_name,
+                'email': request.user.email,
+                'full_name': f"{request.user.first_name} {request.user.last_name}".strip(),
+                'age': 18,  # Âge par défaut
+                'gender': 'M',  # Genre par défaut
+            }
+            logger.info(f"Vue creator_add: Initialisation du formulaire avec données utilisateur: {initial_data}")
+        
+        form = CreatorForm(initial=initial_data)
+        location_form = LocationForm()
+    
+    context = {
+        'form': form,
+        'location_form': location_form,
+        'is_new': True,
+    }
+    
+    # Utiliser un template spécifique pour la création qui n'utilise pas creator.id
+    return render(request, 'creators/creator_add.html', context)
