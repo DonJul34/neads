@@ -1,6 +1,12 @@
 {% extends 'base.html' %}
 
-{% block title %}{{ creator.full_name }} - NEADS{% endblock %}
+{% block title %}
+    {% if user.role == 'client' %}
+        {{ creator.first_name }} {{ creator.last_name|first }}. - NEADS
+    {% else %}
+        {{ creator.full_name }} - NEADS
+    {% endif %}
+{% endblock %}
 
 {% block extra_css %}
 <style>
@@ -176,6 +182,41 @@
         border-color: #80bdff;
         box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
     }
+    
+    /* Styles pour les réseaux sociaux */
+    .social-links {
+        display: flex;
+        gap: 15px;
+        margin-top: 10px;
+    }
+    
+    .social-icon {
+        width: 40px;
+        height: 40px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 50%;
+        color: white;
+        font-size: 1.2rem;
+        transition: transform 0.2s ease;
+    }
+    
+    .social-icon:hover {
+        transform: scale(1.1);
+    }
+    
+    .social-youtube {
+        background-color: #FF0000;
+    }
+    
+    .social-tiktok {
+        background-color: #000000;
+    }
+    
+    .social-instagram {
+        background: radial-gradient(circle at 30% 107%, #fdf497 0%, #fdf497 5%, #fd5949 45%, #d6249f 60%, #285AEB 90%);
+    }
 </style>
 {% endblock %}
 
@@ -186,48 +227,6 @@
     <div class="verified-badge">
         <i class="fas fa-check-circle me-1"></i> Vérifié par NEADS
     </div>
-    {% endif %}
-    
-    <!-- Panneau d'administration pour les admins et créateurs -->
-    {% if user.is_authenticated %}
-        {% if user.role == 'admin' %}
-        <div class="admin-panel position-absolute top-0 end-0 p-3 bg-light border rounded shadow-sm" style="z-index: 999; margin-top: 50px;">
-            <h6 class="fw-bold mb-2">Actions d'administration</h6>
-            <div class="btn-group-vertical w-100">
-                <a href="{% url 'creator_edit' creator.id %}" class="btn btn-sm btn-outline-primary mb-1">
-                    <i class="fas fa-edit me-1"></i> Modifier le profil
-                </a>
-                <a href="{% url 'upload_media' creator.id %}" class="btn btn-sm btn-outline-primary mb-1">
-                    <i class="fas fa-photo-video me-1"></i> Gérer les médias
-                </a>
-                <button type="button" class="btn btn-sm btn-outline-warning mb-1" data-bs-toggle="modal" data-bs-target="#toggleVerificationModal">
-                    {% if creator.verified_by_neads %}
-                    <i class="fas fa-times-circle me-1"></i> Retirer vérification
-                    {% else %}
-                    <i class="fas fa-check-circle me-1"></i> Vérifier le profil
-                    {% endif %}
-                </button>
-                <button type="button" class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#deleteCreatorModal">
-                    <i class="fas fa-trash-alt me-1"></i> Supprimer le profil
-                </button>
-            </div>
-        </div>
-        {% elif user.role == 'creator' and user.creator_profile and user.creator_profile.id == creator.id %}
-        <div class="admin-panel position-absolute top-0 end-0 p-3 bg-light border rounded shadow-sm" style="z-index: 999; margin-top: 50px;">
-            <h6 class="fw-bold mb-2">Gérer mon profil</h6>
-            <div class="btn-group-vertical w-100">
-                <a href="{% url 'creator_edit' creator.id %}" class="btn btn-sm btn-outline-primary mb-1">
-                    <i class="fas fa-edit me-1"></i> Modifier mon profil
-                </a>
-                <a href="{% url 'upload_media' creator.id %}" class="btn btn-sm btn-outline-primary mb-1">
-                    <i class="fas fa-photo-video me-1"></i> Gérer mes médias
-                </a>
-                <button type="button" class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#deleteCreatorModal">
-                    <i class="fas fa-trash-alt me-1"></i> Supprimer mon profil
-                </button>
-            </div>
-        </div>
-        {% endif %}
     {% endif %}
     
     <div class="row align-items-center">
@@ -247,10 +246,36 @@
                     {{ creator.first_name|first|upper }}{{ creator.last_name|first|upper }}
                 </div>
             {% endif %}
+            
+            {% if creator.has_social_links %}
+            <div class="social-links justify-content-center mt-2">
+                {% if creator.youtube_link %}
+                <a href="{{ creator.youtube_link }}" target="_blank" class="social-icon social-youtube" title="YouTube">
+                    <i class="fab fa-youtube"></i>
+                </a>
+                {% endif %}
+                
+                {% if creator.tiktok_link %}
+                <a href="{{ creator.tiktok_link }}" target="_blank" class="social-icon social-tiktok" title="TikTok">
+                    <i class="fab fa-tiktok"></i>
+                </a>
+                {% endif %}
+                
+                {% if creator.instagram_link %}
+                <a href="{{ creator.instagram_link }}" target="_blank" class="social-icon social-instagram" title="Instagram">
+                    <i class="fab fa-instagram"></i>
+                </a>
+                {% endif %}
+            </div>
+            {% endif %}
         </div>
         
         <div class="col-md-9">
-            <h1 class="h2 mb-1">{{ creator.full_name }}</h1>
+            {% if user.role == 'client' %}
+                <h1 class="h2 mb-1">{{ creator.first_name }} {{ creator.last_name|first }}.</h1>
+            {% else %}
+                <h1 class="h2 mb-1">{{ creator.full_name }}</h1>
+            {% endif %}
             <p class="text-muted mb-2">{{ creator.age }} ans, {{ creator.get_gender_display }}</p>
             
             <div class="d-flex flex-wrap mb-3">
@@ -282,6 +307,7 @@
                                 <i class="fas fa-heart me-1"></i> Retirer des favoris
                             </button>
                         {% else %}
+                            <input type="hidden" name="action" value="add">
                             <button type="submit" class="btn btn-outline-primary">
                                 <i class="far fa-heart me-1"></i> Ajouter aux favoris
                             </button>
@@ -709,12 +735,12 @@
 
 <!-- Modal de suppression -->
 {% if user.is_authenticated %}
-    {% if user.role == 'admin' or user.role == 'creator' and user.creator_profile and user.creator_profile.id == creator.id %}
+    {% if user.role == 'admin' or user.role == 'consultant' or user.role == 'creator' and user.creator_profile and user.creator_profile.id == creator.id %}
     <div class="modal fade" id="deleteCreatorModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title">{% if user.role == 'admin' %}Supprimer ce profil{% else %}Supprimer mon profil{% endif %}</h5>
+                    <h5 class="modal-title">{% if user.role == 'admin' or user.role == 'consultant' %}Supprimer ce profil{% else %}Supprimer mon profil{% endif %}</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
@@ -723,7 +749,7 @@
                         Attention ! Cette action est irréversible.
                     </div>
                     <p>
-                        {% if user.role == 'admin' %}
+                        {% if user.role == 'admin' or user.role == 'consultant' %}
                         Êtes-vous absolument sûr de vouloir supprimer le profil de <strong>{{ creator.full_name }}</strong> ?
                         {% else %}
                         Êtes-vous absolument sûr de vouloir supprimer votre profil ?
@@ -737,7 +763,7 @@
                         <li>Toutes les interactions (favoris, etc.)</li>
                     </ul>
                     <div class="mb-3">
-                        <label for="confirmDelete" class="form-label">Pour confirmer, tapez {% if user.role == 'admin' %}le nom du créateur{% else %}votre nom{% endif %} :</label>
+                        <label for="confirmDelete" class="form-label">Pour confirmer, tapez {% if user.role == 'admin' or user.role == 'consultant' %}le nom du créateur{% else %}votre nom{% endif %} :</label>
                         <input type="text" class="form-control" id="confirmDelete" placeholder="{{ creator.full_name }}">
                     </div>
                 </div>
@@ -809,6 +835,63 @@
 </div>
 {% endif %}
 
+<!-- Panneau d'administration pour les admins et créateurs -->
+{% if user.is_authenticated %}
+    {% if user.role == 'admin' %}
+    <div class="admin-panel position-absolute top-0 end-0 p-3 bg-light border rounded shadow-sm" style="z-index: 999; margin-top: 50px;">
+        <h6 class="fw-bold mb-2">Actions d'administration</h6>
+        <div class="btn-group-vertical w-100">
+            <a href="{% url 'creator_edit' creator.id %}" class="btn btn-sm btn-outline-primary mb-1">
+                <i class="fas fa-edit me-1"></i> Modifier le profil
+            </a>
+            <a href="{% url 'upload_media' creator.id %}" class="btn btn-sm btn-outline-primary mb-1">
+                <i class="fas fa-photo-video me-1"></i> Gérer les médias
+            </a>
+            <button type="button" class="btn btn-sm btn-outline-warning mb-1" data-bs-toggle="modal" data-bs-target="#toggleVerificationModal">
+                {% if creator.verified_by_neads %}
+                <i class="fas fa-times-circle me-1"></i> Retirer vérification
+                {% else %}
+                <i class="fas fa-check-circle me-1"></i> Vérifier le profil
+                {% endif %}
+            </button>
+            <button type="button" class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#deleteCreatorModal">
+                <i class="fas fa-trash-alt me-1"></i> Supprimer le profil
+            </button>
+        </div>
+    </div>
+    {% elif user.role == 'consultant' %}
+    <div class="admin-panel position-absolute top-0 end-0 p-3 bg-light border rounded shadow-sm" style="z-index: 999; margin-top: 50px;">
+        <h6 class="fw-bold mb-2">Actions consultant</h6>
+        <div class="btn-group-vertical w-100">
+            <a href="{% url 'creator_edit' creator.id %}" class="btn btn-sm btn-outline-primary mb-1">
+                <i class="fas fa-edit me-1"></i> Modifier le profil
+            </a>
+            <a href="{% url 'upload_media' creator.id %}" class="btn btn-sm btn-outline-primary mb-1">
+                <i class="fas fa-photo-video me-1"></i> Gérer les médias
+            </a>
+            <button type="button" class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#deleteCreatorModal">
+                <i class="fas fa-trash-alt me-1"></i> Supprimer le profil
+            </button>
+        </div>
+    </div>
+    {% elif user.role == 'creator' and user.creator_profile and user.creator_profile.id == creator.id %}
+    <div class="admin-panel position-absolute top-0 end-0 p-3 bg-light border rounded shadow-sm" style="z-index: 999; margin-top: 50px;">
+        <h6 class="fw-bold mb-2">Gérer mon profil</h6>
+        <div class="btn-group-vertical w-100">
+            <a href="{% url 'creator_edit' creator.id %}" class="btn btn-sm btn-outline-primary mb-1">
+                <i class="fas fa-edit me-1"></i> Modifier mon profil
+            </a>
+            <a href="{% url 'upload_media' creator.id %}" class="btn btn-sm btn-outline-primary mb-1">
+                <i class="fas fa-photo-video me-1"></i> Gérer mes médias
+            </a>
+            <button type="button" class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#deleteCreatorModal">
+                <i class="fas fa-trash-alt me-1"></i> Supprimer mon profil
+            </button>
+        </div>
+    </div>
+    {% endif %}
+{% endif %}
+
 {% endblock %}
 
 {% block extra_js %}
@@ -823,9 +906,17 @@
         }).addTo(map);
         
         // Marqueur pour le créateur
-        L.marker([{{ creator.location.latitude }}, {{ creator.location.longitude }}])
-            .addTo(map)
-            .bindPopup('{{ creator.full_name }}');
+        {% if user.is_authenticated and user.role == 'client' %}
+            // Format abrégé pour les clients
+            L.marker([{{ creator.location.latitude }}, {{ creator.location.longitude }}])
+                .addTo(map)
+                .bindPopup('{{ creator.first_name }} {{ creator.last_name|first }}.');
+        {% else %}
+            // Format complet pour les autres utilisateurs
+            L.marker([{{ creator.location.latitude }}, {{ creator.location.longitude }}])
+                .addTo(map)
+                .bindPopup('{{ creator.full_name }}');
+        {% endif %}
     });
     
     // Fonction pour télécharger la VCard
@@ -833,7 +924,11 @@
         // Code pour générer une VCard
         var vcard = 'BEGIN:VCARD\n';
         vcard += 'VERSION:3.0\n';
-        vcard += 'FN:{{ creator.full_name }}\n';
+        {% if user.role == 'client' %}
+            vcard += 'FN:{{ creator.first_name }} {{ creator.last_name|first }}.\n';
+        {% else %}
+            vcard += 'FN:{{ creator.full_name }}\n';
+        {% endif %}
         vcard += 'EMAIL:{{ creator.email }}\n';
         {% if creator.phone %}
         vcard += 'TEL:{{ creator.phone }}\n';
@@ -846,7 +941,11 @@
         // Création d'un élément <a> pour le téléchargement
         var element = document.createElement('a');
         element.setAttribute('href', 'data:text/vcard;charset=utf-8,' + encodeURIComponent(vcard));
-        element.setAttribute('download', '{{ creator.full_name }}.vcf');
+        {% if user.role == 'client' %}
+            element.setAttribute('download', '{{ creator.first_name }} {{ creator.last_name|first }}.vcf');
+        {% else %}
+            element.setAttribute('download', '{{ creator.full_name }}.vcf');
+        {% endif %}
         element.style.display = 'none';
         document.body.appendChild(element);
         element.click();
@@ -856,7 +955,7 @@
 {% endif %}
 
 {% if user.is_authenticated %}
-    {% if user.role == 'admin' %}
+    {% if user.role == 'admin' or user.role == 'consultant' %}
     <script>
         // Script pour activer/désactiver le bouton de suppression
         document.addEventListener('DOMContentLoaded', function() {

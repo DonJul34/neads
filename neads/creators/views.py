@@ -1088,7 +1088,7 @@ def toggle_verification(request, creator_id):
         return redirect('creator_detail', creator_id=creator_id)
 
 @login_required
-@role_required(['admin'])
+@role_required(['admin', 'consultant'])
 def delete_creator(request, creator_id):
     """
     Vue permettant aux administrateurs de supprimer un profil créateur complet.
@@ -1252,8 +1252,66 @@ def creator_add(request):
         
         if form.is_valid() and location_form.is_valid():
             logger.info(f"Vue creator_add: Formulaires valides")
+            
+            # Vérifier que les coordonnées de localisation sont présentes
+            latitude = location_form.cleaned_data.get('latitude')
+            longitude = location_form.cleaned_data.get('longitude')
+            country = location_form.cleaned_data.get('country')
+            city = location_form.cleaned_data.get('city')
+            
+            # Tenter de géocoder si les coordonnées sont manquantes mais que la ville est présente
+            missing_geo_data = not (latitude and longitude and country)
+            if missing_geo_data and city:
+                logger.info(f"Vue creator_add: Tentative de géocodage côté serveur pour {city}")
+                try:
+                    import requests
+                    response = requests.get(
+                        'https://nominatim.openstreetmap.org/search',
+                        params={
+                            'q': city,
+                            'format': 'json',
+                            'limit': 1
+                        },
+                        headers={'User-Agent': 'NEADS/1.0'}
+                    )
+                    data = response.json()
+                    
+                    if data and len(data) > 0:
+                        latitude = float(data[0]['lat'])
+                        longitude = float(data[0]['lon'])
+                        
+                        # Mettre à jour le formulaire avant de sauvegarder
+                        location_form.cleaned_data['latitude'] = latitude
+                        location_form.cleaned_data['longitude'] = longitude
+                        
+                        # Si on a un pays dans la réponse, le récupérer
+                        if 'address' in data[0] and 'country' in data[0]['address']:
+                            country = data[0]['address']['country']
+                            location_form.cleaned_data['country'] = country
+                        
+                        # Si on a un code postal, le récupérer
+                        if 'address' in data[0] and 'postcode' in data[0]['address']:
+                            postal_code = data[0]['address']['postcode']
+                            location_form.cleaned_data['postal_code'] = postal_code
+                            
+                        missing_geo_data = not (latitude and longitude and country)
+                        logger.info(f"Vue creator_add: Géocodage réussi pour {city}: lat={latitude}, lon={longitude}, pays={country}")
+                except Exception as e:
+                    logger.warning(f"Vue creator_add: Échec du géocodage pour {city}: {str(e)}")
+            
+            # Vérifier à nouveau si on a toutes les données nécessaires
+            if missing_geo_data:
+                logger.warning("Vue creator_add: Données de localisation incomplètes après tentative de géocodage")
+                messages.error(request, "Veuillez sélectionner une ville valide dans la liste des suggestions pour que la localisation soit correctement enregistrée.")
+                return render(request, 'creators/creator_add.html', {
+                    'form': form,
+                    'location_form': location_form,
+                    'is_new': True,
+                })
+            
             # Sauvegarder la localisation d'abord
             location = location_form.save()
+            logger.info(f"Vue creator_add: Localisation sauvegardée: {location.city}, {location.country}")
             
             # Puis sauvegarder le créateur avec la référence à la localisation
             creator = form.save(commit=False)
@@ -1271,6 +1329,8 @@ def creator_add(request):
             
             logger.info(f"Vue creator_add: Profil créateur créé avec succès (ID: {creator.id})")
             messages.success(request, f"Le profil a été créé avec succès.")
+            
+            # Rediriger vers la page de détail du créateur
             return redirect('creator_detail', creator_id=creator.id)
         else:
             logger.warning(f"Vue creator_add: Formulaires invalides")
@@ -1301,3 +1361,28 @@ def creator_add(request):
     
     # Utiliser un template spécifique pour la création qui n'utilise pas creator.id
     return render(request, 'creators/creator_add.html', context)
+
+@login_required
+def favorites_view(request):
+    """
+    Vue pour afficher les créateurs favoris de l'utilisateur.
+    """
+    # Récupérer les favoris de l'utilisateur connecté
+    favorites = Favorite.objects.filter(user=request.user).select_related('creator').order_by('-created_at')
+    
+    # Récupérer les créateurs favoris
+    favorite_creators = [favorite.creator for favorite in favorites]
+    
+    # Pagination
+    paginator = Paginator(favorite_creators, 12)  # 12 créateurs par page
+    page_number = request.GET.get('page', 1)
+    page_obj = paginator.get_page(page_number)
+    
+    context = {
+        'favorites': favorites,
+        'creators': page_obj,
+        'total_creators': paginator.count,
+        'is_favorites_page': True,
+    }
+    
+    return render(request, 'creators/favorites.html', context)

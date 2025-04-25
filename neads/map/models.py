@@ -1,3 +1,28 @@
+"""
+Modèles de l'application Map du projet NEADS.
+
+Cette application gère la représentation géographique des créateurs sur une carte
+interactive. Elle permet de visualiser la distribution des créateurs, de les
+regrouper en clusters et d'effectuer des recherches géolocalisées.
+
+Modèles principaux:
+- MapPoint: Représentation d'un créateur sur la carte
+- MapCluster: Regroupement de points sur la carte pour optimiser l'affichage
+
+Caractéristiques principales:
+- Coordonnées géographiques des créateurs
+- Informations pour les popups sur la carte
+- Système de clustering pour l'optimisation de l'affichage
+- Configuration de la visibilité et du style des points
+
+Relations principales:
+- MapPoint est lié à Creator (relation one-to-one)
+- MapPoint est lié à Location (relation many-to-one)
+- Importe Creator et Location depuis l'application Creators
+
+Voir README.md pour plus de détails sur l'architecture et l'utilisation.
+"""
+
 from django.db import models
 from neads.creators.models import Creator, Location
 

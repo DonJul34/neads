@@ -9,6 +9,7 @@ urlpatterns = [
     path('add/', views.creator_add, name='creator_add'),
     path('upload-media/<int:creator_id>/', views.media_upload, name='upload_media'),
     path('search/', views.search_view, name='search_view'),
+    path('favorites/', views.favorites_view, name='favorites_view'),
     path('api/creators/', api_creators, name='api_creators'),
     path('api/creators/map-search/', views.api_map_search, name='api_map_search'),
     path('api/cities/', views.api_cities, name='api_cities'),
@@ -21,5 +22,5 @@ urlpatterns = [
     path('toggle-verification/<int:creator_id>/', views.toggle_verification, name='toggle_verification'),
     path('delete-creator/<int:creator_id>/', views.delete_creator, name='delete_creator'),
     path('delete-rating/<int:rating_id>/', views.delete_rating, name='delete_rating'),
-    path('list/', views.creators_list, name='creators_list'),
+    path('list/', views.creators_list, name='creator_list'),
 ] 

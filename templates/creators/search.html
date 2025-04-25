@@ -173,13 +173,17 @@
                         data-lat="{{ creator.location.latitude|default:'null' }}" 
                         data-lng="{{ creator.location.longitude|default:'null' }}"
                         data-rating="{{ creator.average_rating|default:'0' }}"
-                        data-name="{{ creator.first_name }} {{ creator.last_name }}">
+                        {% if user.role == 'client' %}
+                        data-name="{{ creator.first_name }} {{ creator.last_name|first }}."
+                        {% else %}
+                        data-name="{{ creator.first_name }} {{ creator.last_name }}"
+                        {% endif %}>
                         <div class="card h-100">
                             <div class="card-img-top position-relative">
                                 {% if creator.media_set.filter.exists %}
                                     {% with media=creator.media_set.first %}
                                         {% if media.file and media.file.name and media.file.url %}
-                                            <img src="{{ media.file.url }}" alt="{{ creator.first_name }} {{ creator.last_name }}" class="img-fluid card-image">
+                                            <img src="{{ media.file.url }}" alt="{% if user.role == 'client' %}{{ creator.first_name }} {{ creator.last_name|first }}.{% else %}{{ creator.first_name }} {{ creator.last_name }}{% endif %}" class="img-fluid card-image">
                                         {% else %}
                                             <img src="{% static 'images/placeholder.jpg' %}" alt="Pas d'image disponible" class="img-fluid card-image">
                                         {% endif %}
@@ -190,7 +194,13 @@
                             </div>
                             <div class="card-body">
                                 <div class="d-flex justify-content-between align-items-start">
-                                    <h3 class="card-title h5 mb-1">{{ creator.full_name }}</h3>
+                                    <h3 class="card-title h5 mb-1">
+                                        {% if user.role == 'client' %}
+                                            {{ creator.first_name }} {{ creator.last_name|first }}.
+                                        {% else %}
+                                            {{ creator.full_name }}
+                                        {% endif %}
+                                    </h3>
                                     {% if creator.verified_by_neads %}
                                         <span class="verified-icon" data-bs-toggle="tooltip" title="Vérifié par NEADS">
                                             <i class="fas fa-check-circle"></i>

@@ -8,9 +8,12 @@ from django.template.loader import render_to_string
 from django.utils import timezone
 from django.conf import settings
 from django.contrib import messages
+from django.core.paginator import Paginator
+from django.db.models import Q
 
 from .models import User, UserProfile
 from .forms import LoginForm, TemporaryLoginForm, UserProfileForm, SetPasswordForm
+from .decorators import role_required
 
 
 def home(request):
@@ -239,3 +242,35 @@ def reset_password(request, token):
     }
     
     return render(request, 'core/reset_password.html', context)
+
+
+@login_required
+@role_required(['admin', 'consultant'])
+def client_list(request):
+    """
+    Vue pour la gestion des clients (pour consultants et admins).
+    """
+    # Filtrer uniquement les clients
+    clients = User.objects.filter(role='client').order_by('last_name', 'first_name')
+    
+    # Recherche par nom/email
+    search_query = request.GET.get('query')
+    if search_query:
+        clients = clients.filter(
+            Q(first_name__icontains=search_query) | 
+            Q(last_name__icontains=search_query) | 
+            Q(email__icontains=search_query)
+        )
+    
+    # Pagination
+    paginator = Paginator(clients, 15)  # 15 clients par page
+    page_number = request.GET.get('page', 1)
+    page_obj = paginator.get_page(page_number)
+    
+    context = {
+        'clients': page_obj,
+        'search_query': search_query,
+        'total_clients': paginator.count,
+    }
+    
+    return render(request, 'core/client_list.html', context)

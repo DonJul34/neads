@@ -1,7 +1,7 @@
 from django import forms
 from django.core.exceptions import ValidationError
 from django.core.validators import MinValueValidator
-from .models import Creator, Media, Rating, Domain, Location, Favorite
+from .models import Creator, Media, Rating, Domain, Location, Favorite, ContentType
 import datetime
 
 
@@ -24,15 +24,25 @@ class LocationForm(forms.ModelForm):
         model = Location
         fields = ['city', 'country', 'postal_code', 'latitude', 'longitude']
         widgets = {
-            'country': forms.HiddenInput(),
-            'postal_code': forms.HiddenInput(),
-            'latitude': forms.HiddenInput(),
-            'longitude': forms.HiddenInput(),
+            'country': forms.HiddenInput(attrs={'id': 'id_country'}),
+            'postal_code': forms.HiddenInput(attrs={'id': 'id_postal_code'}),
+            'latitude': forms.HiddenInput(attrs={'id': 'id_latitude'}),
+            'longitude': forms.HiddenInput(attrs={'id': 'id_longitude'}),
         }
-    
+        
     def clean(self):
         cleaned_data = super().clean()
-        # Pas besoin de validation ici, les champs cachés sont remplis par JS
+        # Vérifier que le pays est bien renseigné
+        country = cleaned_data.get('country')
+        latitude = cleaned_data.get('latitude')
+        longitude = cleaned_data.get('longitude')
+        
+        if not country:
+            self.add_error('country', "Le pays est requis. Utilisez l'autocomplétion pour sélectionner une ville valide.")
+        
+        if not latitude or not longitude:
+            self.add_error('city', "Veuillez sélectionner une ville dans la liste des suggestions ou vérifier que la carte s'affiche correctement.")
+            
         return cleaned_data
 
 
@@ -56,6 +66,34 @@ class CreatorForm(forms.ModelForm):
         widget=forms.Select(attrs={'class': 'form-select'}),
     )
     
+    # Réseaux sociaux
+    youtube_link = forms.URLField(
+        required=False,
+        widget=forms.URLInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'https://youtube.com/@votrechaine'
+        }),
+        label="Chaîne YouTube"
+    )
+    
+    tiktok_link = forms.URLField(
+        required=False,
+        widget=forms.URLInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'https://tiktok.com/@votreprofil'
+        }),
+        label="Profil TikTok"
+    )
+    
+    instagram_link = forms.URLField(
+        required=False,
+        widget=forms.URLInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'https://instagram.com/votreprofil'
+        }),
+        label="Profil Instagram"
+    )
+    
     bio = forms.CharField(
         widget=forms.Textarea(attrs={
             'class': 'form-control', 
@@ -74,13 +112,11 @@ class CreatorForm(forms.ModelForm):
         required=False
     )
     
-    content_types = forms.CharField(
-        widget=forms.Textarea(attrs={
-            'class': 'form-control', 
-            'rows': 2, 
-            'placeholder': 'Photos, vidéos, podcasts...'
-        }),
-        required=False
+    content_types = forms.ModelMultipleChoiceField(
+        queryset=None,  # Sera défini dans __init__
+        widget=forms.CheckboxSelectMultiple(attrs={'class': 'content-types-checkbox'}),
+        required=False,
+        label="Types de contenu"
     )
     
     previous_clients = forms.CharField(
@@ -139,12 +175,13 @@ class CreatorForm(forms.ModelForm):
     
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        from .models import Domain
+        from .models import Domain, ContentType
         self.fields['domains'].queryset = Domain.objects.all().order_by('name')
+        self.fields['content_types'].queryset = ContentType.objects.all().order_by('name')
         
         # Ajouter des classes Bootstrap à tous les champs
         for field_name, field in self.fields.items():
-            if not isinstance(field.widget, (forms.CheckboxInput, forms.RadioSelect)):
+            if not isinstance(field.widget, (forms.CheckboxInput, forms.RadioSelect, forms.CheckboxSelectMultiple)):
                 if not field.widget.attrs.get('class'):
                     field.widget.attrs['class'] = 'form-control'
     

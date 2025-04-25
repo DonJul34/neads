@@ -1,0 +1,235 @@
+{% extends 'base.html' %}
+
+{% block title %}NEADS - Mes Créateurs Favoris{% endblock %}
+
+{% block extra_css %}
+<style>
+    .creator-card {
+        height: 100%;
+        transition: transform 0.2s ease-in-out;
+    }
+    
+    .creator-card:hover {
+        transform: translateY(-5px);
+    }
+    
+    .creator-img-container {
+        height: 200px;
+        overflow: hidden;
+        border-top-left-radius: 0.25rem;
+        border-top-right-radius: 0.25rem;
+    }
+    
+    .creator-img-container img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+    
+    .domain-badge {
+        font-size: 0.7rem;
+        padding: 0.2rem 0.5rem;
+        margin-right: 0.25rem;
+        margin-bottom: 0.25rem;
+        display: inline-block;
+        border-radius: 0.25rem;
+        background-color: var(--light-bg);
+    }
+    
+    .star-rating {
+        color: var(--accent-color);
+    }
+    
+    .verified-icon {
+        color: var(--primary-color);
+    }
+    
+    .favorite-note {
+        background-color: #fef9e7;
+        border-radius: 0.25rem;
+        padding: 0.5rem;
+        font-style: italic;
+        margin-top: 0.5rem;
+        font-size: 0.9rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="mb-4">
+    <h1 class="h2">Mes Créateurs Favoris</h1>
+    <p class="text-muted">{{ total_creators }} créateur{{ total_creators|pluralize }} enregistré{{ total_creators|pluralize }} dans vos favoris</p>
+</div>
+
+<div class="row">
+    <!-- Grille de créateurs favoris -->
+    <div class="col-12">
+        {% if creators %}
+            <div class="row" id="creators-grid">
+                {% for creator in creators %}
+                    <div class="col-md-6 col-lg-4 mb-4">
+                        <div class="card border-0 shadow-sm creator-card">
+                            <div class="creator-img-container">
+                                {% if creator.media.filter.first %}
+                                    {% with media=creator.media.filter.first %}
+                                        {% if media.file and media.file.name and media.file.url %}
+                                            <img src="{{ media.file.url }}" alt="{% if user.role == 'client' %}{{ creator.first_name }} {{ creator.last_name|first }}.{% else %}{{ creator.full_name }}{% endif %}" loading="lazy">
+                                        {% else %}
+                                            <div class="bg-light d-flex align-items-center justify-content-center h-100">
+                                                <i class="fas fa-user fa-3x text-muted"></i>
+                                            </div>
+                                        {% endif %}
+                                    {% endwith %}
+                                {% else %}
+                                    <div class="bg-light d-flex align-items-center justify-content-center h-100">
+                                        <i class="fas fa-user fa-3x text-muted"></i>
+                                    </div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <h3 class="h5 mb-0">
+                                        {% if user.role == 'client' %}
+                                            {{ creator.first_name }} {{ creator.last_name|first }}.
+                                        {% else %}
+                                            {{ creator.full_name }}
+                                        {% endif %}
+                                    </h3>
+                                    {% if creator.verified_by_neads %}
+                                        <span class="verified-icon" data-bs-toggle="tooltip" title="Vérifié par NEADS">
+                                            <i class="fas fa-check-circle"></i>
+                                        </span>
+                                    {% endif %}
+                                </div>
+                                
+                                <p class="text-muted small mb-2">
+                                    {{ creator.age }} ans, {{ creator.get_gender_display }}
+                                    {% if creator.location %}
+                                        <br>{{ creator.location }}
+                                    {% endif %}
+                                </p>
+                                
+                                <div class="mb-2">
+                                    {% for domain in creator.domains.all %}
+                                        <span class="domain-badge">{{ domain.name }}</span>
+                                    {% endfor %}
+                                </div>
+                                
+                                <div class="star-rating mb-3">
+                                    {% for i in "12345" %}
+                                        {% if forloop.counter <= creator.average_rating %}
+                                            <i class="fas fa-star"></i>
+                                        {% elif forloop.counter <= creator.average_rating|add:0.5 %}
+                                            <i class="fas fa-star-half-alt"></i>
+                                        {% else %}
+                                            <i class="far fa-star"></i>
+                                        {% endif %}
+                                    {% endfor %}
+                                    <span class="ms-1 text-muted">({{ creator.total_ratings }})</span>
+                                </div>
+                                
+                                {% for favorite in favorites %}
+                                    {% if favorite.creator.id == creator.id and favorite.notes %}
+                                        <div class="favorite-note mb-3">
+                                            <i class="fas fa-quote-left me-1 text-muted small"></i>
+                                            {{ favorite.notes }}
+                                        </div>
+                                    {% endif %}
+                                {% endfor %}
+                                
+                                <div class="d-flex">
+                                    <a href="{% url 'creator_detail' creator.id %}" class="btn btn-outline-primary me-2">
+                                        Voir le profil
+                                    </a>
+                                    <form method="post" action="{% url 'toggle_favorite' creator.id %}" class="d-inline">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="action" value="remove">
+                                        <button type="submit" class="btn btn-outline-danger">
+                                            <i class="fas fa-times me-1"></i> Retirer
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+            
+            <!-- Pagination -->
+            {% if creators.has_other_pages %}
+                <nav aria-label="Pagination" class="mt-4">
+                    <ul class="pagination justify-content-center">
+                        {% if creators.has_previous %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page=1" aria-label="First">
+                                    <span aria-hidden="true">&laquo;&laquo;</span>
+                                </a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ creators.previous_page_number }}" aria-label="Previous">
+                                    <span aria-hidden="true">&laquo;</span>
+                                </a>
+                            </li>
+                        {% else %}
+                            <li class="page-item disabled">
+                                <a class="page-link" href="#" aria-label="First">
+                                    <span aria-hidden="true">&laquo;&laquo;</span>
+                                </a>
+                            </li>
+                            <li class="page-item disabled">
+                                <a class="page-link" href="#" aria-label="Previous">
+                                    <span aria-hidden="true">&laquo;</span>
+                                </a>
+                            </li>
+                        {% endif %}
+                        
+                        {% for i in creators.paginator.page_range %}
+                            {% if creators.number == i %}
+                                <li class="page-item active"><a class="page-link" href="#">{{ i }}</a></li>
+                            {% elif i > creators.number|add:'-3' and i < creators.number|add:'3' %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ i }}">{{ i }}</a>
+                                </li>
+                            {% endif %}
+                        {% endfor %}
+                        
+                        {% if creators.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ creators.next_page_number }}" aria-label="Next">
+                                    <span aria-hidden="true">&raquo;</span>
+                                </a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ creators.paginator.num_pages }}" aria-label="Last">
+                                    <span aria-hidden="true">&raquo;&raquo;</span>
+                                </a>
+                            </li>
+                        {% else %}
+                            <li class="page-item disabled">
+                                <a class="page-link" href="#" aria-label="Next">
+                                    <span aria-hidden="true">&raquo;</span>
+                                </a>
+                            </li>
+                            <li class="page-item disabled">
+                                <a class="page-link" href="#" aria-label="Last">
+                                    <span aria-hidden="true">&raquo;&raquo;</span>
+                                </a>
+                            </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+            {% endif %}
+        {% else %}
+            <div class="alert alert-light text-center p-5">
+                <i class="fas fa-heart fa-3x mb-3 text-muted"></i>
+                <h3 class="h4">Aucun créateur dans vos favoris</h3>
+                <p class="mb-3">Vous n'avez pas encore ajouté de créateurs à vos favoris.</p>
+                <a href="{% url 'gallery_view' %}" class="btn btn-primary">
+                    <i class="fas fa-search me-1"></i> Explorer les créateurs
+                </a>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %} 

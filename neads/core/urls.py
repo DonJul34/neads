@@ -10,6 +10,7 @@ urlpatterns = [
     path('login/request/', views.temporary_login_request, name='temp_login_request'),
     path('login/temp/<str:token>/<str:email>/', views.temporary_login, name='temp_login'),
     path('reset-password/<str:token>/', views.reset_password, name='reset_password'),
+    path('clients/', views.client_list, name='client_list'),
     path('admin/', admin_views.admin_dashboard, name='admin_dashboard'),
     path('admin/users/', admin_views.user_list, name='admin_user_list'),
     path('admin/users/create/', admin_views.user_create, name='admin_user_create'),

@@ -106,17 +106,84 @@
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav me-auto">
                     {% if user.is_authenticated %}
-                    <li class="nav-item">
-                        <a class="nav-link" href="{% url 'gallery_view' %}">Créateurs</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="{% url 'search_view' %}">
-                            <i class="fas fa-search me-1"></i>Recherche
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="{% url 'map_view' %}">Carte</a>
-                    </li>
+                        {% if user.role == 'client' %}
+                            <!-- Navigation pour les clients -->
+                            <li class="nav-item">
+                                <a class="nav-link" href="{% url 'gallery_view' %}">Galerie Créateurs</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="{% url 'map_view' %}">Carte</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="{% url 'search_view' %}">
+                                    <i class="fas fa-search me-1"></i>Recherche
+                                </a>
+                            </li>
+                        {% elif user.role == 'consultant' %}
+                            <!-- Navigation pour les consultants -->
+                            <li class="nav-item">
+                                <a class="nav-link" href="{% url 'gallery_view' %}">Galerie Créateurs</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="{% url 'map_view' %}">Carte</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="{% url 'search_view' %}">
+                                    <i class="fas fa-search me-1"></i>Recherche
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="{% url 'favorites_view' %}">
+                                    <i class="fas fa-heart me-1"></i>Favoris
+                                </a>
+                            </li>
+                            <li class="nav-item dropdown">
+                                <a class="nav-link dropdown-toggle" href="#" id="navbarManagement" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                    <i class="fas fa-cogs me-1"></i>Gestion NEADS
+                                </a>
+                                <ul class="dropdown-menu" aria-labelledby="navbarManagement">
+                                    <li><a class="dropdown-item" href="/creators/list/">Gestion Créateurs</a></li>
+                                    <li><a class="dropdown-item" href="/clients/">Gestion Clients</a></li>
+                                </ul>
+                            </li>
+                        {% elif user.role == 'admin' %}
+                            <!-- Navigation pour les administrateurs -->
+                            <li class="nav-item">
+                                <a class="nav-link" href="{% url 'gallery_view' %}">Galerie Créateurs</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="{% url 'map_view' %}">Carte</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="{% url 'search_view' %}">
+                                    <i class="fas fa-search me-1"></i>Recherche
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="{% url 'favorites_view' %}">
+                                    <i class="fas fa-heart me-1"></i>Favoris
+                                </a>
+                            </li>
+                            <li class="nav-item dropdown">
+                                <a class="nav-link dropdown-toggle" href="#" id="navbarManagement" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                    <i class="fas fa-cogs me-1"></i>Gestion NEADS
+                                </a>
+                                <ul class="dropdown-menu" aria-labelledby="navbarManagement">
+                                    <li><a class="dropdown-item" href="/creators/list/">Gestion Créateurs</a></li>
+                                    <li><a class="dropdown-item" href="/clients/">Gestion Clients</a></li>
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li><a class="dropdown-item" href="/admin/" target="_blank">Administration Django</a></li>
+                                </ul>
+                            </li>
+                        {% elif user.role == 'creator' %}
+                            <!-- Navigation pour les créateurs -->
+                            <li class="nav-item">
+                                <a class="nav-link" href="{% url 'gallery_view' %}">Galerie Créateurs</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="{% url 'map_view' %}">Carte</a>
+                            </li>
+                        {% endif %}
                     {% endif %}
                 </ul>
                 <div class="d-flex">
@@ -124,8 +191,14 @@
                         <div class="dropdown">
                             <button class="btn btn-outline-primary dropdown-toggle" type="button" id="userDropdown" data-bs-toggle="dropdown">
                                 {{ user.email }}
-                                {% if user.is_staff %}
+                                {% if user.role == 'admin' %}
                                 <span class="badge bg-danger ms-1">Admin</span>
+                                {% elif user.role == 'consultant' %}
+                                <span class="badge bg-info ms-1">Consultant</span>
+                                {% elif user.role == 'client' %}
+                                <span class="badge bg-success ms-1">Client</span>
+                                {% elif user.role == 'creator' %}
+                                <span class="badge bg-warning ms-1">Créateur</span>
                                 {% endif %}
                             </button>
                             <ul class="dropdown-menu dropdown-menu-end">
@@ -133,8 +206,8 @@
                                 {% if user.role == 'creator' and user.creator_profile %}
                                     <li><a class="dropdown-item" href="{% url 'creator_detail' creator_id=user.creator_profile.id %}">Ma fiche créateur</a></li>
                                 {% endif %}
-                                {% if user.is_staff %}
-                                    <li><a class="dropdown-item" href="/admin/" target="_blank">Administration</a></li>
+                                {% if user.role == 'admin' %}
+                                    <li><a class="dropdown-item" href="/admin/" target="_blank">Administration Django</a></li>
                                 {% endif %}
                                 <li><hr class="dropdown-divider"></li>
                                 <li><a class="dropdown-item" href="{% url 'logout' %}">Déconnexion</a></li>

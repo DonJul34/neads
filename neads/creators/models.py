@@ -1,3 +1,29 @@
+"""
+Modèles de l'application Creators du projet NEADS.
+
+Cette application gère les profils des créateurs de contenu, leur portfolio, 
+les évaluations et les favoris. Elle constitue le cœur fonctionnel de la plateforme
+en permettant de mettre en relation les créateurs avec les clients potentiels.
+
+Modèles principaux:
+- Creator: Profil complet d'un créateur de contenu
+- Domain: Domaines d'expertise des créateurs
+- ContentType: Types de contenu proposés par les créateurs
+- Location: Informations de localisation des créateurs
+- Media: Fichiers médias (images/vidéos) constituant le portfolio
+- Rating: Évaluations et commentaires sur les créateurs
+- Favorite: Sauvegarde de créateurs favoris par utilisateur
+
+Relations principales:
+- Creator peut être lié à un User (relation one-to-one facultative)
+- Creator est lié à une Location (relation many-to-one)
+- Creator a plusieurs Domain et ContentType (relations many-to-many)
+- Creator a plusieurs Media, Rating et Favorite (relations one-to-many)
+- Creator est lié à un MapPoint dans l'application Map (relation one-to-one)
+
+Voir README.md pour plus de détails sur l'architecture et l'utilisation.
+"""
+
 from django.db import models
 from django.core.validators import MinValueValidator, MaxValueValidator
 from neads.core.models import User
@@ -24,6 +50,13 @@ def video_upload_path(instance, filename):
 class Domain(models.Model):
     name = models.CharField(max_length=100)
     icon = models.CharField(max_length=50, blank=True, null=True)  # Classe CSS pour icône
+    
+    def __str__(self):
+        return self.name
+
+
+class ContentType(models.Model):
+    name = models.CharField(max_length=50)
     
     def __str__(self):
         return self.name
@@ -65,13 +98,18 @@ class Creator(models.Model):
     age = models.PositiveIntegerField(validators=[MinValueValidator(13), MaxValueValidator(100)])
     gender = models.CharField(max_length=1, choices=GENDER_CHOICES)
     
+    # Réseaux sociaux
+    youtube_link = models.URLField(max_length=255, blank=True, null=True, verbose_name="Chaîne YouTube")
+    tiktok_link = models.URLField(max_length=255, blank=True, null=True, verbose_name="Profil TikTok")
+    instagram_link = models.URLField(max_length=255, blank=True, null=True, verbose_name="Profil Instagram")
+    
     # Localisation
     location = models.ForeignKey(Location, on_delete=models.SET_NULL, null=True, related_name='creators')
     
     # Contact
     email = models.EmailField()
     phone = models.CharField(max_length=20, blank=True, null=True)
-    
+
     # Domaines d'expertise
     domains = models.ManyToManyField(Domain, related_name='creators')
     
@@ -79,7 +117,7 @@ class Creator(models.Model):
     bio = models.TextField(blank=True, null=True)
     equipment = models.CharField(max_length=255, blank=True, null=True)
     delivery_time = models.CharField(max_length=50, blank=True, null=True)
-    content_types = models.CharField(max_length=100, choices=CONTENT_TYPE_CHOICES, blank=True, null=True)
+    content_types = models.ManyToManyField(ContentType, related_name='creators', blank=True)
     mobility = models.BooleanField(default=False)
     can_invoice = models.BooleanField(default=False)
     previous_clients = models.TextField(blank=True, null=True)
@@ -116,6 +154,9 @@ class Creator(models.Model):
     
     def get_video_count(self):
         return self.media.filter(media_type='video').count()
+    
+    def has_social_links(self):
+        return bool(self.youtube_link or self.tiktok_link or self.instagram_link)
 
 
 class Media(models.Model):

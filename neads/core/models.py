@@ -1,3 +1,27 @@
+"""
+Modèles de l'application Core du projet NEADS.
+
+Cette application constitue le cœur du système d'authentification et des fonctionnalités
+de base de la plateforme. Elle définit un modèle utilisateur personnalisé avec un
+système de rôles et gère les profils utilisateurs.
+
+Modèles principaux:
+- User: Modèle utilisateur personnalisé basé sur l'email avec système de rôles
+- UserProfile: Extension du modèle utilisateur pour informations supplémentaires
+
+Caractéristiques principales:
+- Authentification par email plutôt que par nom d'utilisateur
+- Système de rôles (admin, consultant, client, creator)
+- Mécanisme de connexion temporaire par token
+- Extension de profil utilisateur avec métadonnées
+
+Relations principales:
+- User est lié à UserProfile (relation one-to-one)
+- User peut être lié à Creator dans l'application Creators (relation one-to-one facultative)
+
+Voir README.md pour plus de détails sur l'architecture et l'utilisation.
+"""
+
 from django.db import models
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
 from django.utils import timezone
