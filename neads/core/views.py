@@ -1,4 +1,4 @@
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import login, logout
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse, HttpResponseBadRequest
@@ -354,3 +354,50 @@ def client_list(request):
     }
     
     return render(request, 'core/client_list.html', context)
+
+
+@login_required
+def contact_creator(request, creator_id):
+    """
+    Vue pour envoyer un email à un créateur via le formulaire de contact.
+    """
+    creator = get_object_or_404(Creator, id=creator_id)
+    
+    if request.method == 'POST':
+        subject = request.POST.get('subject')
+        message = request.POST.get('message')
+        copy_me = request.POST.get('copy_me') == 'on'
+        
+        # Préparation du message avec les informations du client
+        html_message = render_to_string('core/emails/contact_creator_email.html', {
+            'creator': creator,
+            'user': request.user,
+            'subject': subject,
+            'message': message,
+        })
+        
+        # Envoi de l'email au créateur
+        send_mail(
+            subject=f"NEADS - Contact: {subject}",
+            message=message,
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            recipient_list=[creator.email],
+            html_message=html_message,
+            fail_silently=False,
+        )
+        
+        # Copie à l'expéditeur si demandée
+        if copy_me and request.user.email:
+            send_mail(
+                subject=f"NEADS - Copie de votre message à {creator.full_name}",
+                message=message,
+                from_email=settings.DEFAULT_FROM_EMAIL,
+                recipient_list=[request.user.email],
+                html_message=html_message,
+                fail_silently=False,
+            )
+        
+        messages.success(request, f"Votre message a été envoyé à {creator.full_name}")
+        return redirect('creator_detail', creator_id=creator_id)
+        
+    return redirect('creator_detail', creator_id=creator_id)

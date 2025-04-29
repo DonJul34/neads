@@ -16,6 +16,9 @@ urlpatterns = [
     path('gestion/createurs/', views.creator_list, name='creator_list'),
     path('gestion/clients/', views.client_list, name='client_list'),
     
+    # Contact créateur
+    path('creators/<int:creator_id>/contact/', views.contact_creator, name='contact_creator'),
+    
     # Panel admin (admins uniquement)
     path('admin/', admin_views.admin_dashboard, name='admin_dashboard'),
     path('admin/users/', admin_views.user_list, name='admin_user_list'),

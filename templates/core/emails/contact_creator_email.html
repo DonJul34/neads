@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <title>Nouveau message de contact via NEADS</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.5;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .container {
+            padding: 20px;
+            border: 1px solid #eee;
+            border-radius: 5px;
+        }
+
+        .header {
+            text-align: center;
+            padding-bottom: 20px;
+            border-bottom: 1px solid #eee;
+            margin-bottom: 20px;
+        }
+
+        .content {
+            margin-bottom: 30px;
+        }
+
+        .message-box {
+            background-color: #f9f9f9;
+            border-left: 4px solid #3b82f6;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 0 4px 4px 0;
+        }
+
+        .sender-info {
+            margin-top: 25px;
+            padding-top: 15px;
+            border-top: 1px solid #eee;
+        }
+
+        .footer {
+            font-size: 12px;
+            color: #777;
+            text-align: center;
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #eee;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>NEADS</h1>
+            <p>Nouvelle demande de contact</p>
+        </div>
+
+        <div class="content">
+            <p>Bonjour {{ creator.full_name }},</p>
+
+            <p>Vous avez reçu un nouveau message via la plateforme NEADS.</p>
+
+            <h3>Sujet : {{ subject }}</h3>
+
+            <div class="message-box">
+                {{ message|linebreaks }}
+            </div>
+
+            <div class="sender-info">
+                <p><strong>Message de :</strong> {{ user.first_name }} {{ user.last_name }}</p>
+                <p><strong>Email :</strong> {{ user.email }}</p>
+                {% if user.profile.phone %}
+                <p><strong>Téléphone :</strong> {{ user.profile.phone }}</p>
+                {% endif %}
+            </div>
+
+            <p>Vous pouvez répondre directement à cet email pour contacter l'expéditeur.</p>
+
+            <p>Cordialement,<br>L'équipe NEADS</p>
+        </div>
+
+        <div class="footer">
+            <p>Cet email a été envoyé via la plateforme NEADS</p>
+            <p>&copy; {% now "Y" %} NEADS - Tous droits réservés</p>
+        </div>
+    </div>
+</body>
+
+</html>
