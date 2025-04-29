@@ -7,41 +7,34 @@ import datetime
 
 class LocationForm(forms.ModelForm):
     """
-    Formulaire pour la localisation avec autocomplétion de ville.
-    Les champs latitude et longitude sont cachés et seront remplis automatiquement
-    par le JavaScript côté client.
+    Formulaire pour la localisation avec autocomplétion d'adresse via l'API Google Places.
+    Le JavaScript côté client extrait automatiquement latitude et longitude
+    à partir de l'adresse complète sélectionnée.
     """
-    city = forms.CharField(
-        label="Ville",
+    full_address = forms.CharField(
+        label="Adresse complète",
         widget=forms.TextInput(attrs={
-            'class': 'form-control location-autocomplete',
-            'placeholder': 'Commencez à taper une ville...',
-            'id': 'location-input'
+            'class': 'form-control full-address-autocomplete',
+            'placeholder': 'Commencez à taper votre adresse...',
+            'id': 'full-address-input'
         })
     )
     
     class Meta:
         model = Location
-        fields = ['city', 'country', 'postal_code', 'latitude', 'longitude']
+        fields = ['full_address', 'latitude', 'longitude']
         widgets = {
-            'country': forms.HiddenInput(attrs={'id': 'id_country'}),
-            'postal_code': forms.HiddenInput(attrs={'id': 'id_postal_code'}),
             'latitude': forms.HiddenInput(attrs={'id': 'id_latitude'}),
             'longitude': forms.HiddenInput(attrs={'id': 'id_longitude'}),
         }
         
     def clean(self):
         cleaned_data = super().clean()
-        # Vérifier que le pays est bien renseigné
-        country = cleaned_data.get('country')
         latitude = cleaned_data.get('latitude')
         longitude = cleaned_data.get('longitude')
         
-        if not country:
-            self.add_error('country', "Le pays est requis. Utilisez l'autocomplétion pour sélectionner une ville valide.")
-        
         if not latitude or not longitude:
-            self.add_error('city', "Veuillez sélectionner une ville dans la liste des suggestions ou vérifier que la carte s'affiche correctement.")
+            self.add_error('full_address', "Veuillez sélectionner une adresse valide dans la liste des suggestions.")
             
         return cleaned_data
 

@@ -216,3 +216,6 @@ LOGGING = {
         },
     },
 }
+
+# Clé API Google Places pour l'autocomplétion des adresses
+GOOGLE_PLACES_API_KEY = 'YOUR_API_KEY'  # À remplacer par votre clé API réelle

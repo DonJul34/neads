@@ -86,9 +86,9 @@ def ajax_map_data(request):
                 
             # Filtres géographiques
             if data.get('country'):
-                creators = creators.filter(location__country__icontains=data['country'])
+                creators = creators.filter(location__full_address__icontains=data['country'])
             if data.get('city'):
-                creators = creators.filter(location__city__icontains=data['city'])
+                creators = creators.filter(location__full_address__icontains=data['city'])
                 
             # Filtre par note minimale
             if data.get('min_rating'):
@@ -191,7 +191,7 @@ def api_creators(request):
     
     city = request.GET.get('city')
     if city:
-        creators = creators.filter(location__city__icontains=city)
+        creators = creators.filter(location__full_address__icontains=city)
 
     # Prepare the creator data
     creators_data = []
@@ -204,8 +204,8 @@ def api_creators(request):
             'image': creator.profile_image.url if creator.profile_image else None,
             'lat': creator.location.latitude,
             'lng': creator.location.longitude,
-            'city': creator.location.city,
-            'country': creator.location.country,
+            'city': '',
+            'country': '',
             'url': reverse('creator_detail', args=[creator.id])
         }
         creators_data.append(creator_data)

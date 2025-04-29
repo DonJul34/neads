@@ -1,274 +1,471 @@
 <!DOCTYPE html>
 <html lang="fr">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}NEADS - Plateforme de Créateurs{% endblock %}</title>
-    
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>
+      {% block title %}NEADS - Plateforme de Créateurs{% endblock %}
+    </title>
+
     <!-- Bootstrap CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+
     <!-- Tailwind CSS pour les composants légers -->
     <script src="https://cdn.tailwindcss.com"></script>
-    
+
     <!-- Font Awesome pour les icônes -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    />
+
     <!-- Leaflet CSS pour les cartes -->
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
-    
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    />
+
     <!-- CSS personnalisé -->
     <style>
-        :root {
-            --primary-color: #3b82f6;
-            --secondary-color: #10b981;
-            --accent-color: #f59e0b;
-            --text-color: #1f2937;
-            --light-bg: #f9fafb;
+      :root {
+        --primary-color: #17142f;
+        --secondary-color: #6a49dc;
+        --accent-color: #8974e8;
+        --accent-color-2: #6a49dc;
+        --text-color: #333333;
+        --light-bg: #f5f5f7;
+        --card-bg: #ffffff;
+        --border-radius: 0.5rem;
+        --shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+        --hover-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+      }
+
+      body {
+        font-family: "Inter", sans-serif;
+        color: var(--text-color);
+        background-color: var(--light-bg);
+      }
+
+      .gradient-text {
+        background: linear-gradient(
+          90deg,
+          var(--accent-color-2) 40%,
+          #6a49dc 72.31%,
+          var(--accent-color) 100%
+        );
+        background-clip: text;
+        color: transparent !important;
+      }
+
+      .navbar {
+        z-index: 1030;
+        color: #fff;
+        background-color: var(--primary-color) !important;
+      }
+
+      .navbar-nav .nav-link {
+        color: rgba(255, 255, 255, 0.85) !important;
+        font-weight: 500;
+        transition: color 0.3s ease;
+      }
+
+      .navbar-nav .nav-link:hover {
+        color: #fff !important;
+      }
+
+      .navbar-brand {
+        font-weight: 700;
+        letter-spacing: -0.5px;
+        color: #fff !important;
+      }
+
+      .navbar-toggler {
+        color: rgba(255, 255, 255, 0.85);
+        border-color: rgba(255, 255, 255, 0.1);
+      }
+
+      .navbar-toggler-icon {
+        filter: invert(1);
+      }
+
+      .btn-primary {
+        background-color: var(--secondary-color);
+        border-color: var(--secondary-color);
+        transition: all 0.3s ease;
+      }
+
+      .btn-primary:hover,
+      .btn-primary:focus {
+        background-color: #5b3ec7;
+        border-color: #5b3ec7;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 10px rgba(106, 73, 220, 0.3);
+      }
+
+      .btn-outline-primary {
+        color: var(--secondary-color);
+        border-color: var(--secondary-color);
+        transition: all 0.3s ease;
+      }
+
+      .btn-outline-primary:hover,
+      .btn-outline-primary:focus {
+        background-color: var(--secondary-color);
+        border-color: var(--secondary-color);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 10px rgba(106, 73, 220, 0.3);
+      }
+
+      .badge {
+        font-weight: 500;
+        padding: 0.35em 0.65em;
+        border-radius: 0.25rem;
+      }
+
+      .card {
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+        border-radius: var(--border-radius);
+        border: none;
+        box-shadow: var(--shadow);
+      }
+
+      .card:hover {
+        transform: translateY(-5px);
+        box-shadow: var(--hover-shadow);
+      }
+
+      .star-rating {
+        color: #ffb400;
+      }
+
+      .media-container {
+        border-radius: var(--border-radius);
+        overflow: hidden;
+      }
+
+      .creator-profile img {
+        object-fit: cover;
+        border-radius: 50%;
+      }
+
+      #map {
+        height: 400px;
+        border-radius: var(--border-radius);
+      }
+
+      /* Custom styles for form controls */
+      .form-control,
+      .form-select {
+        border-radius: 0.5rem;
+        padding: 0.5rem 1rem;
+        border: 1px solid #e0e0e0;
+        transition: border-color 0.3s ease, box-shadow 0.3s ease;
+      }
+
+      .form-control:focus,
+      .form-select:focus {
+        border-color: var(--accent-color);
+        box-shadow: 0 0 0 0.2rem rgba(106, 73, 220, 0.25);
+      }
+
+      /* Custom checkbox */
+      .form-check-input:checked {
+        background-color: var(--accent-color);
+        border-color: var(--accent-color);
+      }
+
+      /* Alert styling */
+      .alert {
+        border-radius: var(--border-radius);
+        border: none;
+        box-shadow: var(--shadow);
+      }
+
+      /* Custom badge colors */
+      .badge.bg-danger {
+        background-color: #dc3545 !important;
+      }
+
+      .badge.bg-info {
+        background-color: var(--accent-color) !important;
+      }
+
+      .badge.bg-success {
+        background-color: var(--secondary-color) !important;
+      }
+
+      .badge.bg-warning {
+        background-color: #ff9f1c !important;
+        color: #fff;
+      }
+
+      /* Footer styling */
+      footer {
+        background-color: var(--primary-color) !important;
+        color: #fff;
+        border-top: none !important;
+      }
+
+      footer p {
+        color: rgba(255, 255, 255, 0.8);
+      }
+
+      /* Dropdown customization */
+      .dropdown-menu {
+        border-radius: var(--border-radius);
+        border: none;
+        box-shadow: var(--hover-shadow);
+      }
+
+      .dropdown-item:hover,
+      .dropdown-item:focus {
+        background-color: #f0ebff;
+        color: var(--secondary-color);
+      }
+
+      /* Pagination styling */
+      .pagination .page-link {
+        color: var(--secondary-color);
+        border-color: #e0e0e0;
+      }
+
+      .pagination .page-item.active .page-link {
+        background-color: var(--secondary-color);
+        border-color: var(--secondary-color);
+      }
+
+      .pagination .page-link:focus {
+        box-shadow: 0 0 0 0.2rem rgba(106, 73, 220, 0.25);
+      }
+
+      /* Responsive */
+      @media (max-width: 768px) {
+        .container {
+          padding-left: 1rem;
+          padding-right: 1rem;
         }
-        
-        body {
-            font-family: 'Inter', sans-serif;
-            color: var(--text-color);
-            background-color: var(--light-bg);
-        }
-        
-        .navbar-brand {
-            font-weight: 700;
-            letter-spacing: -0.5px;
-        }
-        
-        .btn-primary {
-            background-color: var(--primary-color);
-            border-color: var(--primary-color);
-        }
-        
-        .btn-outline-primary {
-            color: var(--primary-color);
-            border-color: var(--primary-color);
-        }
-        
-        .badge {
-            font-weight: 500;
-            padding: 0.35em 0.65em;
-            border-radius: 0.25rem;
-        }
-        
-        .card {
-            transition: transform 0.2s ease-in-out;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-        }
-        
-        .card:hover {
-            transform: translateY(-5px);
-        }
-        
-        .star-rating {
-            color: var(--accent-color);
-        }
-        
-        .media-container {
-            border-radius: 0.5rem;
-            overflow: hidden;
-        }
-        
-        .creator-profile img {
-            object-fit: cover;
-            border-radius: 50%;
-        }
-        
-        #map {
-            height: 400px;
-            border-radius: 0.5rem;
-        }
-        
-        /* Responsive */
-        @media (max-width: 768px) {
-            .container {
-                padding-left: 1rem;
-                padding-right: 1rem;
-            }
-        }
+      }
     </style>
-    
+
     {% block extra_css %}{% endblock %}
-</head>
-<body>
+  </head>
+  <body>
     <!-- Navigation -->
-    <nav class="navbar navbar-expand-lg navbar-light bg-white border-bottom shadow-sm">
-        <div class="container">
-            <a class="navbar-brand" href="{% url 'home' %}">
-                NEADS
-            </a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav me-auto">
-                    {% if user.is_authenticated %}
-                        {% if user.role == 'client' %}
-                            <!-- Navigation pour les clients -->
-                            <li class="nav-item">
-                                <a class="nav-link" href="{% url 'gallery_view' %}">Galerie Créateurs</a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link" href="{% url 'map_view' %}">Carte</a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link" href="{% url 'search_view' %}">
-                                    <i class="fas fa-search me-1"></i>Recherche
-                                </a>
-                            </li>
-                        {% elif user.role == 'consultant' %}
-                            <!-- Navigation pour les consultants -->
-                            <li class="nav-item">
-                                <a class="nav-link" href="{% url 'gallery_view' %}">Galerie Créateurs</a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link" href="{% url 'map_view' %}">Carte</a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link" href="{% url 'search_view' %}">
-                                    <i class="fas fa-search me-1"></i>Recherche
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link" href="{% url 'favorites_view' %}">
-                                    <i class="fas fa-heart me-1"></i>Favoris
-                                </a>
-                            </li>
-                            <li class="nav-item dropdown">
-                                <a class="nav-link dropdown-toggle" href="#" id="navbarManagement" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                    <i class="fas fa-cogs me-1"></i>Gestion NEADS
-                                </a>
-                                <ul class="dropdown-menu" aria-labelledby="navbarManagement">
-                                    <li><a class="dropdown-item" href="/creators/list/">Gestion Créateurs</a></li>
-                                    <li><a class="dropdown-item" href="/clients/">Gestion Clients</a></li>
-                                </ul>
-                            </li>
-                        {% elif user.role == 'admin' %}
-                            <!-- Navigation pour les administrateurs -->
-                            <li class="nav-item">
-                                <a class="nav-link" href="{% url 'gallery_view' %}">Galerie Créateurs</a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link" href="{% url 'map_view' %}">Carte</a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link" href="{% url 'search_view' %}">
-                                    <i class="fas fa-search me-1"></i>Recherche
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link" href="{% url 'favorites_view' %}">
-                                    <i class="fas fa-heart me-1"></i>Favoris
-                                </a>
-                            </li>
-                            <li class="nav-item dropdown">
-                                <a class="nav-link dropdown-toggle" href="#" id="navbarManagement" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                    <i class="fas fa-cogs me-1"></i>Gestion NEADS
-                                </a>
-                                <ul class="dropdown-menu" aria-labelledby="navbarManagement">
-                                    <li><a class="dropdown-item" href="/creators/list/">Gestion Créateurs</a></li>
-                                    <li><a class="dropdown-item" href="/clients/">Gestion Clients</a></li>
-                                    <li><hr class="dropdown-divider"></li>
-                                    <li><a class="dropdown-item" href="/admin/" target="_blank">Administration Django</a></li>
-                                </ul>
-                            </li>
-                        {% elif user.role == 'creator' %}
-                            <!-- Navigation pour les créateurs -->
-                            <li class="nav-item">
-                                <a class="nav-link" href="{% url 'gallery_view' %}">Galerie Créateurs</a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link" href="{% url 'map_view' %}">Carte</a>
-                            </li>
-                        {% endif %}
-                    {% endif %}
-                </ul>
-                <div class="d-flex">
-                    {% if user.is_authenticated %}
-                        <div class="dropdown">
-                            <button class="btn btn-outline-primary dropdown-toggle" type="button" id="userDropdown" data-bs-toggle="dropdown">
-                                {{ user.email }}
-                                {% if user.role == 'admin' %}
-                                <span class="badge bg-danger ms-1">Admin</span>
-                                {% elif user.role == 'consultant' %}
-                                <span class="badge bg-info ms-1">Consultant</span>
-                                {% elif user.role == 'client' %}
-                                <span class="badge bg-success ms-1">Client</span>
-                                {% elif user.role == 'creator' %}
-                                <span class="badge bg-warning ms-1">Créateur</span>
-                                {% endif %}
-                            </button>
-                            <ul class="dropdown-menu dropdown-menu-end">
-                                <li><a class="dropdown-item" href="{% url 'profile' %}">Mon profil</a></li>
-                                {% if user.role == 'creator' and user.creator_profile %}
-                                    <li><a class="dropdown-item" href="{% url 'creator_detail' creator_id=user.creator_profile.id %}">Ma fiche créateur</a></li>
-                                {% endif %}
-                                {% if user.role == 'admin' %}
-                                    <li><a class="dropdown-item" href="/admin/" target="_blank">Administration Django</a></li>
-                                {% endif %}
-                                <li><hr class="dropdown-divider"></li>
-                                <li><a class="dropdown-item" href="{% url 'logout' %}">Déconnexion</a></li>
-                            </ul>
-                        </div>
-                    {% else %}
-                        <a href="{% url 'login' %}" class="btn btn-outline-primary me-2">Connexion</a>
-                        <a href="{% url 'temp_login_request' %}" class="btn btn-primary">Inscription</a>
-                    {% endif %}
-                </div>
+    <nav class="navbar navbar-expand-lg navbar-dark shadow-sm">
+      <div class="container">
+        <a class="navbar-brand" href="{% url 'home' %}"> NEADS </a>
+        <button
+          class="navbar-toggler"
+          type="button"
+          data-bs-toggle="collapse"
+          data-bs-target="#navbarNav"
+        >
+          <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+          <ul class="navbar-nav me-auto">
+            {% if user.is_authenticated %} {% if user.role == 'client' %}
+            <!-- Navigation pour les clients -->
+            <li class="nav-item">
+              <a class="nav-link" href="{% url 'gallery_view' %}"
+                >Galerie Créateurs</a
+              >
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="{% url 'map_view' %}">Carte</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="{% url 'search_view' %}">
+                <i class="fas fa-search me-1"></i>Recherche
+              </a>
+            </li>
+            {% elif user.role == 'consultant' %}
+            <!-- Navigation pour les consultants -->
+            <li class="nav-item">
+              <a class="nav-link" href="{% url 'gallery_view' %}"
+                >Galerie Créateurs</a
+              >
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="{% url 'map_view' %}">Carte</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="{% url 'search_view' %}">
+                <i class="fas fa-search me-1"></i>Recherche
+              </a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="{% url 'favorites_view' %}">
+                <i class="fas fa-heart me-1"></i>Favoris
+              </a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="{% url 'management_dashboard' %}">
+                <i class="fas fa-cogs me-1"></i>Gestion NEADS
+              </a>
+            </li>
+            {% elif user.role == 'admin' %}
+            <!-- Navigation pour les administrateurs -->
+            <li class="nav-item">
+              <a class="nav-link" href="{% url 'gallery_view' %}"
+                >Galerie Créateurs</a
+              >
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="{% url 'map_view' %}">Carte</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="{% url 'search_view' %}">
+                <i class="fas fa-search me-1"></i>Recherche
+              </a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="{% url 'favorites_view' %}">
+                <i class="fas fa-heart me-1"></i>Favoris
+              </a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="{% url 'management_dashboard' %}">
+                <i class="fas fa-cogs me-1"></i>Gestion NEADS
+              </a>
+            </li>
+            {% elif user.role == 'creator' %}
+            <!-- Navigation pour les créateurs - simplifié -->
+            {% if user.creator_profile %}
+            <li class="nav-item">
+              <a
+                class="nav-link"
+                href="{% url 'creator_detail' creator_id=user.creator_profile.id %}"
+                >Mon profil</a
+              >
+            </li>
+            {% else %}
+            <li class="nav-item">
+              <a class="nav-link" href="{% url 'creator_add' %}"
+                >Créer mon profil</a
+              >
+            </li>
+            {% endif %} {% endif %} {% endif %}
+          </ul>
+          <div class="d-flex">
+            {% if user.is_authenticated %}
+            <div class="dropdown">
+              <button
+                class="btn btn-outline-light dropdown-toggle"
+                type="button"
+                id="userDropdown"
+                data-bs-toggle="dropdown"
+              >
+                {{ user.email }} {% if user.role == 'admin' %}
+                <span class="badge bg-danger ms-1">Admin</span>
+                {% elif user.role == 'consultant' %}
+                <span class="badge bg-info ms-1">Consultant</span>
+                {% elif user.role == 'client' %}
+                <span class="badge bg-success ms-1">Client</span>
+                {% elif user.role == 'creator' %}
+                <span class="badge bg-warning ms-1">Créateur</span>
+                {% endif %}
+              </button>
+              <ul class="dropdown-menu dropdown-menu-end">
+                <li>
+                  <a class="dropdown-item" href="{% url 'profile' %}"
+                    >Mon profil</a
+                  >
+                </li>
+                {% if user.role == 'creator' and user.creator_profile %}
+                <li>
+                  <a
+                    class="dropdown-item"
+                    href="{% url 'creator_detail' creator_id=user.creator_profile.id %}"
+                    >Ma fiche créateur</a
+                  >
+                </li>
+                {% endif %} {% if user.role == 'admin' %}
+                <li>
+                  <a class="dropdown-item" href="/admin/" target="_blank"
+                    >Administration Django</a
+                  >
+                </li>
+                {% endif %}
+                <li><hr class="dropdown-divider" /></li>
+                <li>
+                  <a class="dropdown-item" href="{% url 'logout' %}"
+                    >Déconnexion</a
+                  >
+                </li>
+              </ul>
             </div>
+            {% else %}
+            <a href="{% url 'login' %}" class="btn btn-outline-light me-2"
+              >Connexion</a
+            >
+            <a href="{% url 'temp_login_request' %}" class="btn btn-light"
+              >Inscription</a
+            >
+            {% endif %}
+          </div>
         </div>
+      </div>
     </nav>
 
     <!-- Contenu principal -->
     <main class="py-4">
-        <div class="container">
-            {% if messages %}
-                {% for message in messages %}
-                    <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
-                        {{ message }}
-                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                    </div>
-                {% endfor %}
-            {% endif %}
-            
-            {% block content %}{% endblock %}
+      <div class="container">
+        {% if messages %} {% for message in messages %}
+        <div
+          class="alert alert-{{ message.tags }} alert-dismissible fade show"
+          role="alert"
+        >
+          {{ message }}
+          <button
+            type="button"
+            class="btn-close"
+            data-bs-dismiss="alert"
+            aria-label="Close"
+          ></button>
         </div>
+        {% endfor %} {% endif %} {% block content %}{% endblock %}
+      </div>
     </main>
 
     <!-- Pied de page -->
-    <footer class="bg-white border-top py-4 mt-5">
-        <div class="container">
-            <div class="row">
-                <div class="col-md-6">
-                    <p class="mb-0">&copy; 2025 NEADS - Tous droits réservés</p>
-                </div>
-                <div class="col-md-6 text-md-end">
-                    <p class="mb-0">Une application pour la gestion des créateurs de contenu</p>
-                </div>
-            </div>
+    <footer class="py-4 mt-5">
+      <div class="container">
+        <div class="row">
+          <div class="col-md-6">
+            <p class="mb-0">&copy; 2025 NEADS - Tous droits réservés</p>
+          </div>
+          <div class="col-md-6 text-md-end">
+            <p class="mb-0">
+              Une application pour la gestion des créateurs de contenu
+            </p>
+          </div>
         </div>
+      </div>
     </footer>
 
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    
+
     <!-- Leaflet JS -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    
+
     <!-- JavaScript personnalisé -->
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            // Initialize Bootstrap tooltips
-            const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
-            tooltipTriggerList.map(function (tooltipTriggerEl) {
-                return new bootstrap.Tooltip(tooltipTriggerEl);
-            });
+      document.addEventListener("DOMContentLoaded", function () {
+        // Initialize Bootstrap tooltips
+        const tooltipTriggerList = [].slice.call(
+          document.querySelectorAll('[data-bs-toggle="tooltip"]')
+        );
+        tooltipTriggerList.map(function (tooltipTriggerEl) {
+          return new bootstrap.Tooltip(tooltipTriggerEl);
         });
+      });
     </script>
-    
+
     {% block extra_js %}{% endblock %}
-</body>
-</html> 
+  </body>
+</html>

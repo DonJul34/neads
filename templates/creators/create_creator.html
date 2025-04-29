@@ -1,0 +1,37 @@
+{% extends "base.html" %} {% block extra_js %}
+<!-- Google Places API pour l'autocomplétion des adresses -->
+<script src="https://maps.googleapis.com/maps/api/js?key={{ google_api_key }}&libraries=places"></script>
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    // Initialisation de l'autocomplétion pour l'adresse
+    const addressInput = document.getElementById("full-address-input");
+
+    if (addressInput) {
+      const autocomplete = new google.maps.places.Autocomplete(addressInput, {
+        types: ["address"],
+        fields: ["formatted_address", "geometry"],
+      });
+
+      // Quand une adresse est sélectionnée dans l'autocomplétion
+      autocomplete.addListener("place_changed", function () {
+        const place = autocomplete.getPlace();
+
+        if (!place.geometry) {
+          console.error("Aucune information de lieu reçue pour cette adresse");
+          return;
+        }
+
+        // Mettre à jour les coordonnées
+        document.getElementById("id_latitude").value =
+          place.geometry.location.lat();
+        document.getElementById("id_longitude").value =
+          place.geometry.location.lng();
+
+        // Mettre à jour l'adresse complète formatée
+        document.getElementById("full-address-input").value =
+          place.formatted_address;
+      });
+    }
+  });
+</script>
+{% endblock %}

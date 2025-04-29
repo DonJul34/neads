@@ -1,0 +1,204 @@
+{% extends "base.html" %} {% block title %}Modifier le profil de {{
+creator.full_name }}{% endblock %} {% block extra_css %}
+<link
+  rel="stylesheet"
+  href="https://cdn.jsdelivr.net/npm/leaflet@1.7.1/dist/leaflet.css"
+/>
+<style>
+  .map-preview {
+    height: 200px;
+    margin-top: 10px;
+    border-radius: 4px;
+    display: none;
+  }
+</style>
+{% endblock %} {% block content %}
+<div class="container py-4">
+  <div class="row">
+    <div class="col-lg-8 mx-auto">
+      <div class="card shadow-sm border-0">
+        <div class="card-body p-4">
+          <h1 class="h3 mb-4">Modifier le profil créateur</h1>
+
+          <form method="post" enctype="multipart/form-data">
+            {% csrf_token %}
+
+            <div class="mb-4">
+              <h2 class="h5 mb-3">Informations personnelles</h2>
+              {% for field in form %}
+              <div class="mb-3">
+                <label for="{{ field.id_for_label }}" class="form-label"
+                  >{{ field.label }}</label
+                >
+                {{ field }} {% if field.help_text %}
+                <div class="form-text">{{ field.help_text }}</div>
+                {% endif %} {% if field.errors %}
+                <div class="invalid-feedback d-block">
+                  {% for error in field.errors %} {{ error }} {% endfor %}
+                </div>
+                {% endif %}
+              </div>
+              {% endfor %}
+            </div>
+
+            <div class="mb-4">
+              <h2 class="h5 mb-3">Localisation</h2>
+              {% for field in location_form %}
+              <div class="mb-3">
+                {% if not field.is_hidden %}
+                <label for="{{ field.id_for_label }}" class="form-label"
+                  >{{ field.label }}</label
+                >
+                {% endif %} {{ field }} {% if field.help_text %}
+                <div class="form-text">{{ field.help_text }}</div>
+                {% endif %} {% if field.errors %}
+                <div class="invalid-feedback d-block">
+                  {% for error in field.errors %} {{ error }} {% endfor %}
+                </div>
+                {% endif %}
+              </div>
+              {% endfor %}
+
+              <div id="map-preview" class="map-preview"></div>
+            </div>
+
+            <div class="d-flex justify-content-between">
+              <a
+                href="{% url 'creator_detail' creator.id %}"
+                class="btn btn-outline-secondary"
+                >Annuler</a
+              >
+              <button type="submit" class="btn btn-primary">
+                Enregistrer les modifications
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %} {% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/leaflet@1.7.1/dist/leaflet.js"></script>
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    // Éléments du formulaire
+    const locationInput = document.getElementById("location-input");
+    const countryInput = document.getElementById("id_country");
+    const postalCodeInput = document.getElementById("id_postal_code");
+    const latitudeInput = document.getElementById("id_latitude");
+    const longitudeInput = document.getElementById("id_longitude");
+    const mapPreview = document.getElementById("map-preview");
+
+    let map = null;
+    let marker = null;
+
+    // Fonction pour initialiser la carte
+    function initMap(lat, lng) {
+      if (!map) {
+        mapPreview.style.display = "block";
+        map = L.map("map-preview").setView([lat, lng], 13);
+
+        L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+          attribution:
+            '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+        }).addTo(map);
+
+        marker = L.marker([lat, lng], { draggable: true }).addTo(map);
+
+        // Mettre à jour les coordonnées quand le marqueur est déplacé
+        marker.on("dragend", function (e) {
+          const position = marker.getLatLng();
+          latitudeInput.value = position.lat;
+          longitudeInput.value = position.lng;
+
+          // Essayer de faire du géocodage inversé (optionnel)
+          reverseGeocode(position.lat, position.lng);
+        });
+      } else {
+        map.setView([lat, lng], 13);
+        marker.setLatLng([lat, lng]);
+      }
+    }
+
+    // Fonction pour géocoder une adresse
+    function geocodeAddress(address) {
+      const nominatimUrl = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(
+        address
+      )}&limit=1`;
+
+      fetch(nominatimUrl)
+        .then((response) => response.json())
+        .then((data) => {
+          if (data.length > 0) {
+            const result = data[0];
+
+            // Remplir les champs cachés
+            latitudeInput.value = result.lat;
+            longitudeInput.value = result.lon;
+
+            // Récupérer le pays et le code postal si disponible
+            if (result.address) {
+              countryInput.value = result.address.country || "";
+              postalCodeInput.value = result.address.postcode || "";
+            }
+
+            // Afficher sur la carte
+            initMap(parseFloat(result.lat), parseFloat(result.lon));
+          }
+        })
+        .catch((error) => console.error("Erreur de géocodage:", error));
+    }
+
+    // Fonction de géocodage inverse
+    function reverseGeocode(lat, lng) {
+      const nominatimUrl = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`;
+
+      fetch(nominatimUrl)
+        .then((response) => response.json())
+        .then((data) => {
+          if (data && data.address) {
+            // Mettre à jour les champs du formulaire
+            locationInput.value =
+              [
+                data.address.city,
+                data.address.town,
+                data.address.village,
+              ].filter(Boolean)[0] || "";
+            countryInput.value = data.address.country || "";
+            postalCodeInput.value = data.address.postcode || "";
+          }
+        })
+        .catch((error) => console.error("Erreur de géocodage inversé:", error));
+    }
+
+    // Gestionnaire d'événement pour l'autocomplétion
+    let timeoutId = null;
+    if (locationInput) {
+      locationInput.addEventListener("input", function () {
+        // Attendre que l'utilisateur arrête de taper
+        clearTimeout(timeoutId);
+        timeoutId = setTimeout(() => {
+          const address = this.value.trim();
+          if (address.length > 2) {
+            geocodeAddress(address);
+          }
+        }, 500);
+      });
+    }
+
+    // Si des coordonnées existent déjà, initialiser la carte
+    if (
+      latitudeInput &&
+      longitudeInput &&
+      latitudeInput.value &&
+      longitudeInput.value
+    ) {
+      initMap(
+        parseFloat(latitudeInput.value),
+        parseFloat(longitudeInput.value)
+      );
+    }
+  });
+</script>
+{% endblock %}

@@ -1,368 +1,413 @@
-{% extends "base.html" %}
-
-{% block title %}Créer un profil créateur{% endblock %}
-
-{% block extra_css %}
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.7.1/dist/leaflet.css" />
+{% extends "base.html" %} {% block title %}Créer un profil créateur{% endblock
+%} {% block extra_css %}
+<link
+  rel="stylesheet"
+  href="https://cdn.jsdelivr.net/npm/leaflet@1.7.1/dist/leaflet.css"
+/>
 <style>
-    .map-preview {
-        height: 200px;
-        margin-top: 10px;
-        border-radius: 4px;
-        display: none;
-    }
-    .content-types-checkbox {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 10px;
-    }
-    .content-types-checkbox div {
-        flex-basis: 30%;
-        display: flex;
-        align-items: center;
-    }
-    .content-types-checkbox input {
-        margin-right: 5px;
-    }
-    .location-container {
-        position: relative;
-    }
-    .location-suggestions {
-        position: absolute;
-        z-index: 1000;
-        width: 100%;
-        max-height: 200px;
-        overflow-y: auto;
-        background: white;
-        border: 1px solid #ddd;
-        border-radius: 4px;
-        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-        display: none;
-    }
-    .location-suggestion {
-        padding: 8px 12px;
-        cursor: pointer;
-        border-bottom: 1px solid #f0f0f0;
-    }
-    .location-suggestion:hover {
-        background-color: #f8f9fa;
-    }
-    .social-media-section {
-        background-color: #f8f9fa;
-        border-radius: 8px;
-        padding: 15px;
-        margin-bottom: 20px;
-    }
-    .social-media-section h2 {
-        color: #3b82f6;
-        margin-bottom: 15px;
-    }
-    .social-media-icon {
-        width: 28px;
-        display: inline-block;
-        text-align: center;
-        margin-right: 8px;
-    }
+  .map-preview {
+    height: 200px;
+    margin-top: 10px;
+    border-radius: 4px;
+    display: none;
+  }
+  .content-types-checkbox {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  .content-types-checkbox div {
+    flex-basis: 30%;
+    display: flex;
+    align-items: center;
+  }
+  .content-types-checkbox input {
+    margin-right: 5px;
+  }
+  .location-container {
+    position: relative;
+  }
+  .location-suggestions {
+    position: absolute;
+    z-index: 1000;
+    width: 100%;
+    max-height: 200px;
+    overflow-y: auto;
+    background: white;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    display: none;
+  }
+  .location-suggestion {
+    padding: 8px 12px;
+    cursor: pointer;
+    border-bottom: 1px solid #f0f0f0;
+  }
+  .location-suggestion:hover {
+    background-color: #f8f9fa;
+  }
+  .social-media-section {
+    background-color: #f8f9fa;
+    border-radius: 8px;
+    padding: 15px;
+    margin-bottom: 20px;
+  }
+  .social-media-section h2 {
+    color: #3b82f6;
+    margin-bottom: 15px;
+  }
+  .social-media-icon {
+    width: 28px;
+    display: inline-block;
+    text-align: center;
+    margin-right: 8px;
+  }
 </style>
-{% endblock %}
-
-{% block content %}
+{% endblock %} {% block content %}
 <div class="container py-4">
-    <div class="row">
-        <div class="col-lg-8 mx-auto">
-            <div class="card shadow-sm border-0">
-                <div class="card-body p-4">
-                    <h1 class="h3 mb-4">Créer un profil créateur</h1>
-                    
-                    <form method="post" enctype="multipart/form-data">
-                        {% csrf_token %}
-                        
-                        <div class="mb-4">
-                            <h2 class="h5 mb-3">Informations personnelles</h2>
-                            {% for field in form %}
-                                {% if field.name not in 'content_types,youtube_link,tiktok_link,instagram_link' %}
-                                <div class="mb-3">
-                                    <label for="{{ field.id_for_label }}" class="form-label">{{ field.label }}</label>
-                                    {{ field }}
-                                    {% if field.help_text %}
-                                        <div class="form-text">{{ field.help_text }}</div>
-                                    {% endif %}
-                                    {% if field.errors %}
-                                        <div class="invalid-feedback d-block">
-                                            {% for error in field.errors %}
-                                                {{ error }}
-                                            {% endfor %}
-                                        </div>
-                                    {% endif %}
-                                </div>
-                                {% elif field.name == 'content_types' %}
-                                <div class="mb-3">
-                                    <label for="{{ field.id_for_label }}" class="form-label">{{ field.label }}</label>
-                                    <div class="content-types-checkbox">
-                                        {{ field }}
-                                    </div>
-                                    {% if field.errors %}
-                                        <div class="invalid-feedback d-block">
-                                            {% for error in field.errors %}
-                                                {{ error }}
-                                            {% endfor %}
-                                        </div>
-                                    {% endif %}
-                                </div>
-                                {% endif %}
-                            {% endfor %}
-                        </div>
-                        
-                        <div class="social-media-section mb-4">
-                            <h2 class="h5 mb-3">Réseaux sociaux</h2>
-                            <p class="text-muted mb-3">Ajoutez vos réseaux sociaux pour permettre aux clients de découvrir votre contenu</p>
-                            
-                            <div class="mb-3">
-                                <label for="{{ form.youtube_link.id_for_label }}" class="form-label">
-                                    <span class="social-media-icon text-danger"><i class="fab fa-youtube"></i></span>
-                                    {{ form.youtube_link.label }}
-                                </label>
-                                {{ form.youtube_link }}
-                                {% if form.youtube_link.errors %}
-                                    <div class="invalid-feedback d-block">
-                                        {% for error in form.youtube_link.errors %}
-                                            {{ error }}
-                                        {% endfor %}
-                                    </div>
-                                {% endif %}
-                            </div>
-                            
-                            <div class="mb-3">
-                                <label for="{{ form.tiktok_link.id_for_label }}" class="form-label">
-                                    <span class="social-media-icon"><i class="fab fa-tiktok"></i></span>
-                                    {{ form.tiktok_link.label }}
-                                </label>
-                                {{ form.tiktok_link }}
-                                {% if form.tiktok_link.errors %}
-                                    <div class="invalid-feedback d-block">
-                                        {% for error in form.tiktok_link.errors %}
-                                            {{ error }}
-                                        {% endfor %}
-                                    </div>
-                                {% endif %}
-                            </div>
-                            
-                            <div class="mb-3">
-                                <label for="{{ form.instagram_link.id_for_label }}" class="form-label">
-                                    <span class="social-media-icon text-purple"><i class="fab fa-instagram"></i></span>
-                                    {{ form.instagram_link.label }}
-                                </label>
-                                {{ form.instagram_link }}
-                                {% if form.instagram_link.errors %}
-                                    <div class="invalid-feedback d-block">
-                                        {% for error in form.instagram_link.errors %}
-                                            {{ error }}
-                                        {% endfor %}
-                                    </div>
-                                {% endif %}
-                            </div>
-                        </div>
-                        
-                        <div class="mb-4">
-                            <h2 class="h5 mb-3">Localisation</h2>
-                            <div class="location-container mb-3">
-                                <label for="location-input" class="form-label">Ville</label>
-                                {{ location_form.city }}
-                                <div id="location-suggestions" class="location-suggestions"></div>
-                                {% if location_form.city.errors %}
-                                    <div class="invalid-feedback d-block">
-                                        {% for error in location_form.city.errors %}
-                                            {{ error }}
-                                        {% endfor %}
-                                    </div>
-                                {% endif %}
-                            </div>
-                            
-                            {{ location_form.country }}
-                            {{ location_form.postal_code }}
-                            {{ location_form.latitude }}
-                            {{ location_form.longitude }}
-                            
-                            <div id="map-preview" class="map-preview"></div>
-                            
-                            {% if location_form.country.errors %}
-                                <div class="alert alert-warning mt-2">
-                                    <i class="fas fa-exclamation-triangle"></i> 
-                                    Veuillez sélectionner une ville valide dans la liste de suggestions pour que la localisation soit correctement enregistrée.
-                                </div>
-                            {% endif %}
-                        </div>
-                        
-                        <div class="d-flex justify-content-between">
-                            <a href="{% url 'gallery_view' %}" class="btn btn-outline-secondary">Annuler</a>
-                            <button type="submit" class="btn btn-primary">Créer le profil</button>
-                        </div>
-                    </form>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-{% endblock %}
+  <div class="row">
+    <div class="col-lg-8 mx-auto">
+      <div class="card shadow-sm border-0">
+        <div class="card-body p-4">
+          <h1 class="h3 mb-4">Créer un profil créateur</h1>
 
-{% block extra_js %}
+          <form method="post" enctype="multipart/form-data">
+            {% csrf_token %}
+
+            <div class="mb-4">
+              <h2 class="h5 mb-3">Informations personnelles</h2>
+              {% for field in form %} {% if field.name not in
+              'content_types,youtube_link,tiktok_link,instagram_link' %}
+              <div class="mb-3">
+                <label for="{{ field.id_for_label }}" class="form-label"
+                  >{{ field.label }}</label
+                >
+                {{ field }} {% if field.help_text %}
+                <div class="form-text">{{ field.help_text }}</div>
+                {% endif %} {% if field.errors %}
+                <div class="invalid-feedback d-block">
+                  {% for error in field.errors %} {{ error }} {% endfor %}
+                </div>
+                {% endif %}
+              </div>
+              {% elif field.name == 'content_types' %}
+              <div class="mb-3">
+                <label for="{{ field.id_for_label }}" class="form-label"
+                  >{{ field.label }}</label
+                >
+                <div class="content-types-checkbox">{{ field }}</div>
+                {% if field.errors %}
+                <div class="invalid-feedback d-block">
+                  {% for error in field.errors %} {{ error }} {% endfor %}
+                </div>
+                {% endif %}
+              </div>
+              {% endif %} {% endfor %}
+            </div>
+
+            <div class="social-media-section mb-4">
+              <h2 class="h5 mb-3">Réseaux sociaux</h2>
+              <p class="text-muted mb-3">
+                Ajoutez vos réseaux sociaux pour permettre aux clients de
+                découvrir votre contenu
+              </p>
+
+              <div class="mb-3">
+                <label
+                  for="{{ form.youtube_link.id_for_label }}"
+                  class="form-label"
+                >
+                  <span class="social-media-icon text-danger"
+                    ><i class="fab fa-youtube"></i
+                  ></span>
+                  {{ form.youtube_link.label }}
+                </label>
+                {{ form.youtube_link }} {% if form.youtube_link.errors %}
+                <div class="invalid-feedback d-block">
+                  {% for error in form.youtube_link.errors %} {{ error }} {%
+                  endfor %}
+                </div>
+                {% endif %}
+              </div>
+
+              <div class="mb-3">
+                <label
+                  for="{{ form.tiktok_link.id_for_label }}"
+                  class="form-label"
+                >
+                  <span class="social-media-icon"
+                    ><i class="fab fa-tiktok"></i
+                  ></span>
+                  {{ form.tiktok_link.label }}
+                </label>
+                {{ form.tiktok_link }} {% if form.tiktok_link.errors %}
+                <div class="invalid-feedback d-block">
+                  {% for error in form.tiktok_link.errors %} {{ error }} {%
+                  endfor %}
+                </div>
+                {% endif %}
+              </div>
+
+              <div class="mb-3">
+                <label
+                  for="{{ form.instagram_link.id_for_label }}"
+                  class="form-label"
+                >
+                  <span class="social-media-icon text-purple"
+                    ><i class="fab fa-instagram"></i
+                  ></span>
+                  {{ form.instagram_link.label }}
+                </label>
+                {{ form.instagram_link }} {% if form.instagram_link.errors %}
+                <div class="invalid-feedback d-block">
+                  {% for error in form.instagram_link.errors %} {{ error }} {%
+                  endfor %}
+                </div>
+                {% endif %}
+              </div>
+            </div>
+
+            <div class="mb-4">
+              <h2 class="h5 mb-3">Localisation</h2>
+              <div class="location-container mb-3">
+                <label for="location-input" class="form-label">Ville</label>
+                {{ location_form.city }}
+                <div
+                  id="location-suggestions"
+                  class="location-suggestions"
+                ></div>
+                {% if location_form.city.errors %}
+                <div class="invalid-feedback d-block">
+                  {% for error in location_form.city.errors %} {{ error }} {%
+                  endfor %}
+                </div>
+                {% endif %}
+              </div>
+
+              {{ location_form.country }} {{ location_form.postal_code }} {{
+              location_form.latitude }} {{ location_form.longitude }}
+
+              <div id="map-preview" class="map-preview"></div>
+
+              <div class="mb-3">
+                <label for="street-address-input" class="form-label"
+                  >Adresse complète</label
+                >
+                {{ location_form.street_address }}
+                <div
+                  id="address-suggestions"
+                  class="location-suggestions"
+                ></div>
+                {% if location_form.street_address.errors %}
+                <div class="invalid-feedback d-block">
+                  {% for error in location_form.street_address.errors %} {{
+                  error }} {% endfor %}
+                </div>
+                {% endif %}
+              </div>
+
+              {% if location_form.country.errors %}
+              <div class="alert alert-warning mt-2">
+                <i class="fas fa-exclamation-triangle"></i>
+                Veuillez sélectionner une ville valide dans la liste de
+                suggestions pour que la localisation soit correctement
+                enregistrée.
+              </div>
+              {% endif %}
+            </div>
+
+            <div class="d-flex justify-content-between">
+              <a
+                href="{% url 'gallery_view' %}"
+                class="btn btn-outline-secondary"
+                >Annuler</a
+              >
+              <button type="submit" class="btn btn-primary">
+                Créer le profil
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %} {% block extra_js %}
 <script src="https://cdn.jsdelivr.net/npm/leaflet@1.7.1/dist/leaflet.js"></script>
 <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        // Éléments du formulaire
-        const locationInput = document.getElementById('location-input');
-        const countryInput = document.getElementById('id_country');
-        const postalCodeInput = document.getElementById('id_postal_code');
-        const latitudeInput = document.getElementById('id_latitude');
-        const longitudeInput = document.getElementById('id_longitude');
-        const mapPreview = document.getElementById('map-preview');
-        const suggestionsList = document.getElementById('location-suggestions');
-        
-        let map = null;
-        let marker = null;
-        
-        // Fonction pour initialiser la carte
-        function initMap(lat, lng) {
-            if (!map) {
-                mapPreview.style.display = 'block';
-                map = L.map('map-preview').setView([lat, lng], 13);
-                
-                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-                }).addTo(map);
-                
-                marker = L.marker([lat, lng], {draggable: true}).addTo(map);
-                
-                // Mettre à jour les coordonnées quand le marqueur est déplacé
-                marker.on('dragend', function(e) {
-                    const position = marker.getLatLng();
-                    latitudeInput.value = position.lat;
-                    longitudeInput.value = position.lng;
-                    
-                    // Essayer de faire du géocodage inversé
-                    reverseGeocode(position.lat, position.lng);
+  document.addEventListener("DOMContentLoaded", function () {
+    // Éléments du formulaire
+    const locationInput = document.getElementById("location-input");
+    const countryInput = document.getElementById("id_country");
+    const postalCodeInput = document.getElementById("id_postal_code");
+    const latitudeInput = document.getElementById("id_latitude");
+    const longitudeInput = document.getElementById("id_longitude");
+    const mapPreview = document.getElementById("map-preview");
+    const suggestionsList = document.getElementById("location-suggestions");
+
+    let map = null;
+    let marker = null;
+
+    // Fonction pour initialiser la carte
+    function initMap(lat, lng) {
+      if (!map) {
+        mapPreview.style.display = "block";
+        map = L.map("map-preview").setView([lat, lng], 13);
+
+        L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+          attribution:
+            '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+        }).addTo(map);
+
+        marker = L.marker([lat, lng], { draggable: true }).addTo(map);
+
+        // Mettre à jour les coordonnées quand le marqueur est déplacé
+        marker.on("dragend", function (e) {
+          const position = marker.getLatLng();
+          latitudeInput.value = position.lat;
+          longitudeInput.value = position.lng;
+
+          // Essayer de faire du géocodage inversé
+          reverseGeocode(position.lat, position.lng);
+        });
+      } else {
+        map.setView([lat, lng], 13);
+        marker.setLatLng([lat, lng]);
+      }
+    }
+
+    // Fonction pour géocoder une adresse et afficher les suggestions
+    function geocodeAddress(address) {
+      if (address.length < 2) return;
+
+      const nominatimUrl = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(
+        address
+      )}&limit=5`;
+
+      // Afficher un indicateur de chargement
+      suggestionsList.innerHTML =
+        '<div class="p-2">Recherche en cours...</div>';
+      suggestionsList.style.display = "block";
+
+      fetch(nominatimUrl)
+        .then((response) => response.json())
+        .then((data) => {
+          suggestionsList.innerHTML = "";
+
+          if (data.length > 0) {
+            data.forEach((place) => {
+              const item = document.createElement("div");
+              item.className = "location-suggestion";
+              item.textContent = place.display_name;
+
+              item.addEventListener("click", function () {
+                // Remplir les champs du formulaire
+                locationInput.value =
+                  place.address?.city ||
+                  place.address?.town ||
+                  place.address?.village ||
+                  place.name;
+                countryInput.value = place.address?.country || "";
+                postalCodeInput.value = place.address?.postcode || "";
+                latitudeInput.value = place.lat;
+                longitudeInput.value = place.lon;
+
+                // Afficher sur la carte
+                initMap(parseFloat(place.lat), parseFloat(place.lon));
+
+                // Masquer les suggestions
+                suggestionsList.style.display = "none";
+
+                // Log pour le debug
+                console.log("Location selected:", {
+                  city: locationInput.value,
+                  country: countryInput.value,
+                  postal_code: postalCodeInput.value,
+                  lat: latitudeInput.value,
+                  lng: longitudeInput.value,
                 });
-            } else {
-                map.setView([lat, lng], 13);
-                marker.setLatLng([lat, lng]);
-            }
-        }
-        
-        // Fonction pour géocoder une adresse et afficher les suggestions
-        function geocodeAddress(address) {
-            if (address.length < 2) return;
-            
-            const nominatimUrl = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}&limit=5`;
-            
-            // Afficher un indicateur de chargement
-            suggestionsList.innerHTML = '<div class="p-2">Recherche en cours...</div>';
-            suggestionsList.style.display = 'block';
-            
-            fetch(nominatimUrl)
-                .then(response => response.json())
-                .then(data => {
-                    suggestionsList.innerHTML = '';
-                    
-                    if (data.length > 0) {
-                        data.forEach(place => {
-                            const item = document.createElement('div');
-                            item.className = 'location-suggestion';
-                            item.textContent = place.display_name;
-                            
-                            item.addEventListener('click', function() {
-                                // Remplir les champs du formulaire
-                                locationInput.value = place.address?.city || place.address?.town || place.address?.village || place.name;
-                                countryInput.value = place.address?.country || '';
-                                postalCodeInput.value = place.address?.postcode || '';
-                                latitudeInput.value = place.lat;
-                                longitudeInput.value = place.lon;
-                                
-                                // Afficher sur la carte
-                                initMap(parseFloat(place.lat), parseFloat(place.lon));
-                                
-                                // Masquer les suggestions
-                                suggestionsList.style.display = 'none';
-                                
-                                // Log pour le debug
-                                console.log('Location selected:', {
-                                    city: locationInput.value,
-                                    country: countryInput.value,
-                                    postal_code: postalCodeInput.value,
-                                    lat: latitudeInput.value,
-                                    lng: longitudeInput.value
-                                });
-                            });
-                            
-                            suggestionsList.appendChild(item);
-                        });
-                    } else {
-                        suggestionsList.innerHTML = '<div class="p-2">Aucun résultat trouvé</div>';
-                    }
-                })
-                .catch(error => {
-                    console.error('Erreur de géocodage:', error);
-                    suggestionsList.innerHTML = '<div class="p-2">Erreur lors de la recherche</div>';
-                });
-        }
-        
-        // Fonction de géocodage inverse
-        function reverseGeocode(lat, lng) {
-            const nominatimUrl = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`;
-            
-            fetch(nominatimUrl)
-                .then(response => response.json())
-                .then(data => {
-                    if (data && data.address) {
-                        // Mettre à jour les champs du formulaire
-                        locationInput.value = data.address.city || data.address.town || data.address.village || '';
-                        countryInput.value = data.address.country || '';
-                        postalCodeInput.value = data.address.postcode || '';
-                        
-                        // Log pour le debug
-                        console.log('Reverse geocode:', {
-                            city: locationInput.value,
-                            country: countryInput.value,
-                            postal_code: postalCodeInput.value
-                        });
-                    }
-                })
-                .catch(error => console.error('Erreur de géocodage inversé:', error));
-        }
-        
-        // Gestionnaire d'événement pour l'autocomplétion
-        let timeoutId = null;
-        locationInput.addEventListener('input', function() {
-            // Attendre que l'utilisateur arrête de taper
-            clearTimeout(timeoutId);
-            timeoutId = setTimeout(() => {
-                const address = this.value.trim();
-                if (address.length > 2) {
-                    geocodeAddress(address);
-                } else {
-                    suggestionsList.style.display = 'none';
-                }
-            }, 300);
+              });
+
+              suggestionsList.appendChild(item);
+            });
+          } else {
+            suggestionsList.innerHTML =
+              '<div class="p-2">Aucun résultat trouvé</div>';
+          }
+        })
+        .catch((error) => {
+          console.error("Erreur de géocodage:", error);
+          suggestionsList.innerHTML =
+            '<div class="p-2">Erreur lors de la recherche</div>';
         });
-        
-        // Gestionnaire d'événement pour masquer les suggestions lors d'un clic hors de la zone
-        document.addEventListener('click', function(e) {
-            if (!suggestionsList.contains(e.target) && e.target !== locationInput) {
-                suggestionsList.style.display = 'none';
-            }
-        });
-        
-        // Focus sur le champ de localisation affiche les suggestions si du texte est déjà présent
-        locationInput.addEventListener('focus', function() {
-            const address = this.value.trim();
-            if (address.length > 2) {
-                geocodeAddress(address);
-            }
-        });
-        
-        // Si des coordonnées existent déjà, initialiser la carte
-        if (latitudeInput.value && longitudeInput.value) {
-            initMap(parseFloat(latitudeInput.value), parseFloat(longitudeInput.value));
+    }
+
+    // Fonction de géocodage inverse
+    function reverseGeocode(lat, lng) {
+      const nominatimUrl = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`;
+
+      fetch(nominatimUrl)
+        .then((response) => response.json())
+        .then((data) => {
+          if (data && data.address) {
+            // Mettre à jour les champs du formulaire
+            locationInput.value =
+              data.address.city ||
+              data.address.town ||
+              data.address.village ||
+              "";
+            countryInput.value = data.address.country || "";
+            postalCodeInput.value = data.address.postcode || "";
+
+            // Log pour le debug
+            console.log("Reverse geocode:", {
+              city: locationInput.value,
+              country: countryInput.value,
+              postal_code: postalCodeInput.value,
+            });
+          }
+        })
+        .catch((error) => console.error("Erreur de géocodage inversé:", error));
+    }
+
+    // Gestionnaire d'événement pour l'autocomplétion
+    let timeoutId = null;
+    locationInput.addEventListener("input", function () {
+      // Attendre que l'utilisateur arrête de taper
+      clearTimeout(timeoutId);
+      timeoutId = setTimeout(() => {
+        const address = this.value.trim();
+        if (address.length > 2) {
+          geocodeAddress(address);
+        } else {
+          suggestionsList.style.display = "none";
         }
+      }, 300);
     });
+
+    // Gestionnaire d'événement pour masquer les suggestions lors d'un clic hors de la zone
+    document.addEventListener("click", function (e) {
+      if (!suggestionsList.contains(e.target) && e.target !== locationInput) {
+        suggestionsList.style.display = "none";
+      }
+    });
+
+    // Focus sur le champ de localisation affiche les suggestions si du texte est déjà présent
+    locationInput.addEventListener("focus", function () {
+      const address = this.value.trim();
+      if (address.length > 2) {
+        geocodeAddress(address);
+      }
+    });
+
+    // Si des coordonnées existent déjà, initialiser la carte
+    if (latitudeInput.value && longitudeInput.value) {
+      initMap(
+        parseFloat(latitudeInput.value),
+        parseFloat(longitudeInput.value)
+      );
+    }
+  });
 </script>
-{% endblock %} 
+{% endblock %}

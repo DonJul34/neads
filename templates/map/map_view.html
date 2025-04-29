@@ -340,33 +340,6 @@
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://unpkg.com/leaflet.markercluster@1.4.1/dist/leaflet.markercluster.js"></script>
 
-{% if user.role == 'client' %}
-<!-- Script pour les utilisateurs clients (affichage du nom limité) -->
-<script>
-    // Surcharge de la fonction addCreatorMarker du module MapManager
-    document.addEventListener('DOMContentLoaded', function() {
-        // On attend que MapManager soit initialisé
-        setTimeout(function() {
-            const originalAddCreatorMarker = MapManager.addCreatorMarker;
-            
-            // Redéfinir la fonction pour formater le nom des créateurs
-            MapManager.addCreatorMarker = function(point, distance) {
-                // Formatter le nom (prénom + première lettre du nom de famille)
-                const nameParts = point.name.split(' ');
-                if (nameParts.length > 1) {
-                    const firstName = nameParts[0];
-                    const lastInitial = nameParts[nameParts.length - 1].charAt(0) + '.';
-                    point.name = firstName + ' ' + lastInitial;
-                }
-                
-                // Appeler la fonction originale avec le nom formaté
-                originalAddCreatorMarker(point, distance);
-            };
-        }, 500);
-    });
-</script>
-{% endif %}
-
 <!-- Scripts personnalisés -->
 <script src="/static/js/map/user-location.js"></script>
 <script src="/static/js/map/map-manager.js"></script>

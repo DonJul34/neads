@@ -91,6 +91,12 @@ def gallery_view(request):
             return redirect('creator_add')
 
     creators = Creator.objects.all().order_by('-average_rating', 'full_name')
+    
+    # Nettoyer les paramètres de l'URL pour éviter l'accumulation des paramètres 'page'
+    current_params = request.GET.copy()
+    if 'page' in current_params:
+        current_params.pop('page')
+        
     form = CreatorSearchForm(request.GET)
     
     # Appliquer les filtres si le formulaire est valide
@@ -126,9 +132,9 @@ def gallery_view(request):
             
         # Filtres géographiques
         if data.get('country'):
-            creators = creators.filter(location__country__icontains=data['country'])
+            creators = creators.filter(location__full_address__icontains=data['country'])
         if data.get('city'):
-            creators = creators.filter(location__city__icontains=data['city'])
+            creators = creators.filter(location__full_address__icontains=data['city'])
             
         # Filtre par note minimale
         if data.get('min_rating'):
@@ -153,6 +159,7 @@ def gallery_view(request):
         'form': form,
         'domains': domains,
         'total_creators': paginator.count,
+        'clean_params': current_params.urlencode(),  # Paramètres sans 'page'
     }
     
     # Retourner JSON pour les requêtes AJAX
@@ -318,157 +325,34 @@ def creator_detail(request, creator_id):
 
 @login_required
 def creator_edit(request, creator_id):
-    """
-    Vue pour éditer les informations d'un créateur.
-    """
+    """Vue pour modifier un créateur existant."""
     creator = get_object_or_404(Creator, id=creator_id)
-    logger.info(f"Début de l'édition du créateur {creator_id} par {request.user.email}")
     
-    # Vérifier les permissions (propriétaire, staff ou admin/consultant)
-    if not (request.user == creator.user or request.user.is_staff or request.user.role in ['admin', 'consultant']):
-        logger.warning(f"Tentative d'accès non autorisée au créateur {creator_id} par {request.user.email}")
-        return HttpResponseForbidden("Vous n'avez pas les droits pour modifier ce profil.")
-    
-    # Si le créateur a déjà une localisation, l'utiliser, sinon en créer une nouvelle
-    location = creator.location
-    if location is None:
-        location = Location()
-        logger.info(f"Création d'une nouvelle localisation pour le créateur {creator_id}")
+    # Vérifier que l'utilisateur a le droit de modifier ce créateur
+    if not request.user.is_superuser and not request.user.has_role('consultant') and not (request.user.is_authenticated and request.user == creator.user):
+        messages.error(request, "Vous n'avez pas l'autorisation de modifier ce profil.")
+        return redirect('creator_detail', creator_id=creator.id)
     
     if request.method == 'POST':
-        logger.info(f"Reception d'une requête POST pour l'édition du créateur {creator_id}")
-        form = CreatorForm(request.POST, instance=creator)
-        location_form = LocationForm(request.POST, instance=location)
+        creator_form = CreatorForm(request.POST, instance=creator)
+        location_form = LocationForm(request.POST, instance=creator.location)
         
-        # Vérifier si les deux formulaires sont valides
-        if form.is_valid() and location_form.is_valid():
-            try:
-                logger.info(f"Formulaires valides pour le créateur {creator_id}")
-                
-                # Récupérer les anciennes valeurs pour comparaison
-                old_values = {
-                    'creator': {field: getattr(creator, field) for field in form.changed_data},
-                    'location': {field: getattr(location, field) for field in location_form.changed_data}
-                }
-                logger.debug(f"Anciennes valeurs du créateur {creator_id}: {old_values}")
-                
-                # Sauvegarder la localisation d'abord
-                location = location_form.save()
-                logger.info(f"Localisation sauvegardée pour le créateur {creator_id}")
-                
-                # Vérifier si les coordonnées géographiques sont manquantes mais que la ville est renseignée
-                if (not location.latitude or not location.longitude) and location.city:
-                    logger.info(f"Tentative de géocodage pour la ville: {location.city}")
-                    
-                    # Cette logique serait normalement gérée côté client par JavaScript,
-                    # mais on ajoute une vérification de secours côté serveur
-                    try:
-                        import requests
-                        response = requests.get(
-                            'https://nominatim.openstreetmap.org/search',
-                            params={
-                                'q': location.city,
-                                'format': 'json',
-                                'limit': 1
-                            },
-                            headers={'User-Agent': 'NEADS/1.0'}
-                        )
-                        data = response.json()
-                        
-                        if data and len(data) > 0:
-                            location.latitude = float(data[0]['lat'])
-                            location.longitude = float(data[0]['lon'])
-                            
-                            # Si on a un pays dans la réponse, le récupérer
-                            if 'address' in data[0] and 'country' in data[0]['address']:
-                                location.country = data[0]['address']['country']
-                            
-                            # Si on a un code postal, le récupérer
-                            if 'address' in data[0] and 'postcode' in data[0]['address']:
-                                location.postal_code = data[0]['address']['postcode']
-                                
-                            location.save()
-                            logger.info(f"Géocodage réussi pour {location.city}: {location.latitude}, {location.longitude}")
-                    except Exception as e:
-                        logger.warning(f"Échec du géocodage pour {location.city}: {str(e)}")
-                
-                # Puis sauvegarder le créateur avec la référence à la localisation
-                creator = form.save(commit=False)
-                creator.location = location
-                creator.save()
-                logger.info(f"Créateur {creator_id} sauvegardé avec succès")
-                
-                # Enregistrer les relations ManyToMany (domaines)
-                form.save_m2m()
-                logger.info(f"Relations ManyToMany sauvegardées pour le créateur {creator_id}")
-                
-                # Mettre à jour le timestamp de dernière activité
-                creator.last_activity = timezone.now()
-                creator.save()
-                
-                # Préparer le récapitulatif des modifications
-                changes = []
-                
-                # Vérifier les changements dans les informations du créateur
-                for field in form.changed_data:
-                    if field != 'domains':  # On gère les domaines séparément
-                        old_value = old_values['creator'].get(field)
-                        new_value = getattr(creator, field)
-                        if old_value != new_value:
-                            changes.append(f"{field}: {old_value} → {new_value}")
-                
-                # Vérifier les changements dans la localisation
-                for field in location_form.changed_data:
-                    old_value = old_values['location'].get(field)
-                    new_value = getattr(location, field)
-                    if old_value != new_value:
-                        changes.append(f"location.{field}: {old_value} → {new_value}")
-                
-                # Vérifier les changements dans les domaines
-                if 'domains' in form.changed_data:
-                    old_domains = set(creator.domains.all().values_list('id', flat=True))
-                    new_domains = set(form.cleaned_data['domains'].values_list('id', flat=True))
-                    added = new_domains - old_domains
-                    removed = old_domains - new_domains
-                    if added:
-                        added_names = Domain.objects.filter(id__in=added).values_list('name', flat=True)
-                        changes.append(f"domaines ajoutés: {', '.join(added_names)}")
-                    if removed:
-                        removed_names = Domain.objects.filter(id__in=removed).values_list('name', flat=True)
-                        changes.append(f"domaines supprimés: {', '.join(removed_names)}")
-                
-                # Journaliser les modifications
-                logger.info(
-                    f"Modification du profil créateur {creator_id} par {request.user.email}:\n"
-                    f"Changements effectués:\n" + "\n".join(f"- {change}" for change in changes)
-                )
-                
-                # Message de succès avec récapitulatif
-                if changes:
-                    messages.success(request, "Le profil a été mis à jour avec succès. Modifications effectuées:\n" + "\n".join(f"- {change}" for change in changes))
-                else:
-                    messages.info(request, "Aucune modification n'a été effectuée.")
-                
-                return redirect('creator_detail', creator_id=creator.id)
-            except Exception as e:
-                logger.error(f"Erreur lors de la sauvegarde du créateur {creator_id}: {str(e)}", exc_info=True)
-                messages.error(request, f"Une erreur est survenue lors de la sauvegarde: {str(e)}")
-        else:
-            logger.warning(f"Formulaires invalides pour le créateur {creator_id}")
-            logger.warning(f"Erreurs du formulaire créateur: {form.errors}")
-            logger.warning(f"Erreurs du formulaire localisation: {location_form.errors}")
-            messages.error(request, "Veuillez corriger les erreurs dans le formulaire.")
+        if creator_form.is_valid() and location_form.is_valid():
+            location = location_form.save()
+            creator = creator_form.save()
+            
+            messages.success(request, "Le profil de créateur a été mis à jour avec succès!")
+            return redirect('creator_detail', creator_id=creator.id)
     else:
-        form = CreatorForm(instance=creator)
-        location_form = LocationForm(instance=location)
+        creator_form = CreatorForm(instance=creator)
+        location_form = LocationForm(instance=creator.location)
     
-    context = {
-        'form': form,
-        'location_form': location_form,
+    return render(request, 'creators/edit_creator.html', {
         'creator': creator,
-    }
-    
-    return render(request, 'creators/creator_edit.html', context)
+        'form': creator_form,
+        'location_form': location_form,
+        'google_api_key': settings.GOOGLE_PLACES_API_KEY,
+    })
 
 
 @login_required
@@ -735,9 +619,9 @@ def search_view(request):
             
         # Filtres géographiques
         if data.get('country'):
-            creators = creators.filter(location__country__icontains=data['country'])
+            creators = creators.filter(location__full_address__icontains=data['country'])
         if data.get('city'):
-            creators = creators.filter(location__city__icontains=data['city'])
+            creators = creators.filter(location__full_address__icontains=data['city'])
             
         # Filtre par note minimale
         if data.get('min_rating'):
@@ -975,7 +859,7 @@ def api_map_search(request):
     
     city = request.GET.get('city')
     if city:
-        creators = creators.filter(location__city__icontains=city)
+        creators = creators.filter(location__full_address__icontains=city)
     
     domain = request.GET.get('domain')
     if domain and domain.isdigit():
@@ -1130,7 +1014,7 @@ def delete_creator(request, creator_id):
             )
             
             # Rediriger vers la liste des créateurs
-            return redirect('creators_list')
+            return redirect('creator_list')
         
         # Si ce n'est pas une requête POST, rediriger vers la page de détail
         return redirect('creator_detail', creator_id=creator_id)
@@ -1238,129 +1122,39 @@ def creator_add(request):
     """
     Vue pour ajouter un nouveau créateur.
     """
-    logger.info(f"Vue creator_add: Accès par {request.user.email} (role: {request.user.role})")
-    
-    # Vérifier si l'utilisateur a déjà un profil créateur
-    if request.user.has_role('creator') and hasattr(request.user, 'creator_profile') and request.user.creator_profile:
-        logger.info(f"Vue creator_add: L'utilisateur a déjà un profil créateur, redirection vers son profil")
-        return redirect('creator_detail', creator_id=request.user.creator_profile.id)
-    
     if request.method == 'POST':
-        logger.info(f"Vue creator_add: Réception d'un formulaire POST")
-        form = CreatorForm(request.POST)
+        creator_form = CreatorForm(request.POST)
         location_form = LocationForm(request.POST)
         
-        if form.is_valid() and location_form.is_valid():
-            logger.info(f"Vue creator_add: Formulaires valides")
-            
-            # Vérifier que les coordonnées de localisation sont présentes
-            latitude = location_form.cleaned_data.get('latitude')
-            longitude = location_form.cleaned_data.get('longitude')
-            country = location_form.cleaned_data.get('country')
-            city = location_form.cleaned_data.get('city')
-            
-            # Tenter de géocoder si les coordonnées sont manquantes mais que la ville est présente
-            missing_geo_data = not (latitude and longitude and country)
-            if missing_geo_data and city:
-                logger.info(f"Vue creator_add: Tentative de géocodage côté serveur pour {city}")
-                try:
-                    import requests
-                    response = requests.get(
-                        'https://nominatim.openstreetmap.org/search',
-                        params={
-                            'q': city,
-                            'format': 'json',
-                            'limit': 1
-                        },
-                        headers={'User-Agent': 'NEADS/1.0'}
-                    )
-                    data = response.json()
-                    
-                    if data and len(data) > 0:
-                        latitude = float(data[0]['lat'])
-                        longitude = float(data[0]['lon'])
-                        
-                        # Mettre à jour le formulaire avant de sauvegarder
-                        location_form.cleaned_data['latitude'] = latitude
-                        location_form.cleaned_data['longitude'] = longitude
-                        
-                        # Si on a un pays dans la réponse, le récupérer
-                        if 'address' in data[0] and 'country' in data[0]['address']:
-                            country = data[0]['address']['country']
-                            location_form.cleaned_data['country'] = country
-                        
-                        # Si on a un code postal, le récupérer
-                        if 'address' in data[0] and 'postcode' in data[0]['address']:
-                            postal_code = data[0]['address']['postcode']
-                            location_form.cleaned_data['postal_code'] = postal_code
-                            
-                        missing_geo_data = not (latitude and longitude and country)
-                        logger.info(f"Vue creator_add: Géocodage réussi pour {city}: lat={latitude}, lon={longitude}, pays={country}")
-                except Exception as e:
-                    logger.warning(f"Vue creator_add: Échec du géocodage pour {city}: {str(e)}")
-            
-            # Vérifier à nouveau si on a toutes les données nécessaires
-            if missing_geo_data:
-                logger.warning("Vue creator_add: Données de localisation incomplètes après tentative de géocodage")
-                messages.error(request, "Veuillez sélectionner une ville valide dans la liste des suggestions pour que la localisation soit correctement enregistrée.")
-                return render(request, 'creators/creator_add.html', {
-                    'form': form,
-                    'location_form': location_form,
-                    'is_new': True,
-                })
-            
-            # Sauvegarder la localisation d'abord
+        if creator_form.is_valid() and location_form.is_valid():
+            # Créer un objet Location
             location = location_form.save()
-            logger.info(f"Vue creator_add: Localisation sauvegardée: {location.city}, {location.country}")
             
-            # Puis sauvegarder le créateur avec la référence à la localisation
-            creator = form.save(commit=False)
+            # Créer un objet Creator avec la relation vers Location
+            creator = creator_form.save(commit=False)
             creator.location = location
             
-            # Si c'est un créateur qui crée son profil, associer son compte utilisateur
-            if request.user.has_role('creator'):
-                logger.info(f"Vue creator_add: Association du profil au compte utilisateur créateur")
+            # Si l'utilisateur est authentifié, associer le créateur à l'utilisateur
+            if request.user.is_authenticated:
                 creator.user = request.user
             
             creator.save()
             
             # Enregistrer les relations ManyToMany
-            form.save_m2m()
-            
-            logger.info(f"Vue creator_add: Profil créateur créé avec succès (ID: {creator.id})")
-            messages.success(request, f"Le profil a été créé avec succès.")
+            creator_form.save_m2m()
             
             # Rediriger vers la page de détail du créateur
+            messages.success(request, "Votre profil de créateur a été créé avec succès!")
             return redirect('creator_detail', creator_id=creator.id)
-        else:
-            logger.warning(f"Vue creator_add: Formulaires invalides")
-            logger.warning(f"Erreurs form: {form.errors}")
-            logger.warning(f"Erreurs location_form: {location_form.errors}")
     else:
-        # Initialiser les formulaires avec des données par défaut pour le créateur
-        initial_data = {}
-        if request.user.has_role('creator'):
-            initial_data = {
-                'first_name': request.user.first_name,
-                'last_name': request.user.last_name,
-                'email': request.user.email,
-                'full_name': f"{request.user.first_name} {request.user.last_name}".strip(),
-                'age': 18,  # Âge par défaut
-                'gender': 'M',  # Genre par défaut
-            }
-            logger.info(f"Vue creator_add: Initialisation du formulaire avec données utilisateur: {initial_data}")
-        
-        form = CreatorForm(initial=initial_data)
+        creator_form = CreatorForm()
         location_form = LocationForm()
     
-    context = {
-        'form': form,
+    return render(request, 'creators/create_creator.html', {
+        'form': creator_form,
         'location_form': location_form,
-        'is_new': True,
-    }
-    
-    # Utiliser un template spécifique pour la création qui n'utilise pas creator.id
-    return render(request, 'creators/creator_add.html', context)
+        'google_api_key': settings.GOOGLE_PLACES_API_KEY,
+    })
 
 @login_required
 def favorites_view(request):

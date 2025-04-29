@@ -1,0 +1,237 @@
+{% extends 'base.html' %} {% block title %}Gestion NEADS - Tableau de bord{%endblock %} {% block content %}
+<div class="row">
+  <div class="col-12 mb-4">
+    <div class="d-flex justify-content-between align-items-center">
+      <h1 class="h2">Tableau de bord de gestion</h1>
+      <div>
+        {% if user.role == 'admin' %}
+        <a href="{% url 'admin_dashboard' %}" class="btn btn-sm btn-primary">
+          <i class="fas fa-lock me-1"></i> Accès Administration
+        </a>
+        {% endif %}
+      </div>
+    </div>
+    <p class="text-muted">
+      Bienvenue dans votre espace de gestion NEADS{% if user.first_name %} , {{
+      user.first_name }}{% endif %}.
+    </p>
+  </div>
+</div>
+
+<!-- Statistiques -->
+<div class="row mb-4">
+  <div class="col-md-4 mb-3">
+    <div class="card h-100">
+      <div class="card-body">
+        <h5 class="card-title">
+          <i class="fas fa-users me-2 text-primary"></i>Utilisateurs
+        </h5>
+        <div class="mt-3">
+          <p class="mb-2">
+            <span class="fw-bold me-2">{{ user_stats.total }}</span>
+            <span class="text-muted">Utilisateurs au total</span>
+          </p>
+          <p class="mb-2">
+            <span class="fw-bold me-2">{{ user_stats.clients }}</span>
+            <span class="text-muted">Clients</span>
+          </p>
+          <p class="mb-0">
+            <span class="fw-bold me-2">{{ creator_stats.total }}</span>
+            <span class="text-muted">Créateurs</span>
+          </p>
+        </div>
+      </div>
+      <div class="card-footer bg-transparent">
+        <a
+          href="{% url 'client_list' %}"
+          class="btn btn-sm btn-outline-primary"
+        >
+          Gérer les clients
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-4 mb-3">
+    <div class="card h-100">
+      <div class="card-body">
+        <h5 class="card-title">
+          <i class="fas fa-camera me-2 text-success"></i>Créateurs
+        </h5>
+        <div class="mt-3">
+          <p class="mb-2">
+            <span class="fw-bold me-2">{{ creator_stats.total }}</span>
+            <span class="text-muted">Créateurs au total</span>
+          </p>
+          <p class="mb-2">
+            <span class="fw-bold me-2">{{ creator_stats.verified }}</span>
+            <span class="text-muted">Vérifiés par NEADS</span>
+          </p>
+          <p class="mb-0">
+            <span class="fw-bold me-2">{{ creator_stats.with_media }}</span>
+            <span class="text-muted">Avec du contenu média</span>
+          </p>
+        </div>
+      </div>
+      <div class="card-footer bg-transparent">
+        <a
+          href="{% url 'creator_list' %}"
+          class="btn btn-sm btn-outline-success"
+        >
+          Gérer les créateurs
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-4 mb-3">
+    <div class="card h-100">
+      <div class="card-body">
+        <h5 class="card-title">
+          <i class="fas fa-tools me-2 text-warning"></i>Actions rapides
+        </h5>
+        <div class="list-group list-group-flush mt-3">
+          <a
+            href="{% url 'creator_list' %}"
+            class="list-group-item list-group-item-action"
+          >
+            <i class="fas fa-user-plus me-2 text-success"></i>Ajouter un
+            créateur
+          </a>
+          <a
+            href="{% url 'client_list' %}"
+            class="list-group-item list-group-item-action"
+          >
+            <i class="fas fa-user-tie me-2 text-primary"></i>Ajouter un client
+          </a>
+          <a
+            href="{% url 'map_view' %}"
+            class="list-group-item list-group-item-action"
+          >
+            <i class="fas fa-map-marked-alt me-2 text-danger"></i>Voir la carte
+          </a>
+          <a
+            href="{% url 'gallery_view' %}"
+            class="list-group-item list-group-item-action"
+          >
+            <i class="fas fa-images me-2 text-info"></i>Voir la galerie
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Récents Créateurs -->
+<div class="row mb-4">
+  <div class="col-12">
+    <div class="card">
+      <div
+        class="card-header bg-white d-flex justify-content-between align-items-center"
+      >
+        <h5 class="mb-0">Derniers créateurs ajoutés</h5>
+        <a
+          href="{% url 'creator_list' %}"
+          class="btn btn-sm btn-outline-primary"
+          >Voir tous</a
+        >
+      </div>
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table table-hover">
+            <thead class="table-light">
+              <tr>
+                <th>Nom</th>
+                <th>Email</th>
+                <th>Date d'ajout</th>
+                <th>Statut</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for creator in recent_creators %}
+              <tr>
+                <td>{{ creator.full_name }}</td>
+                <td>{{ creator.email }}</td>
+                <td>{{ creator.created_at|date:"d/m/Y" }}</td>
+                <td>
+                  {% if creator.verified_by_neads %}
+                  <span class="badge bg-success">Vérifié</span>
+                  {% else %}
+                  <span class="badge bg-warning text-dark">En attente</span>
+                  {% endif %}
+                </td>
+                <td>
+                  <a
+                    href="{% url 'creator_detail' creator_id=creator.id %}"
+                    class="btn btn-sm btn-outline-info"
+                  >
+                    <i class="fas fa-eye"></i>
+                  </a>
+                </td>
+              </tr>
+              {% empty %}
+              <tr>
+                <td colspan="5" class="text-center py-3">
+                  Aucun créateur trouvé
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Clients récents -->
+<div class="row">
+  <div class="col-12">
+    <div class="card">
+      <div
+        class="card-header bg-white d-flex justify-content-between align-items-center"
+      >
+        <h5 class="mb-0">Derniers clients inscrits</h5>
+        <a href="{% url 'client_list' %}" class="btn btn-sm btn-outline-primary"
+          >Voir tous</a
+        >
+      </div>
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table table-hover">
+            <thead class="table-light">
+              <tr>
+                <th>Nom</th>
+                <th>Email</th>
+                <th>Date d'inscription</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for user in recent_users %}
+              <tr>
+                <td>{{ user.get_full_name }}</td>
+                <td>{{ user.email }}</td>
+                <td>{{ user.date_joined|date:"d/m/Y" }}</td>
+                <td>
+                  <a href="#" class="btn btn-sm btn-outline-info">
+                    <i class="fas fa-eye"></i>
+                  </a>
+                </td>
+              </tr>
+              {% empty %}
+              <tr>
+                <td colspan="4" class="text-center py-3">
+                  Aucun client trouvé
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

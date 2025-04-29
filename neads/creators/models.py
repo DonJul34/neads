@@ -39,6 +39,14 @@ def image_upload_path(instance, filename):
     return os.path.join('creators', str(creator_id), 'images', filename)
 
 
+def featured_image_upload_path(instance, filename):
+    # Upload path pour l'image mise en avant
+    creator_id = instance.id
+    ext = filename.split('.')[-1]
+    filename = f"featured_{timezone.now().timestamp()}_{creator_id}.{ext}"
+    return os.path.join('creators', str(creator_id), 'featured', filename)
+
+
 def video_upload_path(instance, filename):
     # Upload path avec timestamp pour éviter les collisions de noms
     creator_id = instance.creator.id
@@ -63,14 +71,35 @@ class ContentType(models.Model):
 
 
 class Location(models.Model):
-    city = models.CharField(max_length=100)
-    country = models.CharField(max_length=100)
-    postal_code = models.CharField(max_length=20, blank=True, null=True)
+    full_address = models.CharField(max_length=255, verbose_name="Adresse complète", blank=True, null=True)
     latitude = models.FloatField(blank=True, null=True)
     longitude = models.FloatField(blank=True, null=True)
     
     def __str__(self):
-        return f"{self.city}, {self.country}"
+        if self.full_address:
+            return self.full_address
+        elif self.latitude is not None and self.longitude is not None:
+            return f"Coordonnées ({self.latitude}, {self.longitude})"
+        else:
+            return "Localisation inconnue"
+
+
+class LocationNew(models.Model):
+    """
+    Modèle temporaire pour la migration des données.
+    Sera utilisé pour remplacer le modèle Location d'origine.
+    """
+    full_address = models.CharField(max_length=255, verbose_name="Adresse complète", blank=True, null=True)
+    latitude = models.FloatField(blank=True, null=True)
+    longitude = models.FloatField(blank=True, null=True)
+    
+    def __str__(self):
+        if self.full_address:
+            return self.full_address
+        elif self.latitude is not None and self.longitude is not None:
+            return f"Coordonnées ({self.latitude}, {self.longitude})"
+        else:
+            return "Localisation inconnue"
 
 
 class Creator(models.Model):
@@ -97,6 +126,9 @@ class Creator(models.Model):
     full_name = models.CharField(max_length=100, blank=True)  # Auto-généré
     age = models.PositiveIntegerField(validators=[MinValueValidator(13), MaxValueValidator(100)])
     gender = models.CharField(max_length=1, choices=GENDER_CHOICES)
+    
+    # Image mise en avant (image principale du profil)
+    featured_image = models.ImageField(upload_to=featured_image_upload_path, blank=True, null=True, verbose_name="Image mise en avant")
     
     # Réseaux sociaux
     youtube_link = models.URLField(max_length=255, blank=True, null=True, verbose_name="Chaîne YouTube")

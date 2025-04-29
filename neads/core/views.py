@@ -14,6 +14,7 @@ from django.db.models import Q
 from .models import User, UserProfile
 from .forms import LoginForm, TemporaryLoginForm, UserProfileForm, SetPasswordForm
 from .decorators import role_required
+from neads.creators.models import Creator
 
 
 def home(request):
@@ -21,6 +22,85 @@ def home(request):
     Page d'accueil du site.
     """
     return render(request, 'core/home.html')
+
+
+@login_required
+@role_required(['admin', 'consultant'])
+def management_dashboard(request):
+    """
+    Tableau de bord de gestion pour les administrateurs et consultants.
+    Centralise l'accès aux différentes fonctionnalités de gestion.
+    """
+    # Statistiques de base
+    user_stats = {
+        'total': User.objects.count(),
+        'clients': User.objects.filter(role='client').count(),
+        'creators': Creator.objects.count(),
+    }
+    
+    # Statistiques spécifiques aux créateurs
+    creator_stats = {
+        'total': Creator.objects.count(),
+        'verified': Creator.objects.filter(verified_by_neads=True).count(),
+        'with_media': Creator.objects.filter(media__isnull=False).distinct().count(),
+    }
+    
+    # Récents créateurs
+    recent_creators = Creator.objects.all().order_by('-created_at')[:5]
+    
+    # Récents utilisateurs
+    recent_users = User.objects.filter(role='client').order_by('-date_joined')[:5]
+    
+    context = {
+        'user_stats': user_stats,
+        'creator_stats': creator_stats,
+        'recent_creators': recent_creators,
+        'recent_users': recent_users,
+        'user': request.user,
+    }
+    
+    return render(request, 'core/management_dashboard.html', context)
+
+
+@login_required
+@role_required(['admin', 'consultant'])
+def creator_list(request):
+    """
+    Vue pour la gestion des créateurs (pour consultants et admins).
+    """
+    # Récupérer tous les créateurs
+    creators = Creator.objects.all().order_by('-created_at')
+    
+    # Filtres
+    verified_filter = request.GET.get('verified')
+    if verified_filter == 'true':
+        creators = creators.filter(verified_by_neads=True)
+    elif verified_filter == 'false':
+        creators = creators.filter(verified_by_neads=False)
+    
+    # Recherche par nom/email
+    search_query = request.GET.get('query')
+    if search_query:
+        creators = creators.filter(
+            Q(first_name__icontains=search_query) | 
+            Q(last_name__icontains=search_query) | 
+            Q(email__icontains=search_query) |
+            Q(full_name__icontains=search_query)
+        )
+    
+    # Pagination
+    paginator = Paginator(creators, 15)  # 15 créateurs par page
+    page_number = request.GET.get('page', 1)
+    page_obj = paginator.get_page(page_number)
+    
+    context = {
+        'creators': page_obj,
+        'search_query': search_query,
+        'verified_filter': verified_filter,
+        'total_creators': paginator.count,
+    }
+    
+    return render(request, 'core/creator_list.html', context)
 
 
 def login_view(request):
