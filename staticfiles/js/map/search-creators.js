@@ -8,13 +8,14 @@ const SearchCreators = (function () {
     const userLocation = UserLocation;
 
     // Configuration
-    const API_URL = '/api/creators/map-search';
+    const API_URL = '/creators/api/creators/map-search/'; // URL path to match Django URL config
     const DEFAULT_RADIUS = 50; // km
 
     // État
     let isLoading = false;
     let currentFilters = {};
     let creators = [];
+    let lastQueryString = '';
 
     // Éléments DOM
     let searchForm;
@@ -27,6 +28,8 @@ const SearchCreators = (function () {
      * Initialise le module
      */
     function init() {
+        console.log('🔄 SearchCreators.init called');
+
         // Récupérer les éléments DOM
         searchForm = document.getElementById('map-search-form');
         radiusSelector = document.getElementById('radius-selector');
@@ -36,7 +39,7 @@ const SearchCreators = (function () {
 
         // Vérifier si les éléments nécessaires existent
         if (!searchForm || !mapManager) {
-            console.error('Éléments nécessaires non trouvés pour SearchCreators');
+            console.error('❌ Éléments nécessaires non trouvés pour SearchCreators');
             return;
         }
 
@@ -46,10 +49,13 @@ const SearchCreators = (function () {
         // Écouter les événements de la carte
         setupMapListeners();
 
-        // Charger les créateurs initiaux
-        loadCreators();
+        // Charger les créateurs initiaux immédiatement après l'initialisation
+        console.log('🔄 Loading initial creators');
+        setTimeout(() => {
+            loadCreators(true); // Force le chargement initial
+        }, 500); // Petit délai pour s'assurer que tout est initialisé
 
-        console.log('SearchCreators initialized');
+        console.log('✅ SearchCreators initialized');
     }
 
     /**
@@ -65,8 +71,10 @@ const SearchCreators = (function () {
         // Changement de rayon
         if (radiusSelector) {
             radiusSelector.addEventListener('change', function () {
-                // Mettre à jour le rayon sur la carte
-                mapManager.updateRadius(parseInt(radiusSelector.value));
+                // Remplacer updateRadius (qui n'existe pas) par la méthode correcte
+                const radius = parseInt(radiusSelector.value);
+                // Mise à jour du cercle de recherche
+                mapManager.updateSearchArea();
 
                 // Recharger les créateurs
                 loadCreators();
@@ -110,54 +118,73 @@ const SearchCreators = (function () {
 
     /**
      * Charge les créateurs depuis l'API
+     * @param {boolean} forceRefresh - Si true, force le rechargement des créateurs même si les filtres n'ont pas changé
      */
-    function loadCreators() {
+    function loadCreators(forceRefresh = false) {
         // Si déjà en chargement, ne rien faire
         if (isLoading) return;
 
-        // Récupérer la position actuelle
-        const userPos = userLocation.getCurrentLocation();
-        if (!userPos.lat || !userPos.lng) {
-            console.warn('Position utilisateur non disponible pour la recherche');
+        // Récupérer la position actuelle de l'utilisateur
+        let userCoords = userLocation.getSavedLocation();
+        if (!userCoords || !userCoords.latitude || !userCoords.longitude) {
+            console.warn('📍 Position utilisateur non disponible, utilisation de la position par défaut');
+            // Utiliser une position par défaut (Montpellier)
+            userCoords = { latitude: 43.6109, longitude: 3.8772 };
+        }
+
+        // Construire l'URL avec les filtres
+        const searchParams = new URLSearchParams(window.location.search);
+
+        // Ajouter la position et le rayon
+        searchParams.set('lat', userCoords.latitude);
+        searchParams.set('lng', userCoords.longitude);
+        searchParams.set('radius', document.getElementById('radius-selector')?.value || DEFAULT_RADIUS);
+
+        // Log domains param for debugging
+        const domainsParam = searchParams.get('domains');
+        if (domainsParam) {
+            console.log('🔍 Domain filter detected:', domainsParam);
+        }
+
+        // Vérifier si les filtres ont changé
+        const queryString = searchParams.toString();
+        if (queryString === lastQueryString && !forceRefresh) {
+            console.log('ℹ️ Filtres inchangés, pas de rechargement nécessaire');
             return;
         }
 
-        // Récupérer le rayon de recherche
-        const radius = radiusSelector ? parseInt(radiusSelector.value) : DEFAULT_RADIUS;
-
-        // Récupérer les filtres
-        currentFilters = getFilters();
-
-        // Indiquer le chargement
+        // Mettre à jour l'état
+        lastQueryString = queryString;
         isLoading = true;
+
+        // Afficher l'indicateur de chargement
         if (loadingIndicator) {
             loadingIndicator.style.display = 'block';
         }
 
-        // Construire l'URL avec les paramètres
-        const queryParams = new URLSearchParams();
-        queryParams.append('lat', userPos.lat);
-        queryParams.append('lng', userPos.lng);
-        queryParams.append('radius', radius);
+        console.log('🔄 Chargement des créateurs avec filtres:', queryString);
 
-        // Ajouter les filtres
-        for (const [key, value] of Object.entries(currentFilters)) {
-            if (value) {
-                queryParams.append(key, value);
-            }
-        }
+        // Appeler l'API
+        const url = `${API_URL}?${queryString}`;
+        console.log('🔄 Fetching data from:', url);
 
-        // Effectuer la requête API
-        fetch(`${API_URL}?${queryParams.toString()}`)
+        fetch(url)
             .then(response => {
                 if (!response.ok) {
-                    throw new Error('Erreur lors de la récupération des créateurs');
+                    console.error('❌ API Error:', response.status, response.statusText);
+                    throw new Error(`Erreur lors de la récupération des créateurs (${response.status})`);
                 }
                 return response.json();
             })
             .then(data => {
-                // Mettre à jour les données
+                console.log('✅ Données reçues:', data);
                 creators = data.creators || [];
+
+                if (creators.length === 0) {
+                    console.log('⚠️ Aucun créateur trouvé avec ces filtres');
+                } else {
+                    console.log(`✅ ${creators.length} créateurs trouvés`);
+                }
 
                 // Mettre à jour la carte
                 mapManager.renderCreators(creators);
@@ -167,14 +194,32 @@ const SearchCreators = (function () {
                     resultsCounter.textContent = creators.length;
                 }
 
-                console.log(`${creators.length} créateurs trouvés dans un rayon de ${radius}km`);
+                isLoading = false;
+
+                // Cacher l'indicateur de chargement
+                if (loadingIndicator) {
+                    loadingIndicator.style.display = 'none';
+                }
             })
             .catch(error => {
-                console.error('Erreur:', error);
-                showError('Une erreur est survenue lors de la recherche.');
-            })
-            .finally(() => {
+                console.error('❌ Erreur:', error);
+                // Afficher un message d'erreur
+                const creatorsListContent = document.getElementById('creators-list-content');
+                if (creatorsListContent) {
+                    creatorsListContent.innerHTML = `
+                        <div class="alert alert-danger">
+                            <h5><i class="fas fa-exclamation-triangle me-2"></i>Erreur</h5>
+                            <p>${error.message || 'Impossible de charger les créateurs'}</p>
+                            <button class="btn btn-sm btn-outline-danger mt-2" onclick="SearchCreators.reload(true)">
+                                <i class="fas fa-sync-alt me-1"></i>Réessayer
+                            </button>
+                        </div>
+                    `;
+                }
+
                 isLoading = false;
+
+                // Cacher l'indicateur de chargement
                 if (loadingIndicator) {
                     loadingIndicator.style.display = 'none';
                 }
@@ -194,22 +239,50 @@ const SearchCreators = (function () {
             filters.query = searchQuery.value.trim();
         }
 
-        // Récupérer le filtre de domaine
-        const domainFilter = document.getElementById('map-domain-filter');
-        if (domainFilter && domainFilter.value && domainFilter.value !== 'all') {
-            filters.domain = domainFilter.value;
+        // Récupérer les domaines sélectionnés
+        const domainCheckboxes = document.querySelectorAll('input[name="domains"]:checked');
+        if (domainCheckboxes && domainCheckboxes.length > 0) {
+            const domainIds = Array.from(domainCheckboxes).map(cb => cb.value);
+            filters.domains = domainIds.join(',');
         }
 
-        // Récupérer le filtre de plateforme
-        const platformFilter = document.getElementById('map-platform-filter');
-        if (platformFilter && platformFilter.value && platformFilter.value !== 'all') {
-            filters.platform = platformFilter.value;
+        // Récupérer le filtre de genre
+        const genderFilter = document.getElementById('map-gender-filter');
+        if (genderFilter && genderFilter.value) {
+            filters.gender = genderFilter.value;
         }
 
-        // Filtre de followers minimum
-        const minFollowersFilter = document.getElementById('map-min-followers');
-        if (minFollowersFilter && minFollowersFilter.value) {
-            filters.min_followers = minFollowersFilter.value;
+        // Récupérer le filtre de type de contenu
+        const contentTypeFilter = document.getElementById('map-content-type-filter');
+        if (contentTypeFilter && contentTypeFilter.value) {
+            filters.content_type = contentTypeFilter.value;
+        }
+
+        // Récupérer les filtres d'âge
+        const minAgeInput = document.getElementById('min-age-input');
+        const maxAgeInput = document.getElementById('max-age-input');
+        if (minAgeInput && minAgeInput.value) {
+            filters.min_age = minAgeInput.value;
+        }
+        if (maxAgeInput && maxAgeInput.value) {
+            filters.max_age = maxAgeInput.value;
+        }
+
+        // Récupérer les options additionnelles
+        const canInvoiceFilter = document.getElementById('map-can-invoice');
+        if (canInvoiceFilter && canInvoiceFilter.checked) {
+            filters.can_invoice = 'on';
+        }
+
+        const verifiedOnlyFilter = document.getElementById('map-verified-only');
+        if (verifiedOnlyFilter && verifiedOnlyFilter.checked) {
+            filters.verified_only = 'on';
+        }
+
+        // Récupérer la note minimale
+        const minRatingRadios = document.querySelectorAll('input[name="min_rating"]:checked');
+        if (minRatingRadios && minRatingRadios.length > 0) {
+            filters.min_rating = minRatingRadios[0].value;
         }
 
         return filters;
@@ -248,7 +321,7 @@ const SearchCreators = (function () {
     }
 
     /**
-     * Réinitialise les filtres et recharge les créateurs
+     * Réinitialise tous les filtres
      */
     function resetFilters() {
         // Réinitialiser la recherche
@@ -257,21 +330,64 @@ const SearchCreators = (function () {
             searchQuery.value = '';
         }
 
-        // Réinitialiser les sélecteurs
-        const selectors = filtersContainer.querySelectorAll('select');
-        selectors.forEach(select => {
-            select.value = select.options[0].value;
-        });
+        // Réinitialiser les domaines
+        const domainCheckboxes = document.querySelectorAll('input[name="domains"]');
+        if (domainCheckboxes) {
+            domainCheckboxes.forEach(cb => cb.checked = false);
+        }
 
-        // Réinitialiser les inputs numériques
-        const numInputs = filtersContainer.querySelectorAll('input[type="number"]');
-        numInputs.forEach(input => {
-            input.value = input.defaultValue || '';
-        });
+        // Réinitialiser le genre
+        const genderFilter = document.getElementById('map-gender-filter');
+        if (genderFilter) {
+            genderFilter.value = '';
+        }
+
+        // Réinitialiser le type de contenu
+        const contentTypeFilter = document.getElementById('map-content-type-filter');
+        if (contentTypeFilter) {
+            contentTypeFilter.value = '';
+        }
+
+        // Réinitialiser les âges
+        // Nous devons également réinitialiser le slider noUiSlider si disponible
+        const ageSlider = document.getElementById('age-slider');
+        if (ageSlider && ageSlider.noUiSlider) {
+            ageSlider.noUiSlider.set([18, 80]);
+        }
+        const minAgeInput = document.getElementById('min-age-input');
+        const maxAgeInput = document.getElementById('max-age-input');
+        if (minAgeInput) minAgeInput.value = '18';
+        if (maxAgeInput) maxAgeInput.value = '80';
+
+        // Réinitialiser les options additionnelles
+        const canInvoiceFilter = document.getElementById('map-can-invoice');
+        if (canInvoiceFilter) {
+            canInvoiceFilter.checked = false;
+        }
+
+        const verifiedOnlyFilter = document.getElementById('map-verified-only');
+        if (verifiedOnlyFilter) {
+            verifiedOnlyFilter.checked = false;
+        }
+
+        // Réinitialiser la note minimale
+        const minRatingRadios = document.querySelectorAll('input[name="min_rating"]');
+        if (minRatingRadios) {
+            minRatingRadios.forEach(radio => radio.checked = false);
+        }
 
         // Réinitialiser le rayon
+        const radiusSelector = document.getElementById('radius-selector');
         if (radiusSelector) {
             radiusSelector.value = DEFAULT_RADIUS;
+            const radiusValue = document.getElementById('radius-value');
+            if (radiusValue) {
+                radiusValue.textContent = DEFAULT_RADIUS;
+            }
+        }
+
+        // Mettre à jour la carte
+        if (mapManager) {
             mapManager.updateRadius(DEFAULT_RADIUS);
         }
 
@@ -279,10 +395,20 @@ const SearchCreators = (function () {
         loadCreators();
     }
 
-    // API publique
+    /**
+     * Recharge les créateurs avec les filtres actuels
+     * @param {boolean} forceRefresh - Si true, force le rechargement des créateurs même si les filtres n'ont pas changé
+     */
+    function reload(forceRefresh = false) {
+        console.log('SearchCreators.reload called with forceRefresh =', forceRefresh);
+        loadCreators(forceRefresh);
+    }
+
+    // Exposer l'API publique
     return {
         init: init,
-        reload: loadCreators,
+        reload: reload,
+        getCreators: function () { return creators; },
         reset: resetFilters
     };
 })(); 

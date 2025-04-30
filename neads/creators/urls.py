@@ -13,6 +13,7 @@ urlpatterns = [
     path('api/creators/', api_creators, name='api_creators'),
     path('api/creators/map-search/', views.api_map_search, name='api_map_search'),
     path('api/cities/', views.api_cities, name='api_cities'),
+    path('api/domains/', views.api_domains, name='api_domains'),
     path('ajax-search/', views.ajax_filter_results, name='ajax_search'),
     path('toggle-favorite/<int:creator_id>/', views.toggle_favorite, name='toggle_favorite'),
     path('add-favorite/<int:creator_id>/', views.toggle_favorite, name='add_favorite'),

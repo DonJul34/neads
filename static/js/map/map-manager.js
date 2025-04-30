@@ -333,7 +333,8 @@ const MapManager = (() => {
         searchParams.append('lng', coords.longitude);
         searchParams.append('radius', currentRadius);
 
-        const url = `/map/ajax/data/?${searchParams.toString()}`;
+        // Mise à jour de l'URL pour utiliser l'endpoint API qui existe réellement
+        const url = `/creators/api/creators/map-search/?${searchParams.toString()}`;
         console.log('🔄 Fetching data from:', url);
         console.log('📊 Complete request parameters:', searchParams.toString());
 
@@ -403,35 +404,42 @@ const MapManager = (() => {
             })
             .catch(error => {
                 const totalTime = Date.now() - startTime;
-                console.error(`❌ Error loading creators data after ${totalTime}ms:`, error);
-                console.error('📊 Error details:', {
-                    message: error.message,
-                    name: error.name,
-                    stack: error.stack
-                });
-
-                showLoading(false);
-                performance.endTimer('dataLoading');
-
-                // Afficher un message d'erreur visuellement
-                const errorMsg = document.createElement('div');
-                errorMsg.className = 'alert alert-danger map-error';
-                errorMsg.style.position = 'absolute';
-                errorMsg.style.bottom = '20px';
-                errorMsg.style.right = '20px';
-                errorMsg.style.zIndex = '1000';
-                errorMsg.innerHTML = `
-                    <strong>Erreur de chargement</strong>
-                    <p>Impossible de charger les données. Veuillez rafraîchir la page.</p>
-                    <small class="text-muted">Erreur: ${error.message}</small>
-                `;
-                mapElement.parentNode.appendChild(errorMsg);
-                console.log('🔄 Error message displayed to user');
-                setTimeout(() => {
-                    errorMsg.remove();
-                    console.log('ℹ️ Error message removed after timeout');
-                }, 10000);
+                handleError(error, totalTime);
             });
+    };
+
+    /**
+     * Gère les erreurs de chargement et affiche un message à l'utilisateur
+     * @param {Error} error - L'erreur survenue
+     * @param {number} duration - Durée de chargement en ms
+     */
+    const handleError = (error, duration) => {
+        console.error(`❌ Error loading creators data after ${duration}ms:`, error);
+        console.log('📊 Error details:', error);
+
+        // Cacher l'indicateur de chargement
+        showLoading(false);
+        performance.endTimer('dataLoading');
+
+        // Afficher un message d'erreur convivial
+        const errorMessage = document.createElement('div');
+        errorMessage.className = 'alert alert-danger';
+        errorMessage.innerHTML = `
+            <h5><i class="fas fa-exclamation-triangle me-2"></i>Erreur lors du chargement des créateurs</h5>
+            <p>Impossible de charger les créateurs. Veuillez réessayer ultérieurement.</p>
+            <button class="btn btn-sm btn-outline-danger mt-2" onclick="window.location.reload()">
+                <i class="fas fa-sync-alt me-1"></i>Réessayer
+            </button>
+        `;
+
+        // Injecter le message dans la liste des créateurs
+        const listContainer = document.getElementById('creators-list-content');
+        if (listContainer) {
+            listContainer.innerHTML = '';
+            listContainer.appendChild(errorMessage);
+        }
+
+        console.log('🔄 Error message displayed to user');
     };
 
     /**
@@ -500,11 +508,19 @@ const MapManager = (() => {
         console.log('🔄 Adding filtered creators to map...');
         performance.startTimer('distanceCalculations');
 
+        // Liste des créateurs visibles après filtrage
+        const visibleCreators = [];
+
         creatorsData.forEach((point, index) => {
             const creatorCoords = {
-                latitude: point.lat,
-                longitude: point.lng
+                latitude: point.lat || point.latitude,
+                longitude: point.lng || point.longitude
             };
+
+            // Passer les créateurs sans coordonnées valides
+            if (!creatorCoords.latitude || !creatorCoords.longitude) {
+                return;
+            }
 
             const distance = UserLocation.calculateDistance(userCoords, creatorCoords);
             distancesCalculated++;
@@ -521,77 +537,126 @@ const MapManager = (() => {
             else if (distance <= 50) distanceDistribution["25-50km"]++;
             else distanceDistribution["50km+"]++;
 
-            // N'afficher que les créateurs dans le rayon spécifié
+            // Filtrer en fonction du rayon de recherche
             if (distance <= currentRadius) {
-                visibleCreatorsCount++;
-                if (index < 10 || index % 50 === 0) { // Log every 50th creator to avoid excessive logging
-                    console.log(`ℹ️ Adding creator #${index + 1} at distance ${distance.toFixed(2)}km: ${point.name}`);
+                // Ajouter la distance au point pour l'affichage
+                point.distance = distance.toFixed(1);
+
+                // Ajouter à la liste des créateurs visibles
+                visibleCreators.push(point);
+
+                // Ajouter le marqueur sur la carte
+                if (index < 100 || distance < 50) {
+                    if (distance < 1) {
+                        console.log(`ℹ️ Adding nearby creator #${index + 1} at distance ${distance.toFixed(2)}km: ${point.name}`);
+                    }
+                    addCreatorMarker(point);
+                    markersAdded++;
+                    performance.metrics.markerOperations++;
                 }
-                addCreatorMarker(point, distance);
-                markersAdded++;
-                performance.metrics.markerOperations++;
+                visibleCreatorsCount++;
             }
         });
 
-        const calculationTime = performance.endTimer('distanceCalculations');
-        const avgCalcTime = calculationTime / distancesCalculated;
+        performance.endTimer('distanceCalculations');
 
-        console.log(`✅ Filtered creators: ${visibleCreatorsCount} visible within ${currentRadius}km`);
-        console.log('📊 Distance calculations performance:', {
-            totalCalculations: distancesCalculated,
-            totalTime: `${calculationTime}ms`,
-            averagePerCreator: `${avgCalcTime.toFixed(2)}ms`
-        });
-        console.log('📊 Distance statistics:', {
-            min: minDistance !== Infinity ? minDistance.toFixed(2) + 'km' : 'N/A',
-            max: maxDistance.toFixed(2) + 'km',
-            avg: (distanceSum / creatorsData.length).toFixed(2) + 'km',
-            distribution: distanceDistribution
-        });
-        console.log('📊 Map statistics:', {
-            totalCreators: creatorsData.length,
-            displayedCreators: visibleCreatorsCount,
-            percentage: ((visibleCreatorsCount / creatorsData.length) * 100).toFixed(1) + '%',
+        const avgDistance = distancesCalculated ? (distanceSum / distancesCalculated).toFixed(1) : 0;
+
+        // Mettre à jour les compteurs et statistiques
+        if (creatorCountElement) {
+            creatorCountElement.textContent = visibleCreatorsCount;
+            console.log(`✅ Updated creator count display: ${visibleCreatorsCount}`);
+        }
+
+        // Journaliser des statistiques détaillées
+        console.log('🔄 Creator distance statistics:', {
+            total: creatorsData.length,
+            filtered: visibleCreatorsCount,
+            maxDistance: maxDistance.toFixed(1) + 'km',
+            minDistance: (minDistance === Infinity ? 'N/A' : minDistance.toFixed(1) + 'km'),
+            avgDistance: avgDistance + 'km',
+            distribution: distanceDistribution,
             markersAdded: markersAdded
         });
 
-        // Mettre à jour le compteur
-        if (creatorCountElement) {
-            creatorCountElement.textContent = visibleCreatorsCount;
-            console.log('✅ Updated creator count display:', visibleCreatorsCount);
-        }
+        const filterTime = performance.endTimer('filterCreators');
+        console.log(`✅ Creator filtering and marker creation completed in ${filterTime}ms`);
 
-        const totalFilterTime = performance.endTimer('filterCreators');
-        console.log(`✅ Creator filtering and marker creation completed in ${totalFilterTime}ms`);
+        return visibleCreators;
     };
 
     /**
-     * Ajoute un marqueur de créateur à la carte
-     * @param {Object} point - Données du créateur
-     * @param {number} distance - Distance par rapport à l'utilisateur en km
+     * Ajoute un marqueur pour un créateur sur la carte
+     * @param {Object} creator - Données du créateur
      */
-    const addCreatorMarker = (point, distance) => {
-        const marker = L.marker([point.lat, point.lng]);
+    const addCreatorMarker = (creator) => {
+        performance.metrics.markerOperations++;
 
-        // Création du popup
-        const distanceText = distance.toFixed(1);
-        const popupContent = `
-            <div class="creator-popup">
-                ${point.thumbnail ? `<img src="${point.thumbnail}" alt="${point.name}">` : ''}
-                <h5>${point.name}</h5>
-                <div class="d-flex justify-content-between align-items-center mb-2">
-                    <div class="star-rating">
-                        ${renderStars(point.rating)}
-                        <span class="ms-1 text-muted small">(${point.rating})</span>
+        try {
+            // Récupérer les coordonnées
+            const lat = creator.latitude || creator.lat;
+            const lng = creator.longitude || creator.lng;
+
+            if (!lat || !lng) {
+                console.warn('Missing coordinates for creator:', creator.id);
+                return;
+            }
+
+            // Vérifier si des coordonnées valides (nombres)
+            if (isNaN(parseFloat(lat)) || isNaN(parseFloat(lng))) {
+                console.warn('Invalid coordinates for creator:', creator.id, lat, lng);
+                return;
+            }
+
+            // Créer le contenu de la popup
+            const popupContent = `
+                <div class="creator-popup">
+                    ${creator.thumbnail ? `<img src="${creator.thumbnail}" alt="${creator.name}" class="img-fluid mb-2">` : ''}
+                    <h5>${creator.name}</h5>
+                    <div class="d-flex justify-content-between mb-2">
+                        <div class="star-rating">
+                            ${creator.rating ? '⭐ ' + creator.rating.toFixed(1) : 'Non noté'}
+                        </div>
+                        <div class="distance">
+                            ${creator.distance ? creator.distance.toFixed(1) + ' km' : ''}
+                        </div>
                     </div>
-                    <span class="badge bg-info">${distanceText} km</span>
+                    <div class="mb-2">
+                        ${creator.domains && creator.domains.length > 0 ?
+                    creator.domains.slice(0, 3).map(domain =>
+                        `<span class="badge bg-secondary me-1">${domain.name}</span>`
+                    ).join('') : ''
+                }
+                    </div>
+                    <a href="${creator.url}" class="btn btn-primary btn-sm">Voir le profil</a>
                 </div>
-                <a href="${point.url}" class="btn btn-sm btn-primary">Voir le profil</a>
-            </div>
-        `;
+            `;
 
-        marker.bindPopup(popupContent);
-        markers.addLayer(marker);
+            // Ajouter un petit décalage aux coordonnées si plusieurs créateurs au même endroit
+            // Cela permet d'éviter que les marqueurs se superposent
+            const jitter = (Math.random() - 0.5) * 0.001; // Petit décalage aléatoire (environ 10-50m)
+
+            // Créer le marqueur avec une icône personnalisée
+            const marker = L.marker([parseFloat(lat) + jitter, parseFloat(lng) + jitter], {
+                title: creator.name,
+                alt: creator.name,
+                riseOnHover: true
+            });
+
+            // Stocker l'ID du créateur dans le marqueur pour pouvoir le retrouver
+            marker.creatorId = creator.id;
+
+            // Ajouter la popup
+            marker.bindPopup(popupContent);
+
+            // Ajouter au cluster
+            markers.addLayer(marker);
+
+            return marker;
+        } catch (e) {
+            console.error('Error adding marker:', e, creator);
+            return null;
+        }
     };
 
     /**
@@ -655,12 +720,128 @@ const MapManager = (() => {
         return stats;
     };
 
-    // API publique
-    console.log('✅ MapManager module loaded and ready');
+    /**
+     * Rend les créateurs sur la carte à partir de la structure de données fournie par l'API
+     * @param {Array} creatorsList - Liste des créateurs avec données latitude/longitude
+     */
+    const renderCreators = (creatorsList) => {
+        console.log('🔄 MapManager.renderCreators called with', creatorsList.length, 'creators');
+
+        // Stocker les données des créateurs
+        creatorsData = creatorsList;
+
+        // Vider les marqueurs existants
+        markers.clearLayers();
+
+        // Mettre à jour le compteur de résultats
+        if (creatorCountElement) {
+            creatorCountElement.textContent = creatorsList.length;
+        }
+
+        // Remplir la liste des créateurs
+        const creatorsListContainer = document.getElementById('creators-list-content');
+        if (creatorsListContainer) {
+            creatorsListContainer.innerHTML = '';
+
+            if (creatorsList.length === 0) {
+                creatorsListContainer.innerHTML = `
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i> Aucun créateur trouvé avec ces critères.
+                    </div>
+                `;
+            } else {
+                // Trier les créateurs par distance
+                const sortedCreators = [...creatorsList].sort((a, b) => a.distance - b.distance);
+
+                // Ajouter chaque créateur à la liste
+                sortedCreators.forEach(creator => {
+                    try {
+                        // Vérifier les données de position
+                        const lat = creator.latitude;
+                        const lng = creator.longitude;
+
+                        if (!lat || !lng) {
+                            return;
+                        }
+
+                        // Créer le marqueur sur la carte
+                        addCreatorMarker(creator);
+
+                        // Ajouter à la liste des créateurs
+                        const creatorItem = document.createElement('div');
+                        creatorItem.className = 'creator-item';
+                        creatorItem.innerHTML = `
+                            <div class="d-flex align-items-center">
+                                ${creator.thumbnail ?
+                                `<img src="${creator.thumbnail}" alt="${creator.name}" class="rounded-circle me-2" style="width: 40px; height: 40px; object-fit: cover;">` :
+                                `<div class="rounded-circle me-2 bg-secondary d-flex align-items-center justify-content-center" style="width: 40px; height: 40px; color: white;">
+                                        <i class="fas fa-user"></i>
+                                    </div>`
+                            }
+                                <div>
+                                    <h6 class="mb-0">${creator.name}</h6>
+                                    <div class="small text-muted">
+                                        ${creator.distance.toFixed(1)}km
+                                        ${creator.rating ? `<span class="ms-2">⭐ ${creator.rating.toFixed(1)}</span>` : ''}
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="mt-1 small">
+                                ${creator.domains && creator.domains.length > 0 ?
+                                creator.domains.slice(0, 2).map(d =>
+                                    `<span class="badge bg-secondary me-1">${d.name}</span>`
+                                ).join('') : ''
+                            }
+                            </div>
+                            <a href="${creator.url}" class="stretched-link"></a>
+                        `;
+
+                        creatorItem.addEventListener('click', () => {
+                            // Centrer la carte sur ce créateur
+                            map.setView([lat, lng], 14);
+                            // Ouvrir la popup
+                            const marker = findCreatorMarker(creator.id);
+                            if (marker) {
+                                marker.openPopup();
+                            }
+                        });
+
+                        creatorsListContainer.appendChild(creatorItem);
+                    } catch (e) {
+                        console.error('Error adding creator to list:', e, creator);
+                    }
+                });
+            }
+        }
+
+        performance.metrics.totalCreators = creatorsList.length;
+        console.log(`✅ Creator filtering and marker creation completed in ${performance.timers.filterCreators}ms`);
+    };
+
+    /**
+     * Trouve le marqueur d'un créateur par son ID
+     * @param {number} creatorId - ID du créateur
+     * @returns {L.Marker|null} Le marqueur ou null si non trouvé
+     */
+    const findCreatorMarker = (creatorId) => {
+        let foundMarker = null;
+        markers.eachLayer(marker => {
+            if (marker.creatorId === creatorId) {
+                foundMarker = marker;
+            }
+        });
+        return foundMarker;
+    };
+
+    // Exposer l'API publique
     return {
         initialize,
         updateUserPosition,
-        reloadData: loadCreatorsData,
+        loadCreatorsData,
+        updateSearchArea,
+        renderCreators,
+        findCreatorMarker,
+        addCreatorMarker,
         getMapStats
     };
 })();

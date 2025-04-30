@@ -9,6 +9,7 @@ from django.contrib import messages
 from django.utils import timezone
 from django.core.mail import send_mail
 from django.conf import settings
+from django.urls import reverse
 from functools import wraps
 from django.template.loader import render_to_string
 
@@ -565,7 +566,7 @@ def ajax_map_data(request):
                 'lng': float(creator.location.longitude),
                 'rating': float(creator.average_rating),
                 'thumbnail': thumbnail,
-                'url': f"/creator/{creator.id}/",
+                'url': reverse('creator_detail', kwargs={'creator_id': creator.id}),
             })
     
     return JsonResponse({'points': map_points})
@@ -904,26 +905,7 @@ def api_map_search(request):
         location__longitude__isnull=False
     )
 
-    # Apply standard filters if provided
-    min_rating = request.GET.get('min_rating')
-    if min_rating and min_rating.isdigit():
-        creators = creators.filter(average_rating__gte=float(min_rating))
-    
-    min_age = request.GET.get('min_age')
-    max_age = request.GET.get('max_age')
-    if min_age and min_age.isdigit():
-        creators = creators.filter(age__gte=int(min_age))
-    if max_age and max_age.isdigit():
-        creators = creators.filter(age__lte=int(max_age))
-    
-    city = request.GET.get('city')
-    if city:
-        creators = creators.filter(location__full_address__icontains=city)
-    
-    domain = request.GET.get('domain')
-    if domain and domain.isdigit():
-        creators = creators.filter(domains__id=int(domain))
-    
+    # Apply search filters, identiques à la galerie
     query = request.GET.get('query')
     if query:
         creators = creators.filter(
@@ -931,6 +913,55 @@ def api_map_search(request):
             Q(last_name__icontains=query) | 
             Q(full_name__icontains=query)
         )
+    
+    # Filtres par domaines
+    domains_param = request.GET.get('domains')
+    if domains_param:
+        domain_ids = domains_param.split(',')
+        # Si plusieurs domaines, on exige qu'ils soient tous présents (AND)
+        for domain_id in domain_ids:
+            if domain_id.isdigit():
+                creators = creators.filter(domains__id=int(domain_id))
+    
+    # Filtre par genre
+    gender = request.GET.get('gender')
+    if gender:
+        creators = creators.filter(gender=gender)
+    
+    # Filtre par type de contenu
+    content_type = request.GET.get('content_type')
+    if content_type:
+        creators = creators.filter(content_types__contains=[content_type])
+    
+    # Filtres d'âge
+    min_age = request.GET.get('min_age')
+    max_age = request.GET.get('max_age')
+    if min_age and min_age.isdigit():
+        creators = creators.filter(age__gte=int(min_age))
+    if max_age and max_age.isdigit():
+        creators = creators.filter(age__lte=int(max_age))
+    
+    # Filtres additionnels
+    can_invoice = request.GET.get('can_invoice')
+    if can_invoice == 'on':
+        creators = creators.filter(can_invoice=True)
+    
+    verified_only = request.GET.get('verified_only')
+    if verified_only == 'on':
+        creators = creators.filter(verified_by_neads=True)
+    
+    min_rating = request.GET.get('min_rating')
+    if min_rating and min_rating.isdigit():
+        creators = creators.filter(average_rating__gte=float(min_rating))
+    
+    # Filtres géographiques
+    city = request.GET.get('city')
+    if city:
+        creators = creators.filter(location__full_address__icontains=city)
+    
+    country = request.GET.get('country')
+    if country:
+        creators = creators.filter(location__full_address__icontains=country)
 
     # Prepare creator data with distances
     creators_data = []
@@ -967,7 +998,10 @@ def api_map_search(request):
             if request.user.role == 'client':
                 creator_name = f"{creator.first_name} {creator.last_name[0]}."
             else:
-                creator_name = f"{creator.first_name} {creator.last_name}"
+                creator_name = creator.full_name
+            
+            # Récupérer les domaines du créateur
+            domains = [{'id': d.id, 'name': d.name} for d in creator.domains.all()]
             
             creator_data = {
                 'id': creator.id,
@@ -975,16 +1009,24 @@ def api_map_search(request):
                 'first_name': creator.first_name,
                 'last_name': creator.last_name,
                 'rating': float(creator.average_rating),
+                'total_ratings': creator.total_ratings,
                 'age': creator.age,
+                'gender': creator.get_gender_display(),
+                'domains': domains,
+                'can_invoice': creator.can_invoice,
+                'verified': creator.verified_by_neads,
                 'distance': round(distance, 1),
-                'image': thumbnail,
-                'lat': float(creator.location.latitude),
-                'lng': float(creator.location.longitude),
-                'city': creator.location.city,
-                'country': creator.location.country,
-                'url': f"/creators/detail/{creator.id}/",
+                'thumbnail': thumbnail,
+                'latitude': float(creator.location.latitude),
+                'longitude': float(creator.location.longitude),
+                'city': creator.location.full_address.split(',')[0] if creator.location.full_address else '',
+                'country': creator.location.full_address.split(',')[-1].strip() if creator.location.full_address and ',' in creator.location.full_address else '',
+                'url': reverse('creator_detail', kwargs={'creator_id': creator.id}),
             }
             creators_data.append(creator_data)
+    
+    # Trier les créateurs par distance
+    creators_data.sort(key=lambda x: x['distance'])
     
     return JsonResponse({'creators': creators_data, 'total': len(creators_data)})
 
@@ -1287,3 +1329,25 @@ def contact_creator(request, creator_id):
         
         messages.success(request, f"Votre message a été envoyé à {creator.full_name}")
         return redirect('creator_detail', creator_id=creator_id)
+
+@login_required
+def api_domains(request):
+    """
+    API endpoint pour récupérer tous les domaines avec leur nombre d'utilisations.
+    """
+    domains = Domain.objects.all()
+    domains_data = []
+    
+    for domain in domains:
+        # Compter le nombre de créateurs qui utilisent ce domaine
+        count = Creator.objects.filter(domains=domain).count()
+        domains_data.append({
+            'id': domain.id,
+            'name': domain.name,
+            'count': count
+        })
+    
+    # Trier par nom
+    domains_data.sort(key=lambda x: x['name'])
+    
+    return JsonResponse(domains_data, safe=False)

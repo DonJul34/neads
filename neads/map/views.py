@@ -1,11 +1,12 @@
 from django.shortcuts import render
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
-from django.db.models import Q
+from django.db.models import Q, Min, Max
 from django.urls import reverse
 import logging
+import json
 
-from neads.creators.models import Creator
+from neads.creators.models import Creator, Domain
 from neads.creators.forms import CreatorSearchForm
 
 
@@ -24,12 +25,38 @@ def map_view(request):
     # Formulaire de recherche pour les filtres
     form = CreatorSearchForm(request.GET)
     
+    # Récupérer les domaines avec leur nombre d'utilisations, comme dans la galerie
+    domains = Domain.objects.all()
+    domains_data = []
+    
+    for domain in domains:
+        count = Creator.objects.filter(domains=domain).count()
+        domains_data.append({
+            'id': domain.id,
+            'name': domain.name,
+            'count': count
+        })
+    
+    # Trier les domaines par comptage
+    domains_data.sort(key=lambda x: x['count'], reverse=True)
+    
+    # Convertir les domaines en JSON pour le template
+    domains_json = json.dumps(domains_data)
+    
+    # Âge minimum et maximum des créateurs pour les filtres
+    min_creator_age = Creator.objects.all().aggregate(Min('age'))['age__min'] or 18
+    max_creator_age = Creator.objects.all().aggregate(Max('age'))['age__max'] or 80
+    
     context = {
         'form': form,
         'total_creators': creators.count(),
+        'domains': domains_data,
+        'domains_json': domains_json,
+        'min_creator_age': min_creator_age,
+        'max_creator_age': max_creator_age,
     }
     
-    return render(request, 'map/map_view.html', context)
+    return render(request, 'search/map.html', context)
 
 
 @login_required

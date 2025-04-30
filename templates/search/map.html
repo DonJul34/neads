@@ -5,17 +5,22 @@
 
 {% block extra_css %}
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/nouislider@14.6.3/distribute/nouislider.min.css">
+<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.css" />
+<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.Default.css" />
 <style>
     .map-container {
         position: relative;
-        height: 600px;
+        height: 700px;
         width: 100%;
+        border-radius: 8px;
+        overflow: hidden;
+        box-shadow: 0 0 10px rgba(0,0,0,0.1);
     }
     
     #map {
         height: 100%;
         width: 100%;
-        z-index: 1;
     }
     
     .map-search-panel {
@@ -26,9 +31,10 @@
         background-color: white;
         padding: 15px;
         border-radius: 5px;
-        box-shadow: 0 0 10px rgba(0,0,0,0.1);
-        width: 300px;
-        max-width: 100%;
+        box-shadow: 0 0 10px rgba(0,0,0,0.2);
+        width: 320px;
+        max-height: 600px;
+        overflow-y: auto;
     }
     
     .map-filters {
@@ -38,8 +44,8 @@
     .map-controls {
         position: absolute;
         bottom: 20px;
-        right: 20px;
-        z-index: 1000;
+        left: 20px;
+        z-index: 999;
         display: flex;
         flex-direction: column;
         gap: 10px;
@@ -90,6 +96,153 @@
         background-color: #f8f9fa;
     }
     
+    /* Styles pour le slider d'âge */
+    .range-slider-container {
+        padding: 0 10px;
+    }
+    
+    .range-slider {
+        width: 100%;
+        height: 5px;
+        background: #ddd;
+        border-radius: 5px;
+        position: relative;
+    }
+    
+    .noUi-connect {
+        background: var(--primary-color, #007bff);
+    }
+    
+    .noUi-handle {
+        width: 18px !important;
+        height: 18px !important;
+        border-radius: 50%;
+        background: var(--primary-color, #007bff);
+        box-shadow: none;
+        cursor: pointer;
+        top: -7px !important;
+        right: -9px !important;
+        border: 2px solid white !important;
+    }
+    
+    .noUi-handle:before, 
+    .noUi-handle:after {
+        display: none;
+    }
+
+    .noUi-horizontal {
+        height: 5px;
+    }
+
+    .noUi-target {
+        border: none;
+        box-shadow: none;
+    }
+
+    .range-values {
+        display: flex;
+        justify-content: space-between;
+        margin-top: 10px;
+        font-size: 0.8rem;
+    }
+    
+    /* Styles pour les domaines */
+    .domain-checkbox-container {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 4px 0;
+    }
+
+    .domain-count {
+        font-size: 0.7rem;
+        color: #6c757d;
+        background-color: #f8f9fa;
+        border-radius: 10px;
+        padding: 0.1rem 0.5rem;
+        margin-left: 5px;
+    }
+    
+    /* Style pour les étoiles de notation */
+    .rating-stars {
+        display: inline-flex;
+        direction: rtl;
+    }
+
+    .rating-stars input {
+        display: none;
+    }
+
+    .rating-stars label {
+        color: #ddd;
+        font-size: 1.5rem;
+        padding: 0 2px;
+        cursor: pointer;
+    }
+
+    .rating-stars label:hover,
+    .rating-stars label:hover~label,
+    .rating-stars input:checked~label {
+        color: var(--accent-color, #ffc107);
+    }
+    
+    /* Style pour les en-têtes de filtre */
+    .filter-header {
+        font-size: 0.9rem;
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+        border-bottom: 1px solid #eee;
+        padding-bottom: 0.25rem;
+    }
+    
+    /* Autres styles */
+    .scrollable-checkboxes {
+        max-height: 150px;
+        overflow-y: auto;
+        padding-right: 5px;
+    }
+    
+    .scrollable-checkboxes::-webkit-scrollbar {
+        width: 5px;
+    }
+    
+    .scrollable-checkboxes::-webkit-scrollbar-track {
+        background: #f1f1f1;
+        border-radius: 10px;
+    }
+    
+    .scrollable-checkboxes::-webkit-scrollbar-thumb {
+        background: #ccc;
+        border-radius: 10px;
+    }
+    
+    /* Styles pour la popup du marqueur */
+    .creator-popup {
+        width: 220px;
+        padding: 5px;
+    }
+    
+    .creator-popup img {
+        max-width: 100%;
+        border-radius: 5px;
+        margin-bottom: 10px;
+    }
+    
+    .creator-popup h5 {
+        margin-bottom: 5px;
+        font-size: 16px;
+    }
+    
+    .creator-popup .star-rating {
+        color: #ffc107;
+        font-size: 12px;
+    }
+    
+    .creator-popup .btn {
+        width: 100%;
+        margin-top: 5px;
+    }
+    
     @media (max-width: 768px) {
         .map-search-panel, .creators-list {
             position: relative;
@@ -123,51 +276,127 @@
                 
                 <!-- Panneau de recherche -->
                 <div class="map-search-panel">
-                    <form id="map-search-form">
+                    <form id="map-search-form" method="get">
                         <div class="input-group mb-3">
-                            <input type="text" id="map-search-query" class="form-control" placeholder="Rechercher un créateur...">
+                            <input type="text" id="map-search-query" class="form-control" name="query" placeholder="Rechercher un créateur..." value="{{ request.GET.query }}">
                             <button class="btn btn-primary" type="submit">
                                 <i class="fas fa-search"></i>
                             </button>
                         </div>
                         
                         <div id="map-filters" class="map-filters">
-                            <div class="mb-2">
-                                <label for="map-domain-filter" class="form-label small">Domaine</label>
-                                <select id="map-domain-filter" class="form-select form-select-sm">
-                                    <option value="all">Tous les domaines</option>
+                            <!-- Filtres par domaine -->
+                            <div class="mb-3">
+                                <p class="filter-header mb-2">Domaines</p>
+                                <div id="domain-checkboxes" class="scrollable-checkboxes" style="max-height: 150px; overflow-y: auto; border: 1px solid #dee2e6; border-radius: 5px; padding: 8px;">
+                                    <!-- Domaines disponibles -->
                                     {% for domain in domains %}
-                                    <option value="{{ domain.id }}">{{ domain.name }}</option>
+                                    <div class="form-check domain-checkbox-container" style="display: flex; align-items: center; margin-bottom: 5px;">
+                                        <input class="form-check-input domain-checkbox" type="checkbox" name="domains"
+                                            value="{{ domain.id }}" id="domain_{{ domain.id }}" 
+                                            {% if domain.id|stringformat:'i' in request.GET.domains|default:'' %}checked{% endif %}>
+                                        <label class="form-check-label ms-2" for="domain_{{ domain.id }}">
+                                            {{ domain.name }}
+                                            <span class="badge bg-light text-dark ms-1">{{ domain.creators.count }}</span>
+                                        </label>
+                                    </div>
                                     {% endfor %}
-                                </select>
+                                </div>
                             </div>
                             
-                            <div class="mb-2">
-                                <label for="map-platform-filter" class="form-label small">Plateforme</label>
-                                <select id="map-platform-filter" class="form-select form-select-sm">
-                                    <option value="all">Toutes les plateformes</option>
-                                    <option value="instagram">Instagram</option>
-                                    <option value="youtube">YouTube</option>
-                                    <option value="tiktok">TikTok</option>
-                                    <option value="twitter">Twitter</option>
-                                </select>
+                            <!-- Filtres par caractéristiques -->
+                            <div class="mb-3">
+                                <p class="filter-header mb-2">Caractéristiques</p>
+                                
+                                <div class="mb-2">
+                                    <label for="map-gender-filter" class="form-label small">Genre</label>
+                                    <select id="map-gender-filter" name="gender" class="form-select form-select-sm">
+                                        <option value="">Tous</option>
+                                        <option value="M" {% if request.GET.gender == 'M' %}selected{% endif %}>Homme</option>
+                                        <option value="F" {% if request.GET.gender == 'F' %}selected{% endif %}>Femme</option>
+                                        <option value="O" {% if request.GET.gender == 'O' %}selected{% endif %}>Autre</option>
+                                    </select>
+                                </div>
+                                
+                                <div class="mb-2">
+                                    <label for="map-content-type-filter" class="form-label small">Type de contenu</label>
+                                    <select id="map-content-type-filter" name="content_type" class="form-select form-select-sm">
+                                        <option value="">Tous</option>
+                                        <option value="photo" {% if request.GET.content_type == 'photo' %}selected{% endif %}>Photo</option>
+                                        <option value="video" {% if request.GET.content_type == 'video' %}selected{% endif %}>Vidéo</option>
+                                        <option value="audio" {% if request.GET.content_type == 'audio' %}selected{% endif %}>Audio</option>
+                                        <option value="text" {% if request.GET.content_type == 'text' %}selected{% endif %}>Texte</option>
+                                        <option value="mixed" {% if request.GET.content_type == 'mixed' %}selected{% endif %}>Mixte</option>
+                                    </select>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label class="form-label small">Âge</label>
+                                    <div class="range-slider-container">
+                                        <div class="range-slider" id="age-slider"></div>
+                                        <div class="range-values">
+                                            <span id="age-min-value">{{ request.GET.min_age|default:min_creator_age }}</span>
+                                            <span id="age-max-value">{{ request.GET.max_age|default:max_creator_age }}</span>
+                                        </div>
+                                        <input type="hidden" id="min-age-input" name="min_age" value="{{ request.GET.min_age|default:min_creator_age }}">
+                                        <input type="hidden" id="max-age-input" name="max_age" value="{{ request.GET.max_age|default:max_creator_age }}">
+                                    </div>
+                                </div>
                             </div>
                             
-                            <div class="mb-2">
-                                <label for="map-min-followers" class="form-label small">Followers minimum</label>
-                                <input type="number" id="map-min-followers" class="form-control form-control-sm" min="0" placeholder="Nombre de followers minimum">
+                            <!-- Autres filtres -->
+                            <div class="mb-3">
+                                <p class="filter-header mb-2">Options additionnelles</p>
+                                
+                                <div class="form-check mb-2">
+                                    <input type="checkbox" class="form-check-input" id="map-can-invoice" name="can_invoice" {% if request.GET.can_invoice %}checked{% endif %}>
+                                    <label class="form-check-label" for="map-can-invoice">
+                                        Peut facturer
+                                    </label>
+                                </div>
+                                
+                                <div class="form-check mb-2">
+                                    <input type="checkbox" class="form-check-input" id="map-verified-only" name="verified_only" {% if request.GET.verified_only %}checked{% endif %}>
+                                    <label class="form-check-label" for="map-verified-only">
+                                        Vérifiés uniquement
+                                    </label>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label class="form-label small">Note minimum</label>
+                                    <div class="rating-stars">
+                                        <input type="radio" id="map-star5" name="min_rating" value="5" {% if request.GET.min_rating == '5' %}checked{% endif %} />
+                                        <label for="map-star5" title="5 étoiles"><i class="fas fa-star"></i></label>
+                                        
+                                        <input type="radio" id="map-star4" name="min_rating" value="4" {% if request.GET.min_rating == '4' %}checked{% endif %} />
+                                        <label for="map-star4" title="4 étoiles"><i class="fas fa-star"></i></label>
+                                        
+                                        <input type="radio" id="map-star3" name="min_rating" value="3" {% if request.GET.min_rating == '3' %}checked{% endif %} />
+                                        <label for="map-star3" title="3 étoiles"><i class="fas fa-star"></i></label>
+                                        
+                                        <input type="radio" id="map-star2" name="min_rating" value="2" {% if request.GET.min_rating == '2' %}checked{% endif %} />
+                                        <label for="map-star2" title="2 étoiles"><i class="fas fa-star"></i></label>
+                                        
+                                        <input type="radio" id="map-star1" name="min_rating" value="1" {% if request.GET.min_rating == '1' %}checked{% endif %} />
+                                        <label for="map-star1" title="1 étoile"><i class="fas fa-star"></i></label>
+                                    </div>
+                                </div>
                             </div>
                             
-                            <div class="radius-control">
-                                <label for="radius-selector" class="form-label small">Rayon de recherche: <span id="radius-value">50</span> km</label>
-                                <input type="range" class="form-range" id="radius-selector" min="1" max="500" value="50" 
-                                       oninput="document.getElementById('radius-value').textContent = this.value">
+                            <!-- Rayon de recherche -->
+                            <div class="mb-3">
+                                <label for="radius-selector" class="form-label small">Rayon de recherche: <span id="radius-value">{{ request.GET.radius|default:'50' }}</span> km</label>
+                                <input type="range" class="form-range" id="radius-selector" name="radius" min="1" max="500" value="{{ request.GET.radius|default:'50' }}" 
+                                    oninput="document.getElementById('radius-value').textContent = this.value">
                             </div>
                             
-                            <div class="mt-2">
-                                <button type="button" id="reset-filters-btn" class="btn btn-sm btn-outline-secondary w-100">
-                                    <i class="fas fa-undo-alt"></i> Réinitialiser les filtres
+                            <div class="d-grid gap-2">
+                                <button type="submit" class="btn btn-primary btn-sm">
+                                    <i class="fas fa-filter me-1"></i> Appliquer les filtres
                                 </button>
+                                <a href="{% url 'map_view' %}" class="btn btn-outline-secondary btn-sm">
+                                    <i class="fas fa-undo-alt me-1"></i> Réinitialiser
+                                </a>
                             </div>
                         </div>
                     </form>
@@ -207,25 +436,98 @@
 
 {% block extra_js %}
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://unpkg.com/leaflet.markercluster@1.4.1/dist/leaflet.markercluster.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/nouislider@14.6.3/distribute/nouislider.min.js"></script>
 <script src="{% static 'js/map/location.js' %}"></script>
 <script src="{% static 'js/map/map-manager.js' %}"></script>
 <script src="{% static 'js/map/search-creators.js' %}"></script>
 <script>
     document.addEventListener('DOMContentLoaded', function() {
+        console.log('DOM loaded, initializing map components...');
+        
         // Initialiser la carte
-        MapManager.init('map');
+        try {
+            console.log('Initializing MapManager...');
+            MapManager.initialize('map', 'radius-selector', 'results-counter', 'map-loading-indicator');
+            console.log('MapManager initialized successfully');
+        } catch (error) {
+            console.error('Error initializing MapManager:', error);
+        }
         
         // Initialiser le module de recherche
-        SearchCreators.init();
+        try {
+            console.log('Initializing SearchCreators...');
+            SearchCreators.init();
+            console.log('SearchCreators initialized successfully');
+        } catch (error) {
+            console.error('Error initializing SearchCreators:', error);
+        }
         
-        // Bouton de réinitialisation des filtres
-        document.getElementById('reset-filters-btn').addEventListener('click', function() {
-            SearchCreators.reset();
-        });
+        // Capture form submission to ensure all filter values are correctly included
+        const mapSearchForm = document.getElementById('map-search-form');
+        if (mapSearchForm) {
+            mapSearchForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                // Collect all form data
+                const formData = new FormData(mapSearchForm);
+                const params = new URLSearchParams(window.location.search);
+                
+                // Clear all existing filter parameters but keep any other params
+                const existingParams = Array.from(params.keys());
+                existingParams.forEach(key => {
+                    if (['query', 'domains', 'gender', 'content_type', 'min_age', 'max_age', 
+                         'min_rating', 'can_invoice', 'verified_only', 'radius'].includes(key)) {
+                        params.delete(key);
+                    }
+                });
+                
+                // Get all checked domain checkboxes
+                const domainCheckboxes = document.querySelectorAll('input[name="domains"]:checked');
+                if (domainCheckboxes.length > 0) {
+                    const domainIds = Array.from(domainCheckboxes).map(cb => cb.value).join(',');
+                    params.set('domains', domainIds);
+                    console.log('Selected domains:', domainIds);
+                }
+                
+                // Add all other form fields to URL parameters
+                for (const [key, value] of formData.entries()) {
+                    // Skip domains as we've already handled them
+                    if (key === 'domains') continue;
+                    
+                    if (value) {
+                        params.set(key, value);
+                    }
+                }
+                
+                console.log('Form submitted with params:', params.toString());
+                
+                // Update the URL with all filter parameters
+                window.location.href = `${window.location.pathname}?${params.toString()}`;
+            });
+            
+            // Add event handlers for domain checkboxes for better UX
+            const domainCheckboxes = document.querySelectorAll('input[name="domains"]');
+            domainCheckboxes.forEach(checkbox => {
+                checkbox.addEventListener('change', function() {
+                    console.log('Domain checkbox changed:', this.value, 'Checked:', this.checked);
+                });
+            });
+        }
         
         // Bouton ma position
         document.getElementById('locate-me-btn').addEventListener('click', function() {
-            MapManager.locateUser();
+            console.log('Locate me button clicked');
+            UserLocation.getUserLocation(
+                function(coords) {
+                    console.log('User location obtained:', coords);
+                    MapManager.updateUserPosition(coords);
+                },
+                function(error) {
+                    console.error('Error getting user location:', error);
+                    alert('Impossible de récupérer votre position. Vérifiez que vous avez autorisé la géolocalisation.');
+                }
+            );
         });
         
         // Bouton plein écran
@@ -240,6 +542,87 @@
                 document.getElementById('fullscreen-btn').innerHTML = '<i class="fas fa-compress"></i>';
             }
         });
+        
+        // Initialisation du slider d'âge
+        const ageMin = parseInt("{{ min_creator_age }}") || 18;
+        const ageMax = parseInt("{{ max_creator_age }}") || 80;
+        const currentMinAge = parseInt("{{ request.GET.min_age }}") || ageMin;
+        const currentMaxAge = parseInt("{{ request.GET.max_age }}") || ageMax;
+        
+        // Configuration et initialisation du slider d'âge avec noUiSlider
+        const ageSlider = document.getElementById('age-slider');
+        console.log('Age slider element:', ageSlider);
+        console.log('noUiSlider available:', typeof noUiSlider !== 'undefined');
+        console.log('Age range:', ageMin, ageMax, currentMinAge, currentMaxAge);
+        
+        if (ageSlider && typeof noUiSlider !== 'undefined') {
+            try {
+                if (!ageSlider.noUiSlider) {
+                    noUiSlider.create(ageSlider, {
+                        start: [currentMinAge, currentMaxAge],
+                        connect: true,
+                        step: 1,
+                        range: {
+                            'min': ageMin,
+                            'max': ageMax
+                        },
+                        format: {
+                            to: function (value) {
+                                return Math.round(value);
+                            },
+                            from: function (value) {
+                                return Math.round(value);
+                            }
+                        }
+                    });
+                    
+                    const ageMinValue = document.getElementById('age-min-value');
+                    const ageMaxValue = document.getElementById('age-max-value');
+                    const minAgeInput = document.getElementById('min-age-input');
+                    const maxAgeInput = document.getElementById('max-age-input');
+                    
+                    ageSlider.noUiSlider.on('update', function(values, handle) {
+                        const minVal = values[0];
+                        const maxVal = values[1];
+                        
+                        ageMinValue.textContent = minVal;
+                        ageMaxValue.textContent = maxVal;
+                        
+                        minAgeInput.value = minVal;
+                        maxAgeInput.value = maxVal;
+                    });
+                } else {
+                    console.log('Age slider already initialized');
+                }
+            } catch (error) {
+                console.error('Error initializing age slider:', error);
+            }
+        } else {
+            console.error('Age slider element or noUiSlider not found');
+        }
+
+        // Initialisation des étoiles de notation
+        const ratingStars = document.querySelectorAll('.rating-stars input');
+        ratingStars.forEach(star => {
+            star.addEventListener('change', function() {
+                // Visuel pour montrer quelle note est sélectionnée
+                ratingStars.forEach(s => {
+                    const label = document.querySelector(`label[for="${s.id}"]`);
+                    if (parseInt(s.value) <= parseInt(this.value)) {
+                        label.querySelector('i').className = 'fas fa-star';
+                    } else {
+                        label.querySelector('i').className = 'far fa-star';
+                    }
+                });
+            });
+        });
+        
+        // Charger les créateurs avec les filtres actuels
+        if (window.location.search) {
+            setTimeout(() => {
+                SearchCreators.reload(true);
+            }, 500);
+        }
     });
 </script>
 {% endblock %} 
