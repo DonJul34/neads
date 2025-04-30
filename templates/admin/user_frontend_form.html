@@ -1,0 +1,133 @@
+{% extends 'admin/base.html' %}
+
+{% block admin_title %}{{ title }}{% endblock %}
+{% block admin_heading %}{{ title }}{% endblock %}
+
+{% block admin_actions %}
+<a href="{% url 'admin_user_list' %}" class="btn btn-secondary">
+    <i class="fas fa-arrow-left me-1"></i> Retour à la liste
+</a>
+{% endblock %}
+
+{% block admin_content %}
+<div class="card">
+    <div class="card-body">
+        <form method="post">
+            {% csrf_token %}
+            
+            <div class="row">
+                <!-- Informations de base -->
+                <div class="col-md-6">
+                    <h5 class="mb-3">Informations de base</h5>
+                    
+                    <div class="mb-3">
+                        <label for="{{ form.email.id_for_label }}" class="form-label">Email*</label>
+                        {{ form.email }}
+                        {% if form.email.errors %}
+                        <div class="text-danger">
+                            {{ form.email.errors }}
+                        </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ form.first_name.id_for_label }}" class="form-label">Prénom*</label>
+                            {{ form.first_name }}
+                            {% if form.first_name.errors %}
+                            <div class="text-danger">
+                                {{ form.first_name.errors }}
+                            </div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ form.last_name.id_for_label }}" class="form-label">Nom*</label>
+                            {{ form.last_name }}
+                            {% if form.last_name.errors %}
+                            <div class="text-danger">
+                                {{ form.last_name.errors }}
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="{{ form.password1.id_for_label }}" class="form-label">Mot de passe</label>
+                        {{ form.password1 }}
+                        <div class="form-text">
+                            Laissez vide pour envoyer un lien de réinitialisation par email.
+                        </div>
+                        {% if form.password1.errors %}
+                        <div class="text-danger">
+                            {{ form.password1.errors }}
+                        </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="{{ form.password2.id_for_label }}" class="form-label">Confirmation</label>
+                        {{ form.password2 }}
+                        {% if form.password2.errors %}
+                        <div class="text-danger">
+                            {{ form.password2.errors }}
+                        </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="mb-3 form-check">
+                        {{ form.send_credentials }}
+                        <label class="form-check-label" for="{{ form.send_credentials.id_for_label }}">
+                            {{ form.send_credentials.label }}
+                        </label>
+                        <div class="form-text">
+                            Un email sera envoyé avec un lien pour définir un mot de passe.
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Informations complémentaires -->
+                <div class="col-md-6">
+                    <h5 class="mb-3">Informations complémentaires</h5>
+                    
+                    <div class="mb-3">
+                        <label for="{{ form.phone_number.id_for_label }}" class="form-label">Téléphone</label>
+                        {{ form.phone_number }}
+                        {% if form.phone_number.errors %}
+                        <div class="text-danger">
+                            {{ form.phone_number.errors }}
+                        </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="{{ form.company_name.id_for_label }}" class="form-label">Entreprise</label>
+                        {{ form.company_name }}
+                        {% if form.company_name.errors %}
+                        <div class="text-danger">
+                            {{ form.company_name.errors }}
+                        </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="{{ form.notes.id_for_label }}" class="form-label">Notes</label>
+                        {{ form.notes }}
+                        {% if form.notes.errors %}
+                        <div class="text-danger">
+                            {{ form.notes.errors }}
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            
+            <div class="mt-4 text-end">
+                <a href="{% url 'admin_user_list' %}" class="btn btn-outline-secondary me-2">Annuler</a>
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-save me-1"></i> Enregistrer
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %} 

@@ -4,9 +4,19 @@
 {% block admin_heading %}Gestion des utilisateurs{% endblock %}
 
 {% block admin_actions %}
-<a href="{% url 'admin_user_create' %}" class="btn btn-primary">
-    <i class="fas fa-user-plus me-1"></i> Ajouter un utilisateur
-</a>
+<div class="btn-group">
+    <a href="{% url 'client_create' %}" class="btn btn-primary">
+        <i class="fas fa-user-plus me-1"></i> Ajouter un client
+    </a>
+    {% if is_admin %}
+    <a href="{% url 'consultant_create' %}" class="btn btn-success">
+        <i class="fas fa-user-tie me-1"></i> Ajouter un consultant
+    </a>
+    {% endif %}
+    <a href="{% url 'admin_user_create' %}" class="btn btn-secondary">
+        <i class="fas fa-plus me-1"></i> Ajouter (avancé)
+    </a>
+</div>
 {% endblock %}
 
 {% block admin_content %}
@@ -90,7 +100,7 @@
                                 <input class="form-check-input toggle-status" type="checkbox" 
                                        id="status-{{ user.id }}" data-user-id="{{ user.id }}"
                                        {% if user.is_active %}checked{% endif %}
-                                       {% if user == request.user %}disabled{% endif %}>
+                                       {% if user == request.user or not is_admin and user.role in 'admin,consultant' %}disabled{% endif %}>
                                 <label class="form-check-label" for="status-{{ user.id }}">
                                     {% if user.is_active %}
                                         <span class="text-success">Actif</span>
@@ -102,10 +112,12 @@
                         </td>
                         <td>
                             <div class="btn-group" role="group" aria-label="Actions">
+                                {% if is_admin or user.role not in 'admin,consultant' %}
                                 <a href="{% url 'admin_user_edit' user.id %}" class="btn btn-sm btn-primary" 
                                    data-bs-toggle="tooltip" title="Modifier">
                                     <i class="fas fa-edit"></i>
                                 </a>
+                                {% endif %}
                                 
                                 {% if user.role == 'creator' and user.creator_profile %}
                                 <a href="{% url 'creator_detail' user.creator_profile.id %}" class="btn btn-sm btn-info" 
@@ -114,11 +126,13 @@
                                 </a>
                                 {% endif %}
                                 
+                                {% if is_admin or user.role not in 'admin,consultant' %}
                                 <button type="button" class="btn btn-sm btn-secondary reset-password-btn" 
                                         data-user-id="{{ user.id }}" data-user-email="{{ user.email }}"
                                         data-bs-toggle="tooltip" title="Réinitialiser mot de passe">
                                     <i class="fas fa-key"></i>
                                 </button>
+                                {% endif %}
                             </div>
                         </td>
                     </tr>

@@ -12,7 +12,7 @@ from django.core.paginator import Paginator
 from django.db.models import Q
 
 from .models import User, UserProfile
-from .forms import LoginForm, TemporaryLoginForm, UserProfileForm, SetPasswordForm
+from .forms import LoginForm, TemporaryLoginForm, UserProfileForm, SetPasswordForm, ClientCreationForm
 from .decorators import role_required
 from neads.creators.models import Creator
 
@@ -31,6 +31,21 @@ def management_dashboard(request):
     Tableau de bord de gestion pour les administrateurs et consultants.
     Centralise l'accès aux différentes fonctionnalités de gestion.
     """
+    # Vérifier si on a demandé d'ajouter un utilisateur spécifique
+    add_consultant = request.GET.get('add_consultant')
+    add_client = request.GET.get('add_client')
+    add_creator = request.GET.get('add_creator')
+    
+    # Rediriger vers le formulaire d'ajout d'utilisateur dans l'admin Django
+    if add_consultant or add_client or add_creator:
+        # Pour les consultants, on ne peut rediriger que si c'est pour créer un client ou un créateur
+        if not request.user.role == 'admin' and add_consultant:
+            messages.error(request, "Vous n'avez pas les droits pour créer un consultant.")
+            return redirect('management_dashboard')
+            
+        # Rediriger vers le formulaire d'ajout d'utilisateur dans l'admin Django
+        return redirect('/admin/core/user/add/')
+    
     # Statistiques de base
     user_stats = {
         'total': User.objects.count(),
@@ -354,6 +369,57 @@ def client_list(request):
     }
     
     return render(request, 'core/client_list.html', context)
+
+
+@login_required
+@role_required(['admin', 'consultant'])
+def client_create_view(request):
+    """
+    Vue pour permettre aux consultants de créer des clients.
+    Cette vue est accessible depuis la section de gestion, contrairement à celle dans admin_views.
+    """
+    if request.method == 'POST':
+        form = ClientCreationForm(request.POST)
+        if form.is_valid():
+            client = form.save()
+            
+            # Si option cochée, envoyer un email avec mot de passe temporaire
+            if form.cleaned_data.get('send_credentials'):
+                temp_token = client.generate_temp_login_token()
+                reset_url = f"{request.scheme}://{request.get_host()}/reset-password/{temp_token}/"
+                
+                # Envoyer l'email
+                subject = "Bienvenue sur NEADS - Vos identifiants de connexion"
+                html_message = render_to_string('emails/welcome_user.html', {
+                    'user': client,
+                    'reset_url': reset_url,
+                    'role': 'Client',
+                })
+                
+                try:
+                    send_mail(
+                        subject=subject,
+                        message="",
+                        from_email=settings.DEFAULT_FROM_EMAIL,
+                        recipient_list=[client.email],
+                        html_message=html_message,
+                        fail_silently=False,
+                    )
+                    messages.success(request, f"Un email avec les instructions de connexion a été envoyé à {client.email}.")
+                except Exception as e:
+                    messages.error(request, f"Erreur lors de l'envoi de l'email: {str(e)}")
+            
+            messages.success(request, f"Le client {client.get_full_name()} a été créé avec succès.")
+            return redirect('client_list')
+    else:
+        form = ClientCreationForm()
+    
+    context = {
+        'form': form,
+        'title': 'Ajouter un nouveau client',
+    }
+    
+    return render(request, 'core/client_form.html', context)
 
 
 @login_required

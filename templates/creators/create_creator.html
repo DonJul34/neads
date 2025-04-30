@@ -1,37 +1,402 @@
-{% extends "base.html" %} {% block extra_js %}
-<!-- Google Places API pour l'autocomplétion des adresses -->
-<script src="https://maps.googleapis.com/maps/api/js?key={{ google_api_key }}&libraries=places"></script>
+{% extends "base.html" %} 
+
+{% block title %}Créer un profil de créateur{% endblock %}
+
+{% block extra_js %}
+<!-- Utilisation de Nominatim (OpenStreetMap) pour la géocodification -->
 <script>
   document.addEventListener("DOMContentLoaded", function () {
-    // Initialisation de l'autocomplétion pour l'adresse
     const addressInput = document.getElementById("full-address-input");
-
-    if (addressInput) {
-      const autocomplete = new google.maps.places.Autocomplete(addressInput, {
-        types: ["address"],
-        fields: ["formatted_address", "geometry"],
-      });
-
-      // Quand une adresse est sélectionnée dans l'autocomplétion
-      autocomplete.addListener("place_changed", function () {
-        const place = autocomplete.getPlace();
-
-        if (!place.geometry) {
-          console.error("Aucune information de lieu reçue pour cette adresse");
-          return;
-        }
-
-        // Mettre à jour les coordonnées
-        document.getElementById("id_latitude").value =
-          place.geometry.location.lat();
-        document.getElementById("id_longitude").value =
-          place.geometry.location.lng();
-
-        // Mettre à jour l'adresse complète formatée
-        document.getElementById("full-address-input").value =
-          place.formatted_address;
-      });
+    const latitudeInput = document.getElementById("id_latitude");
+    const longitudeInput = document.getElementById("id_longitude");
+    
+    // Fonction pour géocoder manuellement avec Nominatim (OpenStreetMap)
+    function geocodeAddress(address) {
+      // Debug dans la console
+      console.log("Recherche de l'adresse:", address);
+      
+      fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}`)
+        .then(response => {
+          console.log("Réponse reçue du serveur");
+          return response.json();
+        })
+        .then(data => {
+          console.log("Données reçues:", data);
+          
+          if (data && data.length > 0) {
+            const result = data[0];
+            latitudeInput.value = result.lat;
+            longitudeInput.value = result.lon;
+            console.log("Coordonnées trouvées:", result.lat, result.lon);
+            
+            // Afficher un message de confirmation
+            const confirmationMsg = document.createElement('div');
+            confirmationMsg.className = 'alert alert-success mt-2';
+            confirmationMsg.textContent = `Coordonnées trouvées: ${result.lat}, ${result.lon}`;
+            
+            // Supprimer l'ancien message s'il existe
+            const oldMsg = document.querySelector('.geocode-confirmation');
+            if (oldMsg) oldMsg.remove();
+            
+            confirmationMsg.classList.add('geocode-confirmation');
+            addressInput.parentNode.appendChild(confirmationMsg);
+          } else {
+            console.log("Aucune coordonnée trouvée");
+            
+            // Afficher un message d'erreur
+            const errorMsg = document.createElement('div');
+            errorMsg.className = 'alert alert-danger mt-2';
+            errorMsg.textContent = "Adresse introuvable. Veuillez vérifier et réessayer.";
+            
+            // Supprimer l'ancien message s'il existe
+            const oldMsg = document.querySelector('.geocode-confirmation');
+            if (oldMsg) oldMsg.remove();
+            
+            errorMsg.classList.add('geocode-confirmation');
+            addressInput.parentNode.appendChild(errorMsg);
+          }
+        })
+        .catch(error => {
+          console.error("Erreur de géocodage:", error);
+          
+          // Afficher un message d'erreur
+          const errorMsg = document.createElement('div');
+          errorMsg.className = 'alert alert-danger mt-2';
+          errorMsg.textContent = "Erreur lors de la recherche. Veuillez réessayer.";
+          
+          // Supprimer l'ancien message s'il existe
+          const oldMsg = document.querySelector('.geocode-confirmation');
+          if (oldMsg) oldMsg.remove();
+          
+          errorMsg.classList.add('geocode-confirmation');
+          addressInput.parentNode.appendChild(errorMsg);
+        });
     }
+    
+    // Bouton pour déclencher la géocodification
+    const searchButton = document.createElement('button');
+    searchButton.type = 'button';
+    searchButton.className = 'btn btn-outline-secondary mt-2';
+    searchButton.innerHTML = '<i class="fas fa-search"></i> Rechercher les coordonnées';
+    searchButton.onclick = function() {
+      if (addressInput.value.trim()) {
+        console.log("Bouton de recherche cliqué");
+        geocodeAddress(addressInput.value);
+      } else {
+        console.log("Champ d'adresse vide");
+      }
+    };
+    
+    // Ajouter le bouton après l'input
+    addressInput.parentNode.insertBefore(searchButton, addressInput.nextSibling);
+    
+    // Permettre de taper Entrée pour rechercher
+    addressInput.addEventListener('keydown', function(e) {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        console.log("Touche Entrée pressée");
+        searchButton.click();
+      }
+    });
   });
 </script>
+
+<style>
+  .address-suggestions {
+    position: relative;
+    z-index: 1000;
+  }
+  
+  .address-suggestions .list-group {
+    max-height: 250px;
+    overflow-y: auto;
+  }
+  
+  .address-suggestions .list-group-item {
+    cursor: pointer;
+  }
+  
+  .address-suggestions .list-group-item:hover {
+    background-color: #f8f9fa;
+  }
+  
+  .search-address-btn {
+    white-space: nowrap;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  <div class="row">
+    <div class="col-md-10 mx-auto">
+      <div class="card shadow">
+        <div class="card-header bg-primary text-white">
+          <h3 class="mb-0">Créer votre profil de créateur</h3>
+        </div>
+        <div class="card-body">
+          <form method="post" enctype="multipart/form-data">
+            {% csrf_token %}
+            
+            <div class="row mb-4">
+              <div class="col-12 mb-3">
+                <h4 class="border-bottom pb-2">Informations personnelles</h4>
+              </div>
+              
+              <div class="col-md-6 mb-3">
+                <label for="{{ form.first_name.id_for_label }}" class="form-label">{{ form.first_name.label }} <span class="text-danger">*</span></label>
+                {{ form.first_name }}
+                {% if form.first_name.errors %}
+                  <div class="invalid-feedback d-block">
+                    {% for error in form.first_name.errors %}
+                      {{ error }}
+                    {% endfor %}
+                  </div>
+                {% endif %}
+              </div>
+              
+              <div class="col-md-6 mb-3">
+                <label for="{{ form.last_name.id_for_label }}" class="form-label">{{ form.last_name.label }} <span class="text-danger">*</span></label>
+                {{ form.last_name }}
+                {% if form.last_name.errors %}
+                  <div class="invalid-feedback d-block">
+                    {% for error in form.last_name.errors %}
+                      {{ error }}
+                    {% endfor %}
+                  </div>
+                {% endif %}
+              </div>
+              
+              <div class="col-md-6 mb-3">
+                <label for="{{ form.email.id_for_label }}" class="form-label">{{ form.email.label }} <span class="text-danger">*</span></label>
+                {{ form.email }}
+                {% if form.email.errors %}
+                  <div class="invalid-feedback d-block">
+                    {% for error in form.email.errors %}
+                      {{ error }}
+                    {% endfor %}
+                  </div>
+                {% endif %}
+              </div>
+              
+              <div class="col-md-6 mb-3">
+                <label for="{{ form.phone.id_for_label }}" class="form-label">{{ form.phone.label }}</label>
+                {{ form.phone }}
+                {% if form.phone.errors %}
+                  <div class="invalid-feedback d-block">
+                    {% for error in form.phone.errors %}
+                      {{ error }}
+                    {% endfor %}
+                  </div>
+                {% endif %}
+              </div>
+              
+              <div class="col-md-4 mb-3">
+                <label for="{{ form.age.id_for_label }}" class="form-label">{{ form.age.label }} <span class="text-danger">*</span></label>
+                {{ form.age }}
+                <div class="form-text">{{ form.age.help_text }}</div>
+                {% if form.age.errors %}
+                  <div class="invalid-feedback d-block">
+                    {% for error in form.age.errors %}
+                      {{ error }}
+                    {% endfor %}
+                  </div>
+                {% endif %}
+              </div>
+              
+              <div class="col-md-4 mb-3">
+                <label for="{{ form.gender.id_for_label }}" class="form-label">{{ form.gender.label }} <span class="text-danger">*</span></label>
+                {{ form.gender }}
+                {% if form.gender.errors %}
+                  <div class="invalid-feedback d-block">
+                    {% for error in form.gender.errors %}
+                      {{ error }}
+                    {% endfor %}
+                  </div>
+                {% endif %}
+              </div>
+            </div>
+            
+            <div class="row mb-4">
+              <div class="col-12 mb-3">
+                <h4 class="border-bottom pb-2">Localisation</h4>
+              </div>
+              
+              <div class="col-12 mb-3 address-container">
+                <label for="{{ location_form.full_address.id_for_label }}" class="form-label">{{ location_form.full_address.label }} <span class="text-danger">*</span></label>
+                {{ location_form.full_address }}
+                <div class="form-text">Tapez votre adresse et cliquez sur "Rechercher" ou appuyez sur Entrée</div>
+                {% if location_form.full_address.errors %}
+                  <div class="invalid-feedback d-block">
+                    {% for error in location_form.full_address.errors %}
+                      {{ error }}
+                    {% endfor %}
+                  </div>
+                {% endif %}
+                {{ location_form.latitude }}
+                {{ location_form.longitude }}
+              </div>
+            </div>
+            
+            <div class="row mb-4">
+              <div class="col-12 mb-3">
+                <h4 class="border-bottom pb-2">Informations professionnelles</h4>
+              </div>
+              
+              <div class="col-12 mb-3">
+                <label for="{{ form.domains.id_for_label }}" class="form-label">{{ form.domains.label }}</label>
+                <div class="row">
+                  {% for checkbox in form.domains %}
+                    <div class="col-md-4 mb-2">
+                      <div class="form-check">
+                        {{ checkbox }}
+                      </div>
+                    </div>
+                  {% endfor %}
+                </div>
+                {% if form.domains.errors %}
+                  <div class="invalid-feedback d-block">
+                    {% for error in form.domains.errors %}
+                      {{ error }}
+                    {% endfor %}
+                  </div>
+                {% endif %}
+              </div>
+              
+              <div class="col-12 mb-3">
+                <label for="{{ form.content_types.id_for_label }}" class="form-label">{{ form.content_types.label }}</label>
+                <div class="row">
+                  {% for checkbox in form.content_types %}
+                    <div class="col-md-4 mb-2">
+                      <div class="form-check">
+                        {{ checkbox }}
+                      </div>
+                    </div>
+                  {% endfor %}
+                </div>
+                {% if form.content_types.errors %}
+                  <div class="invalid-feedback d-block">
+                    {% for error in form.content_types.errors %}
+                      {{ error }}
+                    {% endfor %}
+                  </div>
+                {% endif %}
+              </div>
+              
+              <div class="col-12 mb-3">
+                <label for="{{ form.bio.id_for_label }}" class="form-label">{{ form.bio.label }}</label>
+                {{ form.bio }}
+                {% if form.bio.errors %}
+                  <div class="invalid-feedback d-block">
+                    {% for error in form.bio.errors %}
+                      {{ error }}
+                    {% endfor %}
+                  </div>
+                {% endif %}
+              </div>
+              
+              <div class="col-12 mb-3">
+                <label for="{{ form.equipment.id_for_label }}" class="form-label">{{ form.equipment.label }}</label>
+                {{ form.equipment }}
+                {% if form.equipment.errors %}
+                  <div class="invalid-feedback d-block">
+                    {% for error in form.equipment.errors %}
+                      {{ error }}
+                    {% endfor %}
+                  </div>
+                {% endif %}
+              </div>
+              
+              <div class="col-12 mb-3">
+                <label for="{{ form.previous_clients.id_for_label }}" class="form-label">{{ form.previous_clients.label }}</label>
+                {{ form.previous_clients }}
+                {% if form.previous_clients.errors %}
+                  <div class="invalid-feedback d-block">
+                    {% for error in form.previous_clients.errors %}
+                      {{ error }}
+                    {% endfor %}
+                  </div>
+                {% endif %}
+              </div>
+              
+              <div class="col-md-4 mb-3">
+                <div class="form-check">
+                  {{ form.can_invoice }}
+                  <label for="{{ form.can_invoice.id_for_label }}" class="form-check-label">{{ form.can_invoice.label }}</label>
+                </div>
+                {% if form.can_invoice.errors %}
+                  <div class="invalid-feedback d-block">
+                    {% for error in form.can_invoice.errors %}
+                      {{ error }}
+                    {% endfor %}
+                  </div>
+                {% endif %}
+              </div>
+              
+              <div class="col-md-4 mb-3">
+                <div class="form-check">
+                  {{ form.mobility }}
+                  <label for="{{ form.mobility.id_for_label }}" class="form-check-label">{{ form.mobility.label }}</label>
+                </div>
+                {% if form.mobility.errors %}
+                  <div class="invalid-feedback d-block">
+                    {% for error in form.mobility.errors %}
+                      {{ error }}
+                    {% endfor %}
+                  </div>
+                {% endif %}
+              </div>
+            </div>
+            
+            <div class="row mb-4">
+              <div class="col-12 mb-3">
+                <h4 class="border-bottom pb-2">Réseaux sociaux</h4>
+              </div>
+              
+              <div class="col-md-4 mb-3">
+                <label for="{{ form.instagram_link.id_for_label }}" class="form-label">{{ form.instagram_link.label }}</label>
+                {{ form.instagram_link }}
+                {% if form.instagram_link.errors %}
+                  <div class="invalid-feedback d-block">
+                    {% for error in form.instagram_link.errors %}
+                      {{ error }}
+                    {% endfor %}
+                  </div>
+                {% endif %}
+              </div>
+              
+              <div class="col-md-4 mb-3">
+                <label for="{{ form.tiktok_link.id_for_label }}" class="form-label">{{ form.tiktok_link.label }}</label>
+                {{ form.tiktok_link }}
+                {% if form.tiktok_link.errors %}
+                  <div class="invalid-feedback d-block">
+                    {% for error in form.tiktok_link.errors %}
+                      {{ error }}
+                    {% endfor %}
+                  </div>
+                {% endif %}
+              </div>
+              
+              <div class="col-md-4 mb-3">
+                <label for="{{ form.youtube_link.id_for_label }}" class="form-label">{{ form.youtube_link.label }}</label>
+                {{ form.youtube_link }}
+                {% if form.youtube_link.errors %}
+                  <div class="invalid-feedback d-block">
+                    {% for error in form.youtube_link.errors %}
+                      {{ error }}
+                    {% endfor %}
+                  </div>
+                {% endif %}
+              </div>
+            </div>
+            
+            <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+              <button type="submit" class="btn btn-primary">Créer mon profil</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
 {% endblock %}

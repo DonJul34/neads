@@ -104,6 +104,14 @@
           >
             <i class="fas fa-user-tie me-2 text-primary"></i>Ajouter un client
           </a>
+          {% if user.role == 'admin' %}
+          <a
+            href="{% url 'management_dashboard' %}?add_consultant=1"
+            class="list-group-item list-group-item-action"
+          >
+            <i class="fas fa-user-cog me-2 text-warning"></i>Ajouter un consultant
+          </a>
+          {% endif %}
           <a
             href="{% url 'map_view' %}"
             class="list-group-item list-group-item-action"

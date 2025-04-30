@@ -3,13 +3,14 @@ from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse, HttpResponseForbidden
 from django.views.decorators.http import require_POST
 from django.core.paginator import Paginator
-from django.db.models import Q, Count
+from django.db.models import Q, Count, Min, Max
 from django.views.decorators.csrf import csrf_exempt
 from django.contrib import messages
 from django.utils import timezone
 from django.core.mail import send_mail
 from django.conf import settings
 from functools import wraps
+from django.template.loader import render_to_string
 
 from neads.core.models import User
 from .models import Creator, Media, Rating, Domain, Favorite, Location
@@ -73,6 +74,31 @@ def has_valid_file(media_obj):
         return False
 
 
+def get_creator_thumbnail(creator):
+    """
+    Récupère une miniature pour un créateur en suivant cet ordre de priorité:
+    1. Image mise en avant (featured_image)
+    2. Première image valide du portfolio
+    3. Null si aucune image n'est disponible
+    """
+    try:
+        # 1. D'abord, vérifier si une image mise en avant est définie
+        if creator.featured_image and creator.featured_image.name:
+            return creator.featured_image.url
+        
+        # 2. Ensuite, chercher la première image valide dans le portfolio
+        if creator.media.filter(media_type='image').exists():
+            image = creator.media.filter(media_type='image').first()
+            if has_valid_file(image):
+                return image.file.url
+        
+        # 3. Aucune image disponible
+        return None
+    except Exception:
+        # En cas d'erreur, retourner None pour éviter de casser le template
+        return None
+
+
 @login_required
 def gallery_view(request):
     """
@@ -95,8 +121,10 @@ def gallery_view(request):
     # Nettoyer les paramètres de l'URL pour éviter l'accumulation des paramètres 'page'
     current_params = request.GET.copy()
     if 'page' in current_params:
+        # Supprime tous les paramètres 'page' sauf le dernier
         current_params.pop('page')
-        
+    
+    # Créer le formulaire avec les paramètres GET
     form = CreatorSearchForm(request.GET)
     
     # Appliquer les filtres si le formulaire est valide
@@ -151,15 +179,42 @@ def gallery_view(request):
     page_number = request.GET.get('page', 1)
     page_obj = paginator.get_page(page_number)
     
-    # Liste des domaines pour les filtres
-    domains = Domain.objects.all()
+    # Récupérer tous les domaines
+    all_domains = Domain.objects.all().order_by('name')
+    
+    # Récupérer les 6 domaines les plus utilisés
+    top_domains = Domain.objects.annotate(
+        creator_count=Count('creators')
+    ).order_by('-creator_count')[:6]
+    
+    # Obtenir les statistiques d'âge pour le slider
+    min_creator_age = Creator.objects.aggregate(Min('age'))['age__min'] or 18
+    max_creator_age = Creator.objects.aggregate(Max('age'))['age__max'] or 65
+    
+    # Construire l'URL des paramètres sans le paramètre page
+    clean_params = current_params.urlencode()
+    
+    # Préparer les données des domaines en JSON pour JavaScript
+    domains_json = []
+    for domain in all_domains:
+        creator_count = domain.creators.count()
+        domains_json.append({
+            'id': domain.id,
+            'name': domain.name,
+            'count': creator_count
+        })
     
     context = {
         'creators': page_obj,
         'form': form,
-        'domains': domains,
+        'domains': all_domains,
+        'all_domains': all_domains,
+        'top_domains': top_domains,
         'total_creators': paginator.count,
-        'clean_params': current_params.urlencode(),  # Paramètres sans 'page'
+        'clean_params': clean_params,
+        'min_creator_age': min_creator_age,
+        'max_creator_age': max_creator_age,
+        'domains_json': json.dumps(domains_json)
     }
     
     # Retourner JSON pour les requêtes AJAX
@@ -167,19 +222,16 @@ def gallery_view(request):
         creator_data = []
         for creator in page_obj:
             # Images pour la miniature
-            thumbnail = None
-            if creator.media.filter(media_type='image').exists():
-                media_obj = creator.media.filter(media_type='image').first()
-                # Vérifier si le fichier existe réellement
-                if has_valid_file(media_obj):
-                    thumbnail = media_obj.file.url
-                
+            thumbnail = get_creator_thumbnail(creator)
+            
             # Domaines comme badges
             domains = [{'id': d.id, 'name': d.name} for d in creator.domains.all()]
             
             creator_data.append({
                 'id': creator.id,
                 'full_name': creator.full_name,
+                'first_name': creator.first_name,
+                'last_name': creator.last_name,
                 'age': creator.age,
                 'gender': creator.get_gender_display(),
                 'location': str(creator.location) if creator.location else "",
@@ -361,10 +413,15 @@ def rate_creator(request, creator_id):
     """
     Vue pour noter un créateur.
     """
+    # Les clients ne peuvent pas noter les créateurs
+    if request.user.role == 'client':
+        messages.error(request, "En tant que client, vous ne pouvez pas noter les créateurs.")
+        return redirect('creator_detail', creator_id=creator_id)
+    
     creator = get_object_or_404(Creator, id=creator_id)
     
-    # Vérifier les permissions (seuls les consultants/clients/admins peuvent noter)
-    if not (request.user.has_role('consultant') or request.user.has_role('client') or request.user.has_role('admin')):
+    # Vérifier les permissions (seuls les consultants/admins peuvent noter)
+    if not (request.user.has_role('consultant') or request.user.has_role('admin')):
         return HttpResponseForbidden("Vous n'avez pas les droits pour noter un créateur.")
     
     # Récupérer ou créer la note
@@ -426,6 +483,11 @@ def toggle_favorite(request, creator_id):
     """
     Vue pour ajouter/supprimer un créateur des favoris.
     """
+    # Les clients ne peuvent pas ajouter de favoris
+    if request.user.role == 'client':
+        messages.error(request, "En tant que client, vous ne pouvez pas ajouter de créateurs aux favoris.")
+        return redirect('creator_detail', creator_id=creator_id)
+    
     creator = get_object_or_404(Creator, id=creator_id)
     
     # Vérifier si déjà dans les favoris
@@ -655,19 +717,16 @@ def search_view(request):
         creator_data = []
         for creator in page_obj:
             # Images pour la miniature
-            thumbnail = None
-            if creator.media.filter(media_type='image').exists():
-                media_obj = creator.media.filter(media_type='image').first()
-                # Vérifier si le fichier existe réellement
-                if has_valid_file(media_obj):
-                    thumbnail = media_obj.file.url
-                
+            thumbnail = get_creator_thumbnail(creator)
+            
             # Domaines comme badges
             domains = [{'id': d.id, 'name': d.name} for d in creator.domains.all()]
             
             creator_data.append({
                 'id': creator.id,
                 'full_name': creator.full_name,
+                'first_name': creator.first_name,
+                'last_name': creator.last_name,
                 'age': creator.age,
                 'gender': creator.get_gender_display(),
                 'location': str(creator.location) if creator.location else "",
@@ -901,16 +960,20 @@ def api_map_search(request):
         
         # Only include creators within the radius
         if distance <= radius:
-            # Get a thumbnail image if available
-            thumbnail = None
-            if creator.media.filter(media_type='image').exists():
-                media_obj = creator.media.filter(media_type='image').first()
-                if has_valid_file(media_obj):
-                    thumbnail = media_obj.file.url
+            # Get a thumbnail image
+            thumbnail = get_creator_thumbnail(creator)
+            
+            # Format name based on user role
+            if request.user.role == 'client':
+                creator_name = f"{creator.first_name} {creator.last_name[0]}."
+            else:
+                creator_name = f"{creator.first_name} {creator.last_name}"
             
             creator_data = {
                 'id': creator.id,
-                'name': f"{creator.first_name} {creator.last_name}",
+                'name': creator_name,
+                'first_name': creator.first_name,
+                'last_name': creator.last_name,
                 'rating': float(creator.average_rating),
                 'age': creator.age,
                 'distance': round(distance, 1),
@@ -1159,24 +1222,68 @@ def creator_add(request):
 @login_required
 def favorites_view(request):
     """
-    Vue pour afficher les créateurs favoris de l'utilisateur.
+    Affiche la liste des créateurs favoris de l'utilisateur.
     """
-    # Récupérer les favoris de l'utilisateur connecté
-    favorites = Favorite.objects.filter(user=request.user).select_related('creator').order_by('-created_at')
+    # Les clients ne peuvent pas avoir de favoris
+    if request.user.role == 'client':
+        messages.error(request, "En tant que client, vous n'avez pas accès aux favoris.")
+        return redirect('gallery_view')
     
-    # Récupérer les créateurs favoris
-    favorite_creators = [favorite.creator for favorite in favorites]
-    
-    # Pagination
-    paginator = Paginator(favorite_creators, 12)  # 12 créateurs par page
-    page_number = request.GET.get('page', 1)
-    page_obj = paginator.get_page(page_number)
+    favorites = Favorite.objects.filter(user=request.user).select_related('creator')
+    total_favorites = favorites.count()
     
     context = {
         'favorites': favorites,
-        'creators': page_obj,
-        'total_creators': paginator.count,
-        'is_favorites_page': True,
+        'total_favorites': total_favorites,
     }
     
     return render(request, 'creators/favorites.html', context)
+
+@login_required
+def contact_creator(request, creator_id):
+    """
+    Vue pour envoyer un email à un créateur via le formulaire de contact.
+    """
+    # Les clients ne peuvent pas contacter les créateurs
+    if request.user.role == 'client':
+        messages.error(request, "En tant que client, vous ne pouvez pas contacter directement les créateurs.")
+        return redirect('creator_detail', creator_id=creator_id)
+    
+    creator = get_object_or_404(Creator, id=creator_id)
+    
+    if request.method == 'POST':
+        subject = request.POST.get('subject')
+        message = request.POST.get('message')
+        copy_me = request.POST.get('copy_me') == 'on'
+        
+        # Préparation du message avec les informations du client
+        html_message = render_to_string('core/emails/contact_creator_email.html', {
+            'creator': creator,
+            'user': request.user,
+            'subject': subject,
+            'message': message,
+        })
+        
+        # Envoi de l'email au créateur
+        send_mail(
+            subject=f"NEADS - Contact: {subject}",
+            message=message,
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            recipient_list=[creator.email],
+            html_message=html_message,
+            fail_silently=False,
+        )
+        
+        # Copie à l'expéditeur si demandée
+        if copy_me and request.user.email:
+            send_mail(
+                subject=f"NEADS - Copie de votre message à {creator.full_name}",
+                message=message,
+                from_email=settings.DEFAULT_FROM_EMAIL,
+                recipient_list=[request.user.email],
+                html_message=html_message,
+                fail_silently=False,
+            )
+        
+        messages.success(request, f"Votre message a été envoyé à {creator.full_name}")
+        return redirect('creator_detail', creator_id=creator_id)

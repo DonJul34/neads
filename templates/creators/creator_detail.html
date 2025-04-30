@@ -1,6 +1,12 @@
 {% extends 'base.html' %}
 
-{% block title %}{{ creator.full_name }} - NEADS{% endblock %}
+{% block title %}
+    {% if user.role == 'client' %}
+        {{ creator.first_name }} {{ creator.last_name|first }}. - NEADS
+    {% else %}
+        {{ creator.full_name }} - NEADS
+    {% endif %}
+{% endblock %}
 
 {% block extra_css %}
 <style>
@@ -271,7 +277,13 @@
       </div>
 
       <div class="col-md-9">
-        <h1 class="h2 mb-1">{{ creator.full_name }}</h1>
+        <h1 class="h2 mb-1">
+          {% if user.role == 'client' %}
+            {{ creator.first_name }} {{ creator.last_name|first }}.
+          {% else %}
+            {{ creator.full_name }}
+          {% endif %}
+        </h1>
         <p class="text-muted mb-2">
           {{ creator.age }} ans, {{ creator.get_gender_display }}
         </p>
@@ -292,25 +304,29 @@
                 avis)</span>
         </div>
 
+        <!-- Boutons d'actions -->
         <div class="d-flex flex-wrap">
           {% if user.is_authenticated %}
-          <form method="post" action="{% url 'toggle_favorite' creator.id %}" class="me-2 mb-2">
-            {% csrf_token %} {% if is_favorite %}
-            <input type="hidden" name="action" value="remove" />
-            <button type="submit" class="btn btn-outline-danger">
-              <i class="fas fa-heart me-1"></i> Retirer des favoris
-            </button>
-            {% else %}
-            <button type="submit" class="btn btn-outline-primary">
-              <i class="far fa-heart me-1"></i> Ajouter aux favoris
-            </button>
-            {% endif %}
-          </form>
-          {% endif %}
+            {% if user.role != 'client' %}
+              <form method="post" action="{% url 'toggle_favorite' creator.id %}" class="me-2 mb-2">
+                {% csrf_token %} 
+                {% if is_favorite %}
+                  <input type="hidden" name="action" value="remove" />
+                  <button type="submit" class="btn btn-outline-danger">
+                    <i class="fas fa-heart me-1"></i> Retirer des favoris
+                  </button>
+                {% else %}
+                  <button type="submit" class="btn btn-outline-primary">
+                    <i class="far fa-heart me-1"></i> Ajouter aux favoris
+                  </button>
+                {% endif %}
+              </form>
 
-          <a href="#contact" class="btn btn-primary mb-2">
-            <i class="fas fa-envelope me-1"></i> Contacter
-          </a>
+              <a href="#contact" class="btn btn-primary mb-2">
+                <i class="fas fa-envelope me-1"></i> Contacter
+              </a>
+            {% endif %}
+          {% endif %}
         </div>
       </div>
     </div>
@@ -514,6 +530,12 @@
               </form>
             </div>
           </div>
+          {% elif user.role == 'client' %}
+          <div class="alert alert-info mb-4">
+            <i class="fas fa-info-circle me-2"></i>
+            En tant que client, vous ne pouvez pas noter les créateurs.
+            Veuillez contacter un consultant si vous souhaitez partager votre expérience avec ce créateur.
+          </div>
           {% endif %}
           {% endif %}
 
@@ -667,11 +689,11 @@
           </div>
           {% elif user.role == 'client' %}
           <!-- Pour les clients, information sans contact -->
-          <p class="text-muted mb-3">
-            En tant que client, vous n'avez pas accès aux coordonnées directes
-            des créateurs.
-            <br />Veuillez contacter un consultant pour plus d'informations.
-          </p>
+          <div class="alert alert-info mt-3">
+            <i class="fas fa-info-circle me-2"></i>
+            En tant que client, vous n'avez pas accès aux coordonnées directes des créateurs.
+            <br />Veuillez contacter un consultant pour organiser une collaboration avec ce créateur.
+          </div>
           {% endif %}
           {% endif %}
         </div>
@@ -781,7 +803,9 @@
     <div class="modal-dialog">
       <div class="modal-content">
         <div class="modal-header">
-          <h5 class="modal-title" id="contactModalLabel">Contacter {{ creator.get_full_name }}</h5>
+          <h5 class="modal-title" id="contactModalLabel">
+            Contacter {% if user.role == 'client' %}{{ creator.first_name }} {{ creator.last_name|first }}.{% else %}{{ creator.get_full_name }}{% endif %}
+          </h5>
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
         <form id="contactForm" method="post" action="{% url 'contact_creator' creator.id %}">
@@ -830,7 +854,7 @@
     [{{ creator.location.latitude }}, {{ creator.location.longitude }}]
   )
     .addTo(map)
-    .bindPopup('{{ creator.full_name }}');
+    .bindPopup({% if user.role == 'client' %}'{{ creator.first_name }} {{ creator.last_name|first }}.'{% else %}'{{ creator.full_name }}'{% endif %});
   });
 
   // Fonction pour télécharger la VCard
@@ -851,7 +875,7 @@
     // Création d'un élément <a> pour le téléchargement
     var element = document.createElement('a');
     element.setAttribute('href', 'data:text/vcard;charset=utf-8,' + encodeURIComponent(vcard));
-    element.setAttribute('download', '{{ creator.full_name }}.vcf');
+    element.setAttribute('download', '{% if user.role == 'client' %}{{ creator.first_name }} {{ creator.last_name|first }}.{% else %}{{ creator.full_name }}{% endif %}.vcf');
     element.style.display = 'none';
     document.body.appendChild(element);
     element.click();

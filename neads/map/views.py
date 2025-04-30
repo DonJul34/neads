@@ -122,9 +122,17 @@ def ajax_map_data(request):
                 # Utiliser la fonction reverse pour générer une URL correcte
                 creator_url = reverse('creator_detail', kwargs={'creator_id': creator.id})
                 
+                # Format name based on user role
+                if request.user.role == 'client':
+                    creator_name = f"{creator.first_name} {creator.last_name[0]}."
+                else:
+                    creator_name = creator.full_name
+                
                 map_points.append({
                     'id': creator.id,
-                    'name': creator.full_name,
+                    'name': creator_name,
+                    'first_name': creator.first_name,
+                    'last_name': creator.last_name,
                     'lat': float(creator.location.latitude),
                     'lng': float(creator.location.longitude),
                     'rating': float(creator.average_rating),
@@ -196,9 +204,17 @@ def api_creators(request):
     # Prepare the creator data
     creators_data = []
     for creator in creators:
+        # Format name based on user role
+        if request.user.role == 'client':
+            creator_name = f"{creator.first_name} {creator.last_name[0]}."
+        else:
+            creator_name = f"{creator.first_name} {creator.last_name}"
+            
         creator_data = {
             'id': creator.id,
-            'name': f"{creator.first_name} {creator.last_name}",
+            'name': creator_name,
+            'first_name': creator.first_name,
+            'last_name': creator.last_name,
             'rating': creator.avg_rating,
             'age': creator.age,
             'image': creator.profile_image.url if creator.profile_image else None,

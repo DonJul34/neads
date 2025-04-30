@@ -165,6 +165,29 @@ const DiscoverCreators = (function () {
     }
 
     /**
+     * Vérifie si l'utilisateur courant est un client
+     * @returns {boolean} True si l'utilisateur est un client
+     */
+    function isClientUser() {
+        // Vérifier si un élément avec data-user-role existe et a la valeur "client"
+        const userRoleElement = document.querySelector('[data-user-role]');
+        return userRoleElement && userRoleElement.getAttribute('data-user-role') === 'client';
+    }
+
+    /**
+     * Formate le nom d'un créateur pour les clients (prénom + initiale du nom de famille)
+     * @param {string} firstName - Prénom du créateur
+     * @param {string} lastName - Nom de famille du créateur
+     * @returns {string} Nom formaté pour les clients
+     */
+    function getCreatorName(firstName, lastName) {
+        if (isClientUser()) {
+            return `${firstName} ${lastName.charAt(0)}.`;
+        }
+        return `${firstName} ${lastName}`;
+    }
+
+    /**
      * Crée une carte de créateur
      * @param {Object} creator - Données du créateur
      * @return {HTMLElement} - Élément DOM de la carte
@@ -185,15 +208,18 @@ const DiscoverCreators = (function () {
         const formattedFollowers = formatNumber(creator.followers_count);
         const formattedEngagement = creator.engagement_rate ? creator.engagement_rate.toFixed(2) + '%' : 'N/A';
 
+        // Obtenir le nom formaté
+        const creatorName = getCreatorName(creator.first_name, creator.last_name);
+
         // Construire la carte HTML
         colElement.innerHTML = `
             <div class="result-card">
                 <div class="card-header">
                     <div class="profile-image">
-                        <img src="${creator.profile_image || '/static/img/default-avatar.png'}" alt="${creator.first_name} ${creator.last_name}">
+                        <img src="${creator.profile_image || '/static/img/default-avatar.png'}" alt="${creatorName}">
                     </div>
                     <div class="creator-info">
-                        <h3 class="creator-name">${creator.first_name} ${creator.last_name}</h3>
+                        <h3 class="creator-name">${creatorName}</h3>
                         <p class="creator-location">
                             <i class="fas fa-map-marker-alt"></i> ${creator.location.city || 'Non spécifié'}, ${creator.location.country || ''}
                         </p>

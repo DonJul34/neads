@@ -11,6 +11,9 @@ import re
 import random
 import time
 import string
+import subprocess
+import tempfile
+from pathlib import Path
 
 # Configurer l'environnement Django
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'neads.settings')
@@ -361,6 +364,260 @@ def clean_duplicate_media(creator_id=None):
     total_after = media_query.count()
     print(f"Nettoyage terminé: {total_before - total_after} médias supprimés")
 
+def extract_video_frame(video_path, output_path=None):
+    """
+    Extrait une frame aléatoire d'une vidéo en utilisant ffmpeg.
+    Retourne le chemin de la frame extraite.
+    """
+    try:
+        if not os.path.exists(video_path):
+            print(f"Le fichier vidéo n'existe pas: {video_path}")
+            return None
+            
+        # Si aucun chemin de sortie n'est spécifié, créer un nom temporaire
+        if output_path is None:
+            # Créer un dossier temporaire si nécessaire
+            temp_dir = os.path.join('media', 'temp_frames')
+            os.makedirs(temp_dir, exist_ok=True)
+            
+            # Générer un nom de fichier unique
+            filename = f"frame_{int(time.time())}_{random.randint(1000, 9999)}.jpg"
+            output_path = os.path.join(temp_dir, filename)
+        
+        # Vérifier si ffmpeg est disponible
+        try:
+            subprocess.run(['ffmpeg', '-version'], capture_output=True, check=False)
+        except FileNotFoundError:
+            print("FFmpeg n'est pas disponible. Utilisation d'une méthode alternative pour l'extraction de frame.")
+            return fallback_video_thumbnail(video_path, output_path)
+        
+        # Obtenir la durée de la vidéo
+        duration_cmd = [
+            'ffprobe', 
+            '-v', 'error', 
+            '-show_entries', 'format=duration', 
+            '-of', 'default=noprint_wrappers=1:nokey=1', 
+            video_path
+        ]
+        
+        result = subprocess.run(duration_cmd, capture_output=True, text=True)
+        if result.returncode != 0:
+            print(f"Erreur lors de l'obtention de la durée: {result.stderr}")
+            # Utiliser une position par défaut si on ne peut pas obtenir la durée
+            random_position = "00:00:05"
+        else:
+            # Convertir la durée en secondes et choisir une position aléatoire
+            try:
+                duration = float(result.stdout.strip())
+                # Prendre une frame dans les 80% premiers de la vidéo (éviter la fin qui peut être noire)
+                random_seconds = random.uniform(1, duration * 0.8)
+                
+                # Formater en HH:MM:SS.mmm
+                hours, remainder = divmod(random_seconds, 3600)
+                minutes, seconds = divmod(remainder, 60)
+                random_position = f"{int(hours):02d}:{int(minutes):02d}:{seconds:06.3f}"
+            except:
+                # En cas d'erreur, utiliser une position par défaut
+                random_position = "00:00:05"
+        
+        # Extraire la frame à la position aléatoire
+        extract_cmd = [
+            'ffmpeg',
+            '-ss', random_position,  # Position de départ
+            '-i', video_path,        # Fichier d'entrée
+            '-frames:v', '1',        # Extraire une seule frame
+            '-q:v', '2',             # Qualité de la frame (2 est élevé, 31 est bas)
+            '-y',                    # Écraser le fichier existant
+            output_path              # Fichier de sortie
+        ]
+        
+        result = subprocess.run(extract_cmd, capture_output=True)
+        if result.returncode != 0:
+            print(f"Erreur lors de l'extraction de la frame: {result.stderr.decode()}")
+            return fallback_video_thumbnail(video_path, output_path)
+            
+        print(f"Frame extraite avec succès: {output_path}")
+        return output_path
+        
+    except Exception as e:
+        print(f"Erreur lors de l'extraction de la frame: {str(e)}")
+        return fallback_video_thumbnail(video_path, output_path)
+
+def fallback_video_thumbnail(video_path, output_path):
+    """
+    Méthode alternative pour créer une miniature quand FFmpeg n'est pas disponible.
+    Utilise un placeholder générique ou essaie d'autres bibliothèques Python.
+    """
+    try:
+        # Essayer d'utiliser opencv-python si disponible
+        try:
+            import cv2
+            print("Utilisation de OpenCV pour générer la miniature")
+            
+            # Ouvrir la vidéo
+            cap = cv2.VideoCapture(video_path)
+            
+            # Vérifier si la vidéo est ouverte correctement
+            if not cap.isOpened():
+                raise Exception("Impossible d'ouvrir la vidéo avec OpenCV")
+            
+            # Obtenir le nombre total de frames
+            total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+            
+            if total_frames <= 0:
+                raise Exception("Aucune frame détectée dans la vidéo")
+            
+            # Calculer la position pour extraire la frame (25% de la vidéo)
+            frame_position = int(total_frames * 0.25)
+            
+            # Aller à cette position
+            cap.set(cv2.CAP_PROP_POS_FRAMES, frame_position)
+            
+            # Lire la frame
+            ret, frame = cap.read()
+            
+            if not ret:
+                raise Exception("Échec de la lecture de la frame")
+            
+            # Enregistrer l'image
+            cv2.imwrite(output_path, frame)
+            
+            # Libérer les ressources
+            cap.release()
+            
+            print(f"Miniature générée avec OpenCV: {output_path}")
+            return output_path
+            
+        except (ImportError, Exception) as e:
+            print(f"Echec avec OpenCV: {str(e)}")
+            
+            # Essayer avec moviepy comme seconde alternative
+            try:
+                from moviepy.editor import VideoFileClip
+                print("Utilisation de MoviePy pour générer la miniature")
+                
+                clip = VideoFileClip(video_path)
+                
+                # Prendre une frame à 25% de la durée
+                duration = clip.duration
+                frame_time = duration * 0.25
+                
+                # Extraire et sauvegarder la frame
+                clip.save_frame(output_path, t=frame_time)
+                clip.close()
+                
+                print(f"Miniature générée avec MoviePy: {output_path}")
+                return output_path
+                
+            except (ImportError, Exception) as e:
+                print(f"Echec avec MoviePy: {str(e)}")
+        
+        # Si toutes les méthodes échouent, créer un placeholder générique
+        print("Création d'une miniature placeholder générique")
+        
+        # Utiliser une image générique du projet s'il en existe une
+        placeholder_paths = [
+            os.path.join('media', 'placeholders', 'video_thumbnail.jpg'),
+            os.path.join('static', 'images', 'video_placeholder.jpg'),
+            os.path.join('static', 'img', 'video_thumbnail.png')
+        ]
+        
+        # Chercher un placeholder existant
+        for placeholder in placeholder_paths:
+            if os.path.exists(placeholder):
+                # Copier le placeholder vers la destination
+                import shutil
+                shutil.copy(placeholder, output_path)
+                print(f"Placeholder copié vers: {output_path}")
+                return output_path
+                
+        # Si aucun placeholder n'est trouvé, créer une image basique avec PIL
+        try:
+            from PIL import Image, ImageDraw, ImageFont
+            
+            # Créer une image noire 16:9
+            img = Image.new('RGB', (640, 360), color=(0, 0, 0))
+            draw = ImageDraw.Draw(img)
+            
+            # Dessiner un symbole de lecture
+            draw.polygon([(240, 180), (400, 180), (320, 260)], fill=(255, 255, 255))
+            
+            # Ajouter le nom du fichier
+            video_filename = os.path.basename(video_path)
+            draw.text((320, 300), video_filename, fill=(200, 200, 200), anchor="ms")
+            
+            # Sauvegarder l'image
+            img.save(output_path)
+            print(f"Image placeholder générique créée: {output_path}")
+            return output_path
+            
+        except ImportError:
+            print("PIL n'est pas disponible. Impossible de créer une miniature.")
+            return None
+            
+    except Exception as e:
+        print(f"Toutes les méthodes de génération de miniature ont échoué: {str(e)}")
+        return None
+
+def get_video_thumbnail(video_path, creator_id):
+    """
+    Génère une miniature à partir d'une vidéo.
+    Retourne le chemin relatif pour la base de données.
+    """
+    try:
+        # Vérifier si le fichier existe
+        if not os.path.exists(video_path):
+            print(f"Le fichier vidéo n'existe pas: {video_path}")
+            return None
+            
+        # Créer les répertoires pour stocker la miniature
+        creator_dir = f"{creator_id}"
+        thumbnail_dir = os.path.join('media', 'creators', creator_dir, 'thumbnails')
+        os.makedirs(thumbnail_dir, exist_ok=True)
+        
+        # Générer un nom de fichier pour la miniature
+        filename = f"thumb_{Path(video_path).stem}_{int(time.time())}.jpg"
+        output_path = os.path.join(thumbnail_dir, filename)
+        
+        # Extraire une frame de la vidéo
+        extracted_frame = extract_video_frame(video_path, output_path)
+        
+        if not extracted_frame:
+            print(f"Échec de l'extraction de frame. Recherche d'une image de portfolio à utiliser...")
+            # Fallback: utiliser une image du portfolio du créateur
+            try:
+                portfolio_image = Media.objects.filter(
+                    creator_id=creator_id,
+                    media_type='image'
+                ).first()
+                
+                if portfolio_image and portfolio_image.file:
+                    # Utiliser l'image du portfolio comme miniature
+                    import shutil
+                    # Chemin complet vers l'image du portfolio
+                    portfolio_image_path = os.path.join('media', portfolio_image.file.name)
+                    
+                    if os.path.exists(portfolio_image_path):
+                        # Copier l'image vers le dossier des miniatures
+                        shutil.copy(portfolio_image_path, output_path)
+                        print(f"Image du portfolio utilisée comme miniature: {output_path}")
+                        
+                        # Retourner le chemin relatif pour la base de données
+                        db_path = os.path.join('creators', creator_dir, 'thumbnails', filename)
+                        return db_path
+            except Exception as e:
+                print(f"Erreur lors de l'utilisation de l'image du portfolio: {str(e)}")
+            
+            return None
+            
+        # Retourner le chemin relatif pour la base de données
+        db_path = os.path.join('creators', creator_dir, 'thumbnails', filename)
+        return db_path
+        
+    except Exception as e:
+        print(f"Erreur lors de la génération de la miniature: {str(e)}")
+        return None
+
 def import_creators_from_csv(csv_path, clean_duplicates=True):
     print(f"Importation des créateurs depuis {csv_path}")
     
@@ -395,15 +652,37 @@ def import_creators_from_csv(csv_path, clean_duplicates=True):
                 # Récupérer ou créer les types de contenu
                 content_types_list = []
                 content_types_fields = ['connaitre_connaitre_domaines', 'propos_propos_adresse_pays']
+                
+                # NOTE: Cette partie est maintenant commentée pour ne pas importer les types de contenu
+                # Les types de contenu sont désormais gérés manuellement via reset_content_types.py
+                """
                 for field in content_types_fields:
                     if field in row and row[field]:
                         # Extraire les IDs des types de contenu
                         content_type_ids = re.findall(r'"(\d+)"', row[field])
                         for content_type_id in content_type_ids:
-                            # Correspondance des IDs vers des noms de type (à adapter)
-                            content_type_name = f"Type {content_type_id}"
+                            # Correspondance des IDs vers des noms de type descriptifs
+                            content_type_mapping = {
+                                # Mapping des IDs vers des noms descriptifs
+                                '8': 'Vidéo',
+                                '9': 'Audio',
+                                '10': 'Image',
+                                '11': 'UGC',
+                                '12': 'Animation',
+                                '13': 'Story',
+                                '15': 'Reel',
+                                '16': 'Live',
+                                '17': 'Podcast',
+                                '77': 'Tutoriel',
+                                '186': 'Vlog',
+                                '309': 'Short',
+                                # Ajouter d'autres correspondances selon vos besoins
+                                # Par défaut si l'ID n'est pas dans le mapping
+                            }
+                            content_type_name = content_type_mapping.get(content_type_id, f"Type {content_type_id}")
                             content_type, created = ContentType.objects.get_or_create(name=content_type_name)
                             content_types_list.append(content_type)
+                """
                 
                 # Récupérer les données d'adresse
                 address = row.get('propos_propos_adresse', '')
@@ -468,7 +747,8 @@ def import_creators_from_csv(csv_path, clean_duplicates=True):
                 
                 # Ajouter les domaines et types de contenu
                 creator.domains.set(domains_list)
-                creator.content_types.set(content_types_list)
+                # Ne pas ajouter de types de contenu lors de l'import
+                # creator.content_types.set(content_types_list)
                 
                 # Stocker les URLs déjà traitées pour éviter les doublons
                 processed_urls = set()
@@ -499,8 +779,10 @@ def import_creators_from_csv(csv_path, clean_duplicates=True):
                     'Attachment URL': 'video'
                 }
                 
-                # Variables pour suivre la première image trouvée
+                # Variables pour suivre les images et vidéos
                 first_image_path = None
+                image_paths = []
+                video_count = 0
                 
                 for field_name, media_type in media_fields.items():
                     if field_name in row and row[field_name]:
@@ -519,9 +801,13 @@ def import_creators_from_csv(csv_path, clean_duplicates=True):
                                 print(f"  - Échec du téléchargement pour {url}")
                                 continue
                                 
-                            # Capturer la première image pour l'utiliser comme image mise en avant si nécessaire
-                            if media_type == 'image' and first_image_path is None:
-                                first_image_path = file_path
+                            # Collecter les images pour une utilisation ultérieure
+                            if media_type == 'image':
+                                if first_image_path is None:
+                                    first_image_path = file_path
+                                image_paths.append(file_path)
+                            elif media_type == 'video':
+                                video_count += 1
                                 
                             # Vérifier si un média avec cette URL existe déjà
                             existing_media = None
@@ -556,21 +842,40 @@ def import_creators_from_csv(csv_path, clean_duplicates=True):
                                 media.file = file_path
                             else:  # video
                                 media.video_file = file_path
-                                # Pour les vidéos, utiliser la première image comme miniature si disponible
-                                # sinon laisser vide pour que le front puisse générer une miniature
-                                if first_image_path:
-                                    media.thumbnail = first_image_path
+                                # Pour les vidéos, générer une miniature à partir de la vidéo elle-même
+                                full_video_path = os.path.join('media', file_path)
+                                thumbnail_path = get_video_thumbnail(full_video_path, creator.id)
+                                if thumbnail_path:
+                                    media.thumbnail = thumbnail_path
+                                    print(f"  - Thumbnail générée à partir de la vidéo: {os.path.basename(thumbnail_path)}")
                             
                             # Enregistrer pour obtenir un ID
                             media.save()
                             
                             print(f"  - Média ajouté: {media.title} ({file_path})")
                 
-                # Si aucune image mise en avant n'a été trouvée mais qu'on a une première image, l'utiliser
-                if not creator.featured_image and first_image_path:
-                    creator.featured_image = first_image_path
+                # Si aucune image mise en avant mais des images dans le portfolio, utiliser la première comme image mise en avant
+                if not creator.featured_image and image_paths:
+                    creator.featured_image = image_paths[0]
                     creator.save()
-                    print(f"  - Image mise en avant définie automatiquement: {first_image_path}")
+                    print(f"  - Image mise en avant définie automatiquement depuis le portfolio: {image_paths[0]}")
+                
+                # Générer des miniatures pour les vidéos qui n'en ont pas
+                videos_without_thumbnail = Media.objects.filter(
+                    creator=creator,
+                    media_type='video',
+                    thumbnail__isnull=True
+                )
+                
+                for video in videos_without_thumbnail:
+                    if video.video_file:
+                        # Générer une miniature à partir de la vidéo
+                        full_video_path = os.path.join('media', video.video_file.name)
+                        thumbnail_path = get_video_thumbnail(full_video_path, creator.id)
+                        if thumbnail_path:
+                            video.thumbnail = thumbnail_path
+                            video.save()
+                            print(f"  - Miniature générée pour vidéo existante: {os.path.basename(video.video_file.name)}")
                 
                 # Ajouter l'ID du créateur à la liste pour nettoyage ultérieur
                 updated_creator_ids.append(creator.id)

@@ -53,6 +53,7 @@
                              aria-valuenow="{{ user_stats.clients }}" aria-valuemin="0" aria-valuemax="{{ total }}">
                             Clients ({{ user_stats.clients }})
                         </div>
+                        {% if is_admin %}
                         <div class="progress-bar bg-success" role="progressbar" style="width: {{ user_stats.consultants|default:0|floatformat:0 }}%;" 
                              aria-valuenow="{{ user_stats.consultants }}" aria-valuemin="0" aria-valuemax="{{ total }}">
                             Consultants ({{ user_stats.consultants }})
@@ -61,6 +62,7 @@
                              aria-valuenow="{{ user_stats.admins }}" aria-valuemin="0" aria-valuemax="{{ total }}">
                             Admins ({{ user_stats.admins }})
                         </div>
+                        {% endif %}
                         {% endwith %}
                     </div>
                 </div>
@@ -69,9 +71,14 @@
                     <a href="{% url 'admin_user_list' %}" class="btn btn-sm btn-outline-primary">
                         <i class="fas fa-users me-1"></i> Gérer les utilisateurs
                     </a>
-                    <a href="{% url 'admin_user_create' %}" class="btn btn-sm btn-primary">
-                        <i class="fas fa-user-plus me-1"></i> Ajouter
+                    <a href="{% url 'client_create' %}" class="btn btn-sm btn-primary">
+                        <i class="fas fa-user-plus me-1"></i> Ajouter un client
                     </a>
+                    {% if is_admin %}
+                    <a href="{% url 'consultant_create' %}" class="btn btn-sm btn-success">
+                        <i class="fas fa-user-cog me-1"></i> Ajouter un consultant
+                    </a>
+                    {% endif %}
                 </div>
             </div>
         </div>
@@ -133,7 +140,7 @@
                     <a href="{% url 'gallery_view' %}" class="btn btn-sm btn-outline-primary">
                         <i class="fas fa-images me-1"></i> Voir la galerie
                     </a>
-                    <a href="{% url 'admin_user_create' %}?role=creator" class="btn btn-sm btn-primary">
+                    <a href="{% url 'management_dashboard' %}?add_creator=1" class="btn btn-sm btn-primary">
                         <i class="fas fa-plus me-1"></i> Ajouter un créateur
                     </a>
                 </div>
@@ -171,9 +178,11 @@
                         </td>
                         <td>{{ user.date_joined|date:"d/m/Y H:i" }}</td>
                         <td>
+                            {% if is_admin or user.role not in 'admin,consultant' %}
                             <a href="{% url 'admin_user_edit' user.id %}" class="btn btn-sm btn-primary">
                                 <i class="fas fa-edit"></i>
                             </a>
+                            {% endif %}
                             {% if user.role == 'creator' and user.creator_profile %}
                             <a href="{% url 'creator_detail' user.creator_profile.id %}" class="btn btn-sm btn-info">
                                 <i class="fas fa-eye"></i>

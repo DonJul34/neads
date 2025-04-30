@@ -346,13 +346,38 @@ const MapManager = (function () {
         // Construire le HTML complet
         return `
             <div class="creator-map-popup">
-                <img src="${creator.thumbnail || 'https://via.placeholder.com/300x150?text=Pas+d\'image'}" alt="${creator.full_name}">
-                <h5>${creator.full_name} ${creator.verified ? '<i class="fas fa-check-circle"></i>' : ''}</h5>
+                <img src="${creator.thumbnail || 'https://via.placeholder.com/300x150?text=Pas+d\'image'}" 
+                     alt="${isClientUser() ? getPrivateName(creator.first_name, creator.last_name) : creator.full_name}">
+                <h5>
+                    ${isClientUser() ? getPrivateName(creator.first_name, creator.last_name) : creator.full_name}
+                    ${creator.verified ? '<i class="fas fa-check-circle"></i>' : ''}
+                </h5>
                 <div class="popup-star-rating">${starsHtml} <small>(${creator.total_ratings || 0})</small></div>
                 ${distanceHtml}
                 <a href="/creators/creator/${creator.id}/" class="btn btn-sm btn-primary w-100">Voir le profil</a>
             </div>
         `;
+    }
+
+    /**
+     * Vérifie si l'utilisateur courant est un client
+     * @returns {boolean} True si l'utilisateur est un client
+     */
+    function isClientUser() {
+        // Vérifier si un élément avec data-user-role existe et a la valeur "client"
+        const userRoleElement = document.querySelector('[data-user-role]');
+        return userRoleElement && userRoleElement.getAttribute('data-user-role') === 'client';
+    }
+
+    /**
+     * Formate le nom d'un créateur pour les clients (prénom + initiale du nom de famille)
+     * @param {string} firstName - Prénom du créateur
+     * @param {string} lastName - Nom de famille du créateur
+     * @returns {string} Nom formaté pour les clients
+     */
+    function getPrivateName(firstName, lastName) {
+        if (!firstName || !lastName) return firstName || lastName || '';
+        return `${firstName} ${lastName.charAt(0)}.`;
     }
 
     /**

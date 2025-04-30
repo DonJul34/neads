@@ -14,9 +14,11 @@ class LocationForm(forms.ModelForm):
     full_address = forms.CharField(
         label="Adresse complète",
         widget=forms.TextInput(attrs={
-            'class': 'form-control full-address-autocomplete',
+            'class': 'form-control',
             'placeholder': 'Commencez à taper votre adresse...',
-            'id': 'full-address-input'
+            'id': 'full-address-input',
+            'autocomplete': 'off',  # Désactiver l'autocomplétion du navigateur
+            'data-disable-autocompletion': 'true'  # Attribut personnalisé
         })
     )
     
@@ -33,8 +35,10 @@ class LocationForm(forms.ModelForm):
         latitude = cleaned_data.get('latitude')
         longitude = cleaned_data.get('longitude')
         
+        # Assouplir la validation pour permettre la saisie manuelle de l'adresse
         if not latitude or not longitude:
-            self.add_error('full_address', "Veuillez sélectionner une adresse valide dans la liste des suggestions.")
+            # On ne déclenche pas d'erreur pour permettre la saisie manuelle
+            pass
             
         return cleaned_data
 

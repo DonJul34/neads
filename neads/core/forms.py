@@ -198,3 +198,171 @@ class SetPasswordForm(forms.Form):
         if password1 and password2 and password1 != password2:
             raise ValidationError("Les mots de passe ne correspondent pas.")
         return password2 
+
+
+class ClientCreationForm(forms.ModelForm):
+    """Formulaire frontend pour la création de clients par les consultants ou les admins."""
+    
+    password1 = forms.CharField(
+        label='Mot de passe', 
+        widget=forms.PasswordInput(attrs={'class': 'form-control'}),
+        required=False
+    )
+    password2 = forms.CharField(
+        label='Confirmation', 
+        widget=forms.PasswordInput(attrs={'class': 'form-control'}),
+        required=False
+    )
+    
+    # Champs pour UserProfile
+    phone_number = forms.CharField(
+        max_length=15, 
+        required=False, 
+        label="Téléphone",
+        widget=forms.TextInput(attrs={'class': 'form-control'})
+    )
+    company_name = forms.CharField(
+        max_length=100, 
+        required=False, 
+        label="Entreprise",
+        widget=forms.TextInput(attrs={'class': 'form-control'})
+    )
+    notes = forms.CharField(
+        widget=forms.Textarea(attrs={'rows': 3, 'class': 'form-control'}), 
+        required=False, 
+        label="Notes"
+    )
+    
+    # Option pour envoyer les identifiants
+    send_credentials = forms.BooleanField(
+        required=False, 
+        initial=True,
+        label="Envoyer les identifiants par email",
+        widget=forms.CheckboxInput(attrs={'class': 'form-check-input'})
+    )
+    
+    class Meta:
+        model = User
+        fields = ('email', 'first_name', 'last_name')
+        widgets = {
+            'email': forms.EmailInput(attrs={'class': 'form-control'}),
+            'first_name': forms.TextInput(attrs={'class': 'form-control'}),
+            'last_name': forms.TextInput(attrs={'class': 'form-control'}),
+        }
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Définir le rôle client par défaut (caché dans le formulaire)
+        if not self.instance.pk:
+            self.instance.role = 'client'
+    
+    def clean_password2(self):
+        password1 = self.cleaned_data.get("password1")
+        password2 = self.cleaned_data.get("password2")
+        if password1 and password2 and password1 != password2:
+            raise ValidationError("Les mots de passe ne correspondent pas")
+        return password2
+    
+    def save(self, commit=True):
+        user = super().save(commit=False)
+        user.role = 'client'  # S'assurer que le rôle est client
+        
+        # Définir le mot de passe si fourni
+        if self.cleaned_data.get("password1"):
+            user.set_password(self.cleaned_data["password1"])
+        
+        if commit:
+            user.save()
+            
+            # Créer ou mettre à jour le profil
+            profile, created = UserProfile.objects.get_or_create(user=user)
+            profile.phone_number = self.cleaned_data.get('phone_number', '')
+            profile.company_name = self.cleaned_data.get('company_name', '')
+            profile.notes = self.cleaned_data.get('notes', '')
+            profile.save()
+        
+        return user
+
+
+class ConsultantCreationForm(forms.ModelForm):
+    """Formulaire frontend pour la création de consultants par les admins."""
+    
+    password1 = forms.CharField(
+        label='Mot de passe', 
+        widget=forms.PasswordInput(attrs={'class': 'form-control'}),
+        required=False
+    )
+    password2 = forms.CharField(
+        label='Confirmation', 
+        widget=forms.PasswordInput(attrs={'class': 'form-control'}),
+        required=False
+    )
+    
+    # Champs pour UserProfile
+    phone_number = forms.CharField(
+        max_length=15, 
+        required=False, 
+        label="Téléphone",
+        widget=forms.TextInput(attrs={'class': 'form-control'})
+    )
+    company_name = forms.CharField(
+        max_length=100, 
+        required=False, 
+        label="Entreprise",
+        widget=forms.TextInput(attrs={'class': 'form-control'})
+    )
+    notes = forms.CharField(
+        widget=forms.Textarea(attrs={'rows': 3, 'class': 'form-control'}), 
+        required=False, 
+        label="Notes"
+    )
+    
+    # Option pour envoyer les identifiants
+    send_credentials = forms.BooleanField(
+        required=False, 
+        initial=True,
+        label="Envoyer les identifiants par email",
+        widget=forms.CheckboxInput(attrs={'class': 'form-check-input'})
+    )
+    
+    class Meta:
+        model = User
+        fields = ('email', 'first_name', 'last_name')
+        widgets = {
+            'email': forms.EmailInput(attrs={'class': 'form-control'}),
+            'first_name': forms.TextInput(attrs={'class': 'form-control'}),
+            'last_name': forms.TextInput(attrs={'class': 'form-control'}),
+        }
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Définir le rôle consultant par défaut (caché dans le formulaire)
+        if not self.instance.pk:
+            self.instance.role = 'consultant'
+    
+    def clean_password2(self):
+        password1 = self.cleaned_data.get("password1")
+        password2 = self.cleaned_data.get("password2")
+        if password1 and password2 and password1 != password2:
+            raise ValidationError("Les mots de passe ne correspondent pas")
+        return password2
+    
+    def save(self, commit=True):
+        user = super().save(commit=False)
+        user.role = 'consultant'  # S'assurer que le rôle est consultant
+        
+        # Définir le mot de passe si fourni
+        if self.cleaned_data.get("password1"):
+            user.set_password(self.cleaned_data["password1"])
+        
+        if commit:
+            user.save()
+            
+            # Créer ou mettre à jour le profil
+            profile, created = UserProfile.objects.get_or_create(user=user)
+            profile.phone_number = self.cleaned_data.get('phone_number', '')
+            profile.company_name = self.cleaned_data.get('company_name', '')
+            profile.notes = self.cleaned_data.get('notes', '')
+            profile.save()
+        
+        return user 

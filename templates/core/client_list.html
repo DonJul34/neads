@@ -33,10 +33,18 @@
         <h1 class="h2">Gestion des Clients</h1>
         <p class="text-muted">{{ total_clients }} client{{ total_clients|pluralize }} enregistré{{ total_clients|pluralize }}</p>
     </div>
-    <div>
-        <a href="{% url 'admin_user_create' %}" class="btn btn-primary">
+    <div class="d-flex gap-2">
+        <!-- Ajouter un client -->
+        <a href="{% url 'client_create_view' %}" class="btn btn-primary">
             <i class="fas fa-plus me-1"></i> Ajouter un client
         </a>
+        
+        <!-- Ajouter un consultant (admin uniquement) -->
+        {% if user.role == 'admin' %}
+        <a href="{% url 'consultant_create' %}" class="btn btn-success">
+            <i class="fas fa-user-cog me-1"></i> Ajouter un consultant
+        </a>
+        {% endif %}
     </div>
 </div>
 
@@ -240,4 +248,52 @@
     </ul>
 </nav>
 {% endif %}
+
+<!-- À REMPLACER: Modal pour ajouter un client -->
+<!-- <div class="modal fade" id="createClientModal" tabindex="-1" aria-labelledby="createClientModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="createClientModalLabel">Ajouter un client</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p class="alert alert-info">
+                    <i class="fas fa-info-circle me-2"></i>
+                    Pour créer un nouveau client, veuillez utiliser l'interface d'administration Django.
+                </p>
+                <div class="d-grid">
+                    <a href="/admin/core/user/add/" class="btn btn-primary" target="_blank">
+                        Accéder au formulaire d'ajout d'utilisateur
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div> -->
+
+<!-- À REMPLACER: Modal pour ajouter un consultant (admin uniquement) -->
+<!-- {% if user.role == 'admin' %}
+<div class="modal fade" id="createConsultantModal" tabindex="-1" aria-labelledby="createConsultantModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="createConsultantModalLabel">Ajouter un consultant</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p class="alert alert-info">
+                    <i class="fas fa-info-circle me-2"></i>
+                    Pour créer un nouveau consultant, veuillez utiliser l'interface d'administration Django et sélectionner le rôle "Consultant".
+                </p>
+                <div class="d-grid">
+                    <a href="/admin/core/user/add/" class="btn btn-primary" target="_blank">
+                        Accéder au formulaire d'ajout d'utilisateur
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %} -->
 {% endblock %} 

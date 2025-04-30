@@ -15,6 +15,7 @@ urlpatterns = [
     path('gestion/', views.management_dashboard, name='management_dashboard'),
     path('gestion/createurs/', views.creator_list, name='creator_list'),
     path('gestion/clients/', views.client_list, name='client_list'),
+    path('gestion/clients/create/', views.client_create_view, name='client_create_view'),
     
     # Contact créateur
     path('creators/<int:creator_id>/contact/', views.contact_creator, name='contact_creator'),
@@ -26,4 +27,8 @@ urlpatterns = [
     path('admin/users/<int:user_id>/edit/', admin_views.user_edit, name='admin_user_edit'),
     path('admin/users/send-password/', admin_views.user_send_temp_password, name='admin_send_password'),
     path('admin/users/<int:user_id>/toggle-status/', admin_views.toggle_user_status, name='admin_toggle_user_status'),
+    
+    # Nouveaux formulaires frontend pour la création d'utilisateurs
+    path('admin/clients/create/', admin_views.client_create, name='client_create'),
+    path('admin/consultants/create/', admin_views.consultant_create, name='consultant_create'),
 ] 

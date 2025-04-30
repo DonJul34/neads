@@ -9,7 +9,40 @@ creator.full_name }}{% endblock %} {% block extra_css %}
     height: 200px;
     margin-top: 10px;
     border-radius: 4px;
-    display: none;
+  }
+  
+  /* Style pour s'assurer que le champ d'adresse reste actif */
+  .keep-active {
+    background-color: white !important;
+    opacity: 1 !important;
+    color: #212529 !important;
+  }
+  
+  /* Surcharger les styles appliqués par Google Places API */
+  .pac-container {
+    z-index: 10000;
+  }
+  
+  .address-suggestions {
+    position: relative;
+    z-index: 1000;
+  }
+  
+  .address-suggestions .list-group {
+    max-height: 250px;
+    overflow-y: auto;
+  }
+  
+  .address-suggestions .list-group-item {
+    cursor: pointer;
+  }
+  
+  .address-suggestions .list-group-item:hover {
+    background-color: #f8f9fa;
+  }
+  
+  .search-address-btn {
+    white-space: nowrap;
   }
 </style>
 {% endblock %} {% block content %}
@@ -44,12 +77,14 @@ creator.full_name }}{% endblock %} {% block extra_css %}
             <div class="mb-4">
               <h2 class="h5 mb-3">Localisation</h2>
               {% for field in location_form %}
-              <div class="mb-3">
+              <div class="mb-3 {% if field.name == 'full_address' %}address-container{% endif %}">
                 {% if not field.is_hidden %}
                 <label for="{{ field.id_for_label }}" class="form-label"
                   >{{ field.label }}</label
                 >
-                {% endif %} {{ field }} {% if field.help_text %}
+                {% endif %} {{ field }} {% if field.name == 'full_address' %}
+                <div class="form-text">Tapez votre adresse et cliquez sur "Rechercher" ou appuyez sur Entrée</div>
+                {% endif %} {% if field.help_text %}
                 <div class="form-text">{{ field.help_text }}</div>
                 {% endif %} {% if field.errors %}
                 <div class="invalid-feedback d-block">
@@ -79,24 +114,25 @@ creator.full_name }}{% endblock %} {% block extra_css %}
   </div>
 </div>
 {% endblock %} {% block extra_js %}
+<!-- Utilisation de Leaflet et OpenStreetMap pour la carte et le géocodage -->
 <script src="https://cdn.jsdelivr.net/npm/leaflet@1.7.1/dist/leaflet.js"></script>
 <script>
   document.addEventListener("DOMContentLoaded", function () {
-    // Éléments du formulaire
-    const locationInput = document.getElementById("location-input");
-    const countryInput = document.getElementById("id_country");
-    const postalCodeInput = document.getElementById("id_postal_code");
+    // On remplace l'input d'origine par notre propre implémentation
+    const addressContainer = document.querySelector('.address-container');
+    const originalInput = document.getElementById("full-address-input");
+    
+    // Références aux champs cachés de latitude/longitude
     const latitudeInput = document.getElementById("id_latitude");
     const longitudeInput = document.getElementById("id_longitude");
     const mapPreview = document.getElementById("map-preview");
-
+    
     let map = null;
     let marker = null;
 
     // Fonction pour initialiser la carte
     function initMap(lat, lng) {
       if (!map) {
-        mapPreview.style.display = "block";
         map = L.map("map-preview").setView([lat, lng], 13);
 
         L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
@@ -111,9 +147,6 @@ creator.full_name }}{% endblock %} {% block extra_css %}
           const position = marker.getLatLng();
           latitudeInput.value = position.lat;
           longitudeInput.value = position.lng;
-
-          // Essayer de faire du géocodage inversé (optionnel)
-          reverseGeocode(position.lat, position.lng);
         });
       } else {
         map.setView([lat, lng], 13);
@@ -121,83 +154,139 @@ creator.full_name }}{% endblock %} {% block extra_css %}
       }
     }
 
-    // Fonction pour géocoder une adresse
-    function geocodeAddress(address) {
-      const nominatimUrl = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(
-        address
-      )}&limit=1`;
-
-      fetch(nominatimUrl)
-        .then((response) => response.json())
-        .then((data) => {
-          if (data.length > 0) {
-            const result = data[0];
-
-            // Remplir les champs cachés
-            latitudeInput.value = result.lat;
-            longitudeInput.value = result.lon;
-
-            // Récupérer le pays et le code postal si disponible
-            if (result.address) {
-              countryInput.value = result.address.country || "";
-              postalCodeInput.value = result.address.postcode || "";
-            }
-
-            // Afficher sur la carte
-            initMap(parseFloat(result.lat), parseFloat(result.lon));
-          }
-        })
-        .catch((error) => console.error("Erreur de géocodage:", error));
+    // Initialiser la carte si des coordonnées sont disponibles
+    if (latitudeInput && longitudeInput && latitudeInput.value && longitudeInput.value) {
+      initMap(parseFloat(latitudeInput.value), parseFloat(longitudeInput.value));
     }
-
-    // Fonction de géocodage inverse
-    function reverseGeocode(lat, lng) {
-      const nominatimUrl = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`;
-
-      fetch(nominatimUrl)
-        .then((response) => response.json())
-        .then((data) => {
-          if (data && data.address) {
-            // Mettre à jour les champs du formulaire
-            locationInput.value =
-              [
-                data.address.city,
-                data.address.town,
-                data.address.village,
-              ].filter(Boolean)[0] || "";
-            countryInput.value = data.address.country || "";
-            postalCodeInput.value = data.address.postcode || "";
-          }
-        })
-        .catch((error) => console.error("Erreur de géocodage inversé:", error));
-    }
-
-    // Gestionnaire d'événement pour l'autocomplétion
-    let timeoutId = null;
-    if (locationInput) {
-      locationInput.addEventListener("input", function () {
-        // Attendre que l'utilisateur arrête de taper
-        clearTimeout(timeoutId);
-        timeoutId = setTimeout(() => {
-          const address = this.value.trim();
-          if (address.length > 2) {
-            geocodeAddress(address);
-          }
-        }, 500);
+    
+    if (addressContainer && originalInput) {
+      // Cacher l'input original (mais garder pour le formulaire)
+      originalInput.style.display = 'none';
+      
+      // Créer notre propre input pour l'édition libre
+      const customInput = document.createElement('input');
+      customInput.type = 'text';
+      customInput.className = 'form-control';
+      customInput.id = 'custom-address-input';
+      customInput.placeholder = 'Commencez à taper votre adresse...';
+      customInput.value = originalInput.value; // Copier la valeur existante
+      
+      // Créer un bouton de recherche
+      const searchBtn = document.createElement('button');
+      searchBtn.type = 'button';
+      searchBtn.className = 'btn btn-outline-secondary search-address-btn';
+      searchBtn.innerHTML = '<i class="fas fa-search"></i> Rechercher';
+      
+      // Créer un conteneur flex pour l'input et le bouton
+      const inputGroup = document.createElement('div');
+      inputGroup.className = 'input-group';
+      inputGroup.appendChild(customInput);
+      
+      const btnContainer = document.createElement('div');
+      btnContainer.className = 'input-group-append';
+      btnContainer.appendChild(searchBtn);
+      
+      inputGroup.appendChild(btnContainer);
+      
+      // Ajouter le tout avant l'input original
+      originalInput.parentNode.insertBefore(inputGroup, originalInput);
+      
+      // Créer une div pour les messages de statut
+      const statusContainer = document.createElement('div');
+      statusContainer.className = 'geocode-status mt-2';
+      statusContainer.style.display = 'none';
+      originalInput.parentNode.insertBefore(statusContainer, originalInput.nextSibling);
+      
+      // Fonction pour synchroniser notre input avec l'input original
+      function syncInputs() {
+        originalInput.value = customInput.value;
+      }
+      
+      // Écouter les modifications de notre input personnalisé
+      customInput.addEventListener('input', function() {
+        syncInputs();
       });
-    }
-
-    // Si des coordonnées existent déjà, initialiser la carte
-    if (
-      latitudeInput &&
-      longitudeInput &&
-      latitudeInput.value &&
-      longitudeInput.value
-    ) {
-      initMap(
-        parseFloat(latitudeInput.value),
-        parseFloat(longitudeInput.value)
-      );
+      
+      // Fonction pour rechercher des adresses avec Nominatim
+      function searchAddress() {
+        const query = customInput.value.trim();
+        if (query.length < 3) {
+          showStatus('error', 'L\'adresse est trop courte.');
+          return;
+        }
+        
+        // Afficher un message de chargement
+        showStatus('loading', 'Recherche en cours...');
+        
+        // Utiliser Nominatim (OpenStreetMap) pour la géocodification
+        fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}`)
+          .then(response => response.json())
+          .then(data => {
+            console.log("Résultats Nominatim:", data);
+            
+            if (data && data.length > 0) {
+              const result = data[0];
+              
+              // Mettre à jour l'adresse complète
+              customInput.value = result.display_name;
+              syncInputs();
+              
+              // Enregistrer les coordonnées
+              latitudeInput.value = result.lat;
+              longitudeInput.value = result.lon;
+              
+              // Mettre à jour la carte
+              initMap(parseFloat(result.lat), parseFloat(result.lon));
+              
+              // Afficher un message de confirmation
+              showStatus('success', `Coordonnées trouvées: ${result.lat}, ${result.lon}`);
+            } else {
+              showStatus('error', 'Aucun résultat trouvé pour cette adresse.');
+            }
+          })
+          .catch(error => {
+            console.error("Erreur lors de la géocodification:", error);
+            showStatus('error', 'Une erreur est survenue lors de la recherche.');
+          });
+      }
+      
+      // Fonction pour afficher les messages de statut
+      function showStatus(type, message) {
+        statusContainer.innerHTML = '';
+        statusContainer.style.display = 'block';
+        
+        let alertClass = 'alert ';
+        switch(type) {
+          case 'success':
+            alertClass += 'alert-success';
+            break;
+          case 'error':
+            alertClass += 'alert-danger';
+            break;
+          case 'loading':
+            alertClass += 'alert-info';
+            break;
+          default:
+            alertClass += 'alert-secondary';
+        }
+        
+        const alertDiv = document.createElement('div');
+        alertDiv.className = alertClass;
+        alertDiv.textContent = message;
+        
+        statusContainer.appendChild(alertDiv);
+      }
+      
+      // Attacher l'événement au bouton de recherche
+      searchBtn.addEventListener('click', searchAddress);
+      
+      // Permettre aussi la recherche en appuyant sur Entrée
+      customInput.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+          e.preventDefault(); // Empêcher l'envoi du formulaire
+          searchAddress();
+        }
+      });
     }
   });
 </script>
