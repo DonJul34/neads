@@ -16,7 +16,9 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     # Add your apps here
-    'neads.apps.NeadsConfig',
+    'neads.creators',
+    'neads.users',
+    'neads.map'
     # Other apps...
 ]
 
