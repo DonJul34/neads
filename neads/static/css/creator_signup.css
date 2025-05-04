@@ -1,0 +1,163 @@
+/* Styles pour le formulaire d'inscription des créateurs */
+
+.card {
+    border-radius: 10px;
+    border: none;
+}
+
+.card-header {
+    border-radius: 10px 10px 0 0 !important;
+}
+
+.card-body {
+    padding: 1.5rem;
+}
+
+/* Zones d'upload */
+.upload-zone {
+    border: 2px dashed #ced4da;
+    border-radius: 5px;
+    padding: 20px;
+    text-align: center;
+    margin-bottom: 10px;
+    background-color: #f8f9fa;
+    transition: all 0.3s;
+}
+
+.upload-zone:hover {
+    border-color: #0d6efd;
+    background-color: #f0f7ff;
+}
+
+.upload-zone input[type="file"] {
+    opacity: 0;
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    cursor: pointer;
+}
+
+.upload-prompt {
+    pointer-events: none;
+}
+
+.upload-prompt i {
+    font-size: 2rem;
+    color: #6c757d;
+    margin-bottom: 10px;
+}
+
+/* Compteurs de caractères */
+.character-counter {
+    font-size: 0.8rem;
+    color: #6c757d;
+    margin-top: 5px;
+}
+
+/* Liste des domaines */
+.domains-list {
+    max-height: 300px;
+    overflow-y: auto;
+    padding: 10px;
+    border: 1px solid #ced4da;
+    border-radius: 5px;
+    background-color: #f8f9fa;
+}
+
+.domains-checkbox ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.domains-checkbox li {
+    margin-bottom: 10px;
+}
+
+.domains-checkbox input {
+    margin-right: 5px;
+}
+
+/* Prévisualisation des fichiers */
+.selected-files {
+    margin-top: 10px;
+}
+
+.file-preview {
+    display: flex;
+    justify-content: space-between;
+    padding: 8px 12px;
+    background-color: #f0f7ff;
+    border-radius: 5px;
+    margin-bottom: 5px;
+    font-size: 0.9rem;
+}
+
+.file-name {
+    font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 70%;
+}
+
+.file-size {
+    color: #6c757d;
+}
+
+/* Options pour facturation */
+.can-invoice-options {
+    margin-bottom: 15px;
+}
+
+.can-invoice-options .form-check {
+    margin-bottom: 8px;
+}
+
+/* Mise en forme responsive */
+@media (max-width: 768px) {
+    .card-body {
+        padding: 1rem;
+    }
+
+    .row {
+        margin-left: -10px;
+        margin-right: -10px;
+    }
+
+    [class*="col-"] {
+        padding-left: 10px;
+        padding-right: 10px;
+    }
+}
+
+/* Améliorations visuelles */
+.form-control:focus,
+.form-select:focus {
+    border-color: #0d6efd;
+    box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.15);
+}
+
+.btn-primary {
+    padding: 12px 24px;
+    font-weight: 500;
+}
+
+.form-label {
+    font-weight: 500;
+}
+
+/* Liens sociaux */
+.social-links a {
+    display: inline-block;
+    color: #6c757d;
+    font-size: 1.5rem;
+    transition: all 0.2s;
+}
+
+.social-links a:hover {
+    color: #0d6efd;
+    transform: scale(1.1);
+}

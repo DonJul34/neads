@@ -1,0 +1,522 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Devenir créateur de contenu UGC chez Neads{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/creator_signup.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="container my-5">
+    <div class="row">
+        <div class="col-lg-8 mx-auto">
+            <div class="card shadow-lg mb-4">
+                <div class="card-header bg-primary text-white py-4">
+                    <h1 class="h3 mb-0 text-center">Postule pour devenir créateur de contenu UGC chez Neads !</h1>
+                </div>
+                <div class="card-body p-4">
+                    <div class="mb-4 text-center">
+                        <p class="lead">Tu es passionné(e) par la création de contenu UGC sur les réseaux sociaux ?<br>
+                        Tu maîtrises parfaitement les codes et tendances de TikTok et Instagram ?</p>
+                        <p class="fs-5 fw-bold text-primary mb-5">Viens collaborer avec les plus belles marques !</p>
+                    </div>
+                    
+                    {% if messages %}
+                    <div class="messages">
+                        {% for message in messages %}
+                        <div class="alert alert-{{ message.tags }}">{{ message }}</div>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                    
+                    <form method="post" enctype="multipart/form-data" id="creator-signup-form" class="needs-validation" novalidate>
+                        {% csrf_token %}
+                        
+                        <!-- Coordonnées -->
+                        <div class="card mb-4">
+                            <div class="card-header bg-light">
+                                <h3 class="h5 mb-0">Tes coordonnées</h3>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label for="{{ form.first_name.id_for_label }}" class="form-label">Prénom *</label>
+                                        {{ form.first_name }}
+                                        <div class="invalid-feedback">
+                                            {% if form.first_name.errors %}{{ form.first_name.errors.0 }}{% else %}Ce champ est requis.{% endif %}
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label for="{{ form.last_name.id_for_label }}" class="form-label">Nom *</label>
+                                        {{ form.last_name }}
+                                        <div class="invalid-feedback">
+                                            {% if form.last_name.errors %}{{ form.last_name.errors.0 }}{% else %}Ce champ est requis.{% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label for="{{ form.gender.id_for_label }}" class="form-label">Genre *</label>
+                                        {{ form.gender }}
+                                        <div class="invalid-feedback">
+                                            {% if form.gender.errors %}{{ form.gender.errors.0 }}{% else %}Ce champ est requis.{% endif %}
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label for="{{ form.birth_year.id_for_label }}" class="form-label">Année de naissance *</label>
+                                        {{ form.birth_year }}
+                                        <div class="invalid-feedback">
+                                            {% if form.birth_year.errors %}{{ form.birth_year.errors.0 }}{% else %}Ce champ est requis.{% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="{{ form.full_address.id_for_label }}" class="form-label">Adresse complète *</label>
+                                    {{ form.full_address }}
+                                    <div class="invalid-feedback">
+                                        {% if form.full_address.errors %}{{ form.full_address.errors.0 }}{% else %}Ce champ est requis.{% endif %}
+                                    </div>
+                                </div>
+                                
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label for="{{ form.email.id_for_label }}" class="form-label">E-mail *</label>
+                                        {{ form.email }}
+                                        <div class="invalid-feedback">
+                                            {% if form.email.errors %}{{ form.email.errors.0 }}{% else %}Ce champ est requis.{% endif %}
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label for="{{ form.phone.id_for_label }}" class="form-label">Téléphone *</label>
+                                        <div class="input-group">
+                                            <span class="input-group-text">France +33</span>
+                                            {{ form.phone }}
+                                        </div>
+                                        <div class="invalid-feedback">
+                                            {% if form.phone.errors %}{{ form.phone.errors.0 }}{% else %}Ce champ est requis.{% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label class="form-label">Statut pour facturer *</label>
+                                    <div class="can-invoice-options">
+                                        {% for choice in form.can_invoice %}
+                                        <div class="form-check">
+                                            {{ choice.tag }}
+                                            <label class="form-check-label" for="{{ choice.id_for_label }}">
+                                                {{ choice.choice_label }}
+                                            </label>
+                                        </div>
+                                        {% endfor %}
+                                    </div>
+                                    <div class="invalid-feedback">
+                                        {% if form.can_invoice.errors %}{{ form.can_invoice.errors.0 }}{% else %}Ce champ est requis.{% endif %}
+                                    </div>
+                                </div>
+                                
+                                {{ form.latitude }}
+                                {{ form.longitude }}
+                            </div>
+                        </div>
+                        
+                        <!-- À propos de toi -->
+                        <div class="card mb-4">
+                            <div class="card-header bg-light">
+                                <h3 class="h5 mb-0">À propos de toi</h3>
+                            </div>
+                            <div class="card-body">
+                                <div class="mb-3">
+                                    <label for="{{ form.baseline.id_for_label }}" class="form-label">Baseline *</label>
+                                    {{ form.baseline }}
+                                    <div class="character-counter" id="baseline-counter">Vous avez utilisé 0 caractères sur les 50 alloués. Il vous reste 50.</div>
+                                    <div class="invalid-feedback">
+                                        {% if form.baseline.errors %}{{ form.baseline.errors.0 }}{% else %}Ce champ est requis.{% endif %}
+                                    </div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="{{ form.bio.id_for_label }}" class="form-label">A propos de toi *</label>
+                                    {{ form.bio }}
+                                    <div class="character-counter" id="bio-counter">Vous avez utilisé 0 caractères sur les 1000 alloués. Il vous reste 1000.</div>
+                                    <div class="invalid-feedback">
+                                        {% if form.bio.errors %}{{ form.bio.errors.0 }}{% else %}Ce champ est requis.{% endif %}
+                                    </div>
+                                </div>
+                                
+                                <div class="row">
+                                    <div class="col-md-4 mb-3">
+                                        <label for="{{ form.tiktok_link.id_for_label }}" class="form-label">Compte TikTok</label>
+                                        {{ form.tiktok_link }}
+                                        <small class="text-muted">ex : https://www.tiktok.com/@neadsagency</small>
+                                        <div class="invalid-feedback">
+                                            {% if form.tiktok_link.errors %}{{ form.tiktok_link.errors.0 }}{% endif %}
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4 mb-3">
+                                        <label for="{{ form.instagram_link.id_for_label }}" class="form-label">Compte Instagram</label>
+                                        {{ form.instagram_link }}
+                                        <small class="text-muted">ex : https://www.instagram.com/neadsagency</small>
+                                        <div class="invalid-feedback">
+                                            {% if form.instagram_link.errors %}{{ form.instagram_link.errors.0 }}{% endif %}
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4 mb-3">
+                                        <label for="{{ form.youtube_link.id_for_label }}" class="form-label">Compte YouTube</label>
+                                        {{ form.youtube_link }}
+                                        <small class="text-muted">ex : https://www.youtube.com/@neadsagency</small>
+                                        <div class="invalid-feedback">
+                                            {% if form.youtube_link.errors %}{{ form.youtube_link.errors.0 }}{% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="{{ form.featured_image.id_for_label }}" class="form-label">Photo de profil *</label>
+                                    <div class="upload-zone">
+                                        <div class="upload-prompt">
+                                            <i class="fas fa-cloud-upload-alt"></i>
+                                            <p>Cliquez ou déplacez un fichier dans cette zone pour le téléverser.</p>
+                                        </div>
+                                        {{ form.featured_image }}
+                                    </div>
+                                    <div class="invalid-feedback">
+                                        {% if form.featured_image.errors %}{{ form.featured_image.errors.0 }}{% else %}Ce champ est requis.{% endif %}
+                                    </div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label class="form-label">Domaines *</label>
+                                    <div class="domains-list">
+                                        {{ form.domains }}
+                                    </div>
+                                    <small class="text-muted">Sélectionne 5 domaines maximum</small>
+                                    <div class="invalid-feedback">
+                                        {% if form.domains.errors %}{{ form.domains.errors.0 }}{% else %}Veuillez sélectionner au moins un domaine.{% endif %}
+                                    </div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="{{ form.equipment.id_for_label }}" class="form-label">Matériel utilisé *</label>
+                                    {{ form.equipment }}
+                                    <div class="invalid-feedback">
+                                        {% if form.equipment.errors %}{{ form.equipment.errors.0 }}{% else %}Ce champ est requis.{% endif %}
+                                    </div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="{{ form.previous_clients.id_for_label }}" class="form-label">Marques avec lesquelles tu as travaillé *</label>
+                                    {{ form.previous_clients }}
+                                    <div class="invalid-feedback">
+                                        {% if form.previous_clients.errors %}{{ form.previous_clients.errors.0 }}{% else %}Ce champ est requis.{% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Portfolio -->
+                        <div class="card mb-4">
+                            <div class="card-header bg-light">
+                                <h3 class="h5 mb-0">Portfolio</h3>
+                            </div>
+                            <div class="card-body">
+                                <h4 class="h6 mb-3">Vidéos UGC</h4>
+                                <p class="text-muted small mb-3">Téléchargez au moins 3 vidéos UGC (format MP4, 100Mo max par vidéo)</p>
+                                
+                                <div class="mb-3">
+                                    <label for="{{ form.video_file1.id_for_label }}" class="form-label">{{ form.video_file1.label }} *</label>
+                                    {{ form.video_file1 }}
+                                    <div class="invalid-feedback">
+                                        {% if form.video_file1.errors %}{{ form.video_file1.errors.0 }}{% else %}Ce champ est requis.{% endif %}
+                                    </div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="{{ form.video_file2.id_for_label }}" class="form-label">{{ form.video_file2.label }} *</label>
+                                    {{ form.video_file2 }}
+                                    <div class="invalid-feedback">
+                                        {% if form.video_file2.errors %}{{ form.video_file2.errors.0 }}{% else %}Ce champ est requis.{% endif %}
+                                    </div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="{{ form.video_file3.id_for_label }}" class="form-label">{{ form.video_file3.label }} *</label>
+                                    {{ form.video_file3 }}
+                                    <div class="invalid-feedback">
+                                        {% if form.video_file3.errors %}{{ form.video_file3.errors.0 }}{% else %}Ce champ est requis.{% endif %}
+                                    </div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="{{ form.video_file4.id_for_label }}" class="form-label">{{ form.video_file4.label }}</label>
+                                    {{ form.video_file4 }}
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="{{ form.video_file5.id_for_label }}" class="form-label">{{ form.video_file5.label }}</label>
+                                    {{ form.video_file5 }}
+                                </div>
+                                
+                                <hr class="my-4">
+                                
+                                <h4 class="h6 mb-3">Photos UGC</h4>
+                                <p class="text-muted small mb-3">Téléchargez au moins 3 photos UGC (format JPG, PNG ou GIF, 5Mo max par image)</p>
+                                
+                                <div class="mb-3">
+                                    <label for="{{ form.image_file1.id_for_label }}" class="form-label">{{ form.image_file1.label }} *</label>
+                                    {{ form.image_file1 }}
+                                    <div class="invalid-feedback">
+                                        {% if form.image_file1.errors %}{{ form.image_file1.errors.0 }}{% else %}Ce champ est requis.{% endif %}
+                                    </div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="{{ form.image_file2.id_for_label }}" class="form-label">{{ form.image_file2.label }} *</label>
+                                    {{ form.image_file2 }}
+                                    <div class="invalid-feedback">
+                                        {% if form.image_file2.errors %}{{ form.image_file2.errors.0 }}{% else %}Ce champ est requis.{% endif %}
+                                    </div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="{{ form.image_file3.id_for_label }}" class="form-label">{{ form.image_file3.label }} *</label>
+                                    {{ form.image_file3 }}
+                                    <div class="invalid-feedback">
+                                        {% if form.image_file3.errors %}{{ form.image_file3.errors.0 }}{% else %}Ce champ est requis.{% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Conditions et envoi -->
+                        <div class="mb-4">
+                            <div class="form-check mb-3">
+                                {{ form.accept_terms }}
+                                <label class="form-check-label" for="{{ form.accept_terms.id_for_label }}">
+                                    {{ form.accept_terms.label }}
+                                </label>
+                                <div class="invalid-feedback">
+                                    {% if form.accept_terms.errors %}{{ form.accept_terms.errors.0 }}{% else %}Vous devez accepter les conditions d'utilisation.{% endif %}
+                                </div>
+                            </div>
+                            
+                            <div class="d-grid">
+                                <button type="submit" class="btn btn-primary btn-lg">Envoyer</button>
+                            </div>
+                        </div>
+                        
+                        <div class="text-center mt-4">
+                            <p class="text-muted">
+                                <a href="#" class="text-decoration-none">Mentions légales</a> – 
+                                <a href="#" class="text-decoration-none">Politique de confidentialité</a>
+                            </p>
+                            <div class="social-links mt-3">
+                                <a href="#" class="me-2"><i class="fab fa-tiktok"></i></a>
+                                <a href="#" class="me-2"><i class="fab fa-instagram"></i></a>
+                                <a href="#" class="me-2"><i class="fab fa-linkedin"></i></a>
+                                <a href="#"><i class="fab fa-youtube"></i></a>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://maps.googleapis.com/maps/api/js?key={{ google_api_key }}&libraries=places"></script>
+<script>
+// Initialisation de l'autocomplétion Google Places
+document.addEventListener('DOMContentLoaded', function() {
+    // Autocomplétion de l'adresse
+    const addressInput = document.getElementById('id_full_address');
+    
+    if (addressInput) {
+        // Préparation du champ avant l'initialisation
+        addressInput.setAttribute('autocomplete', 'off');
+        
+        // Définir un délai pour initialiser l'autocomplete
+        setTimeout(function() {
+            try {
+                const autocomplete = new google.maps.places.Autocomplete(addressInput, {
+                    types: ['address'],
+                    componentRestrictions: {country: 'fr'}
+                });
+                
+                autocomplete.addListener('place_changed', function() {
+                    try {
+                        const place = autocomplete.getPlace();
+                        if (place && place.geometry) {
+                            document.getElementById('id_latitude').value = place.geometry.location.lat();
+                            document.getElementById('id_longitude').value = place.geometry.location.lng();
+                            
+                            // Ajouter feedback positif
+                            addressInput.classList.add('is-valid');
+                            addressInput.classList.remove('is-invalid');
+                        }
+                    } catch (error) {
+                        console.error("Erreur lors de la récupération du lieu:", error);
+                    }
+                });
+                
+                console.log("Autocomplete initialisé avec succès");
+            } catch (error) {
+                console.error("Erreur d'initialisation de l'autocomplete:", error);
+            }
+        }, 500);
+        
+        // Empêcher la désactivation du champ
+        addressInput.addEventListener('focus', function() {
+            this.removeAttribute('disabled');
+            this.removeAttribute('readonly');
+        });
+        
+        // Forcer le champ à rester actif après chaque changement
+        addressInput.addEventListener('input', function() {
+            this.removeAttribute('disabled');
+            this.removeAttribute('readonly');
+        });
+        
+        // Empêcher la soumission avec entrée
+        addressInput.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter' && e.target === this) {
+                e.preventDefault();
+                return false;
+            }
+        });
+    }
+    
+    // Observer pour réactiver le champ s'il est désactivé
+    const observer = new MutationObserver(function(mutations) {
+        mutations.forEach(function(mutation) {
+            if (mutation.attributeName === 'disabled' || mutation.attributeName === 'readonly') {
+                const target = mutation.target;
+                if (target.id === 'id_full_address') {
+                    target.removeAttribute('disabled');
+                    target.removeAttribute('readonly');
+                    console.log("Champ réactivé par l'observateur");
+                }
+            }
+        });
+    });
+    
+    if (addressInput) {
+        observer.observe(addressInput, { 
+            attributes: true 
+        });
+    }
+    
+    // PATCH AGRESSIF: Intercepter toutes les modifications du DOM
+    // qui pourraient désactiver ou mettre en lecture seule le champ
+    (function() {
+        const originalElementSetAttribute = Element.prototype.setAttribute;
+        Element.prototype.setAttribute = function(name, value) {
+            if (this.id === 'id_full_address' && (name === 'disabled' || name === 'readonly')) {
+                console.log("⚠️ Tentative bloquée de désactiver le champ d'adresse");
+                return;
+            }
+            originalElementSetAttribute.call(this, name, value);
+        };
+        
+        const originalElementPropSetter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'disabled').set;
+        Object.defineProperty(HTMLInputElement.prototype, 'disabled', {
+            set: function(value) {
+                if (this.id === 'id_full_address' && value === true) {
+                    console.log("⚠️ Tentative bloquée de désactiver le champ d'adresse via propriété");
+                    return;
+                }
+                originalElementPropSetter.call(this, value);
+            }
+        });
+        
+        // Vérifier périodiquement que le champ n'est pas désactivé
+        setInterval(function() {
+            const field = document.getElementById('id_full_address');
+            if (field && (field.disabled || field.readOnly)) {
+                field.disabled = false;
+                field.readOnly = false;
+                console.log("🔄 Réactivation périodique du champ d'adresse");
+            }
+        }, 200);
+    })();
+    
+    // Validation du formulaire
+    const form = document.getElementById('creator-signup-form');
+    form.addEventListener('submit', function(event) {
+        if (!form.checkValidity()) {
+            event.preventDefault();
+            event.stopPropagation();
+        }
+        form.classList.add('was-validated');
+    });
+    
+    // Compteurs de caractères
+    const baselineInput = document.getElementById('id_baseline');
+    const baselineCounter = document.getElementById('baseline-counter');
+    const bioInput = document.getElementById('id_bio');
+    const bioCounter = document.getElementById('bio-counter');
+    
+    function updateCounter(input, counter, maxLength) {
+        const length = input.value.length;
+        const remaining = maxLength - length;
+        counter.textContent = `Vous avez utilisé ${length} caractères sur les ${maxLength} alloués. Il vous reste ${remaining}.`;
+    }
+    
+    if (baselineInput && baselineCounter) {
+        baselineInput.addEventListener('input', function() {
+            updateCounter(this, baselineCounter, 50);
+        });
+        updateCounter(baselineInput, baselineCounter, 50);
+    }
+    
+    if (bioInput && bioCounter) {
+        bioInput.addEventListener('input', function() {
+            updateCounter(this, bioCounter, 1000);
+        });
+        updateCounter(bioInput, bioCounter, 1000);
+    }
+    
+    // Prévisualisation des fichiers
+    function updateFilePreview(input, previewContainer) {
+        const container = document.getElementById(previewContainer);
+        if (container) {
+            container.innerHTML = '';
+            
+            if (input.files && input.files.length > 0) {
+                const file = input.files[0];
+                const filePreview = document.createElement('div');
+                filePreview.className = 'file-preview';
+                filePreview.innerHTML = `
+                    <span class="file-name">${file.name}</span>
+                    <span class="file-size">${(file.size / (1024 * 1024)).toFixed(2)} MB</span>
+                `;
+                container.appendChild(filePreview);
+            }
+        }
+    }
+    
+    // Appliquer la prévisualisation pour la photo de profil
+    const featuredImageInput = document.getElementById('id_featured_image');
+    if (featuredImageInput) {
+        featuredImageInput.addEventListener('change', function() {
+            const previewContainer = this.closest('.mb-3').querySelector('.upload-prompt');
+            if (this.files && this.files.length > 0) {
+                const file = this.files[0];
+                previewContainer.innerHTML = `
+                    <div class="selected-file">
+                        <i class="fas fa-check-circle text-success"></i>
+                        <p class="mb-0">Fichier sélectionné: ${file.name}</p>
+                        <small>${(file.size / (1024 * 1024)).toFixed(2)} MB</small>
+                    </div>
+                `;
+            }
+        });
+    }
+});
+</script>
+{% endblock %} 

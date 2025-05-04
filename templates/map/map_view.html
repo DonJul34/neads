@@ -9,6 +9,60 @@
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.Default.css">
 <!-- Styles personnalisés pour la carte -->
 <link rel="stylesheet" href="/static/js/map/map-styles.css">
+<!-- Script pour assurer la visibilité des éléments clés -->
+<script>
+    // S'exécute dès que le DOM est disponible, avant le chargement complet
+    document.addEventListener('DOMContentLoaded', function() {
+        console.log('🔄 Vérification des éléments clés de la carte');
+        
+        // Assure la visibilité du bouton de retour à la galerie après 500ms (laisser le temps au CSS de charger)
+        setTimeout(function() {
+            const galleryBtn = document.querySelector('.back-to-gallery');
+            if (galleryBtn) {
+                console.log('✅ Bouton de retour à la galerie trouvé, application de styles forcés');
+                galleryBtn.style.display = 'flex';
+                galleryBtn.style.visibility = 'visible';
+                galleryBtn.style.position = 'absolute';
+                galleryBtn.style.zIndex = '9999';
+                galleryBtn.style.top = '10px';
+                galleryBtn.style.right = '10px';
+                galleryBtn.style.backgroundColor = '#6a49dc';
+                galleryBtn.style.color = 'white';
+                galleryBtn.style.fontWeight = 'bold';
+                galleryBtn.style.boxShadow = '0 0 0 3px rgba(255,255,255,0.7), 0 4px 10px rgba(0,0,0,0.2)';
+            } else {
+                console.warn('❌ Bouton de retour à la galerie non trouvé, création d\'un bouton de secours');
+                // Créer un bouton de secours
+                const mapEl = document.getElementById('map');
+                if (mapEl && mapEl.parentNode) {
+                    const newBtn = document.createElement('a');
+                    newBtn.href = '/creators/gallery/';
+                    newBtn.className = 'btn btn-primary fallback-gallery-btn';
+                    newBtn.innerHTML = '<i class="fas fa-th-large me-2"></i> Retour à la galerie';
+                    newBtn.style.cssText = 'position:absolute;top:10px;right:10px;z-index:9999;background-color:#6a49dc;color:white;font-weight:bold;box-shadow:0 0 0 3px rgba(255,255,255,0.7), 0 4px 10px rgba(0,0,0,0.2);display:flex;align-items:center;';
+                    mapEl.parentNode.appendChild(newBtn);
+                    console.log('✅ Bouton de secours créé');
+                }
+            }
+            
+            // Vérifier le filtre ville
+            const cityFilter = document.getElementById('city-filter');
+            if (cityFilter) {
+                console.log('✅ Filtre ville trouvé, renforcement des styles');
+                const filterGroup = cityFilter.closest('.filter-group');
+                if (filterGroup) {
+                    filterGroup.style.backgroundColor = 'rgba(106, 73, 220, 0.1)';
+                    filterGroup.style.padding = '15px';
+                    filterGroup.style.borderRadius = '8px';
+                    filterGroup.style.borderLeft = '4px solid #6a49dc';
+                    filterGroup.style.marginBottom = '15px';
+                }
+            } else {
+                console.warn('❌ Filtre ville non trouvé');
+            }
+        }, 500);
+    });
+</script>
 <style>
     .position-relative {
         position: relative;
@@ -111,10 +165,50 @@
         left: 10px;
         z-index: 1000;
         background: white;
-        padding: 10px;
+        padding: 15px;
         border-radius: 4px;
-        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        box-shadow: 0 2px 8px rgba(0,0,0,0.15);
         max-width: 320px;
+        width: 320px;
+        border: 1px solid rgba(106, 73, 220, 0.1);
+    }
+    
+    .back-to-gallery {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        z-index: 9999 !important;
+        background: linear-gradient(135deg, #6a49dc, #9773ff);
+        padding: 12px 20px;
+        border-radius: 4px;
+        box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.7), 0 4px 12px rgba(0, 0, 0, 0.25);
+        border: none;
+        transition: all 0.2s ease;
+        font-weight: bold;
+        color: white !important;
+        text-decoration: none;
+        display: flex !important;
+        align-items: center;
+        justify-content: center;
+        animation: pulse-border 2s infinite;
+    }
+    
+    @keyframes pulse-border {
+        0% {
+            box-shadow: 0 0 0 0 rgba(106, 73, 220, 0.7), 0 4px 12px rgba(0, 0, 0, 0.25);
+        }
+        70% {
+            box-shadow: 0 0 0 5px rgba(106, 73, 220, 0), 0 4px 12px rgba(0, 0, 0, 0.25);
+        }
+        100% {
+            box-shadow: 0 0 0 0 rgba(106, 73, 220, 0), 0 4px 12px rgba(0, 0, 0, 0.25);
+        }
+    }
+    
+    .back-to-gallery:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.9), 0 6px 15px rgba(0, 0, 0, 0.3);
+        text-decoration: none;
     }
     
     #map-loading {
@@ -151,6 +245,15 @@
         border-radius: 5px;
         box-shadow: 0 0 10px rgba(0,0,0,0.1);
     }
+    
+    #location-search {
+        border: 1px solid rgba(106, 73, 220, 0.2);
+    }
+    
+    #location-search-btn {
+        background: linear-gradient(135deg, #6a49dc, #9773ff);
+        border: none;
+    }
 </style>
 {% endblock %}
 
@@ -182,6 +285,28 @@
                     <div class="filter-group">
                         <label for="{{ form.query.id_for_label }}" class="filter-header">Recherche</label>
                         {{ form.query }}
+                    </div>
+                    
+                    <!-- Filtre par ville -->
+                    <div class="filter-group city-filter" style="background-color: rgba(106, 73, 220, 0.1); padding: 15px; border-radius: 8px; border-left: 4px solid #6a49dc; position: relative; overflow: visible;">
+                        <div class="highlight-badge" style="position: absolute; top: -10px; right: -10px; background: linear-gradient(135deg, #6a49dc, #9773ff); color: white; font-size: 10px; padding: 3px 8px; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.2); z-index: 2;">Nouveau</div>
+                        <label for="city-filter" class="filter-header" style="color: #6a49dc; font-weight: bold;">
+                            <i class="fas fa-map-marker-alt me-2"></i> Ville
+                        </label>
+                        <div class="input-group mb-2">
+                            <input type="text" class="form-control" id="city-filter" name="city" 
+                                   placeholder="Nom de la ville" value="{{ request.GET.city|default:'' }}"
+                                   style="border: 2px solid rgba(106, 73, 220, 0.3);">
+                            <button class="btn btn-primary" type="button" id="city-search-btn"
+                                    style="background: linear-gradient(135deg, #6a49dc, #9773ff); border: none;">
+                                <i class="fas fa-search"></i>
+                            </button>
+                        </div>
+                        <small class="text-muted">Recherchez les créateurs dans une ville spécifique</small>
+                        <!-- Champs cachés pour stocker lat/lng -->
+                        <input type="hidden" id="lat-input" name="lat" value="{{ request.GET.lat|default:'' }}">
+                        <input type="hidden" id="lng-input" name="lng" value="{{ request.GET.lng|default:'' }}">
+                        <input type="hidden" id="radius-input" name="radius" value="{{ request.GET.radius|default:'50' }}">
                     </div>
                     
                     <!-- Filtres par domaine -->
@@ -281,24 +406,27 @@
             
             <!-- Contrôles de la carte -->
             <div class="map-controls">
-                <div class="location-search mb-2">
-                    <div class="location-search-input-wrapper">
-                        <input type="text" id="location-search" class="form-control" placeholder="Rechercher un lieu..." aria-label="Rechercher un lieu">
-                        <button type="button" id="clear-location-btn" class="clear-location-btn" aria-label="Effacer">
-                            <i class="fas fa-times"></i>
+                <div class="mb-2">
+                    <label for="location-search" class="form-label small mb-1">Rechercher une ville</label>
+                    <div class="location-search">
+                        <div class="location-search-input-wrapper">
+                            <input type="text" id="location-search" class="form-control" placeholder="Saisissez un nom de ville..." aria-label="Rechercher une ville">
+                            <button type="button" id="clear-location-btn" class="clear-location-btn" aria-label="Effacer">
+                                <i class="fas fa-times"></i>
+                            </button>
+                            <div id="location-results" class="location-results"></div>
+                        </div>
+                        <button type="button" id="location-search-btn" class="btn btn-primary">
+                            <i class="fas fa-search"></i> 
                         </button>
-                        <div id="location-results" class="location-results"></div>
                     </div>
-                    <button type="button" id="location-search-btn" class="btn btn-primary">
-                        <i class="fas fa-search"></i> 
-                    </button>
-                </div>
-                <div class="d-grid">
-                    <button id="geoloc-button" class="btn btn-outline-primary">
-                        <i class="fas fa-location-arrow me-1"></i> Ma position
-                    </button>
                 </div>
             </div>
+            
+            <!-- Bouton retour à la galerie -->
+            <a href="{% url 'gallery_view' %}?{{ request.GET.urlencode }}" class="btn btn-primary back-to-gallery" id="gallery-button" style="display: flex !important; z-index: 9999 !important;">
+                <i class="fas fa-th-large me-2"></i> Retour à la galerie
+            </a>
             
             <!-- Statistiques et rayon de recherche -->
             <div class="map-stats">
@@ -340,11 +468,229 @@
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://unpkg.com/leaflet.markercluster@1.4.1/dist/leaflet.markercluster.js"></script>
 
+<!-- Protection contre l'erreur map.setView -->
+<script>
+    // S'assurer que map existe avant que d'autres scripts n'essaient d'y accéder
+    console.log('🔄 Création du proxy map défensif');
+    window.map = window.map || {
+        setView: function(coords, zoom) {
+            console.log('🛡️ Tentative d\'appel à map.setView interceptée, sera redéléguée à MapManager plus tard');
+            // Stocker l'appel pour l'exécuter plus tard quand MapManager sera disponible
+            window._pendingMapCalls = window._pendingMapCalls || [];
+            window._pendingMapCalls.push({
+                method: 'setView',
+                args: [coords, zoom]
+            });
+            return this;
+        },
+        on: function() { return this; },
+        addLayer: function() { return this; },
+        removeLayer: function() { return this; },
+        getBounds: function() { return null; },
+        getZoom: function() { return 12; },
+        getCenter: function() { return { lat: 48.8566, lng: 2.3522 }; }
+    };
+    
+    // Fonction pour exécuter les appels en attente
+    window.processPendingMapCalls = function() {
+        if (window._pendingMapCalls && window._pendingMapCalls.length > 0) {
+            console.log('🔄 Traitement de ' + window._pendingMapCalls.length + ' appels map en attente');
+            window._pendingMapCalls.forEach(call => {
+                if (call.method === 'setView' && typeof MapManager !== 'undefined') {
+                    console.log('🔄 Redélégation de setView vers MapManager');
+                    try {
+                        MapManager.updateUserPosition({
+                            latitude: call.args[0][0],
+                            longitude: call.args[0][1]
+                        }, call.args[1]);
+                    } catch (e) {
+                        console.error('❌ Erreur lors de la redélégation:', e);
+                    }
+                }
+            });
+            window._pendingMapCalls = [];
+        }
+    };
+    
+    // Écouter le chargement complet de la page pour traiter les appels en attente
+    window.addEventListener('load', function() {
+        setTimeout(function() {
+            if (typeof MapManager !== 'undefined') {
+                window.processPendingMapCalls();
+            }
+        }, 1000);
+    });
+</script>
+
 <!-- Scripts personnalisés -->
 <script src="/static/js/map/user-location.js"></script>
 <script src="/static/js/map/map-manager.js"></script>
 <script src="/static/js/map/app.js"></script>
-<script src="/static/js/map/location-test.js"></script>
+
+<!-- Script pour le filtre ville -->
+<script>
+    // Suppression du proxy map redondant et potentiellement conflictuel
+    document.addEventListener('DOMContentLoaded', function() {
+        // Configuration du filtre ville
+        const cityFilterInput = document.getElementById('city-filter');
+        const citySearchBtn = document.getElementById('city-search-btn');
+        
+        if (cityFilterInput && citySearchBtn) {
+            console.log('✅ Configuration du filtre ville');
+            
+            // Fonction de recherche de ville
+            const searchCity = () => {
+                try {
+                    const cityName = cityFilterInput.value.trim();
+                    if (cityName.length < 2) {
+                        console.warn('⚠️ Nom de ville trop court');
+                        return;
+                    }
+                    
+                    // Afficher un indicateur de chargement
+                    citySearchBtn.disabled = true;
+                    citySearchBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>';
+                    
+                    console.log('🔄 Recherche ville:', cityName);
+                    
+                    // Recherche de ville via l'API Nominatim (OpenStreetMap)
+                    fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(cityName)}&limit=1&accept-language=fr&featuretype=city,town,village`)
+                        .then(response => {
+                            if (!response.ok) {
+                                throw new Error(`Erreur réseau: ${response.status}`);
+                            }
+                            return response.json();
+                        })
+                        .then(data => {
+                            // Réactiver le bouton
+                            citySearchBtn.disabled = false;
+                            citySearchBtn.innerHTML = '<i class="fas fa-search"></i>';
+                            
+                            // Traiter les résultats
+                            if (data && data.length > 0) {
+                                const cityData = data[0];
+                                console.log('✅ Ville trouvée:', cityData);
+                                
+                                // Coordonnées
+                                const lat = parseFloat(cityData.lat);
+                                const lng = parseFloat(cityData.lon);
+                                
+                                // Afficher une notification de succès
+                                addToast(`Position mise à jour: ${cityData.display_name}`, 'success');
+                                
+                                // SOLUTION ALTERNATIVE: Recharger la page avec les nouveaux paramètres
+                                // C'est plus robuste que d'essayer de mettre à jour la carte en JavaScript
+                                const currentUrl = new URL(window.location.href);
+                                const params = currentUrl.searchParams;
+                                
+                                // Mettre à jour les champs cachés pour les formulaires
+                                const latInput = document.getElementById('lat-input');
+                                const lngInput = document.getElementById('lng-input');
+                                if (latInput && lngInput) {
+                                    latInput.value = lat;
+                                    lngInput.value = lng;
+                                    console.log('✅ Champs cachés mis à jour:', lat, lng);
+                                }
+                                
+                                // Ajouter ou mettre à jour les paramètres de localisation
+                                params.set('lat', lat);
+                                params.set('lng', lng);
+                                params.set('city', cityName);
+                                
+                                // Timestamp pour éviter la mise en cache
+                                params.set('_t', Date.now());
+                                
+                                console.log('🔄 Rechargement de la page avec les nouvelles coordonnées:', lat, lng);
+                                console.log('🔄 Nouvelle URL:', currentUrl.toString());
+                                
+                                // Rediriger vers la nouvelle URL avec les paramètres mis à jour
+                                window.location.href = currentUrl.toString();
+                                
+                                return; // Arrêter l'exécution ici car nous rechargeons la page
+                            } else {
+                                console.warn('❌ Aucun résultat trouvé pour:', cityName);
+                                addToast(`Aucune ville trouvée pour "${cityName}"`, 'warning');
+                            }
+                        })
+                        .catch(error => {
+                            console.error('❌ Erreur lors de la recherche de ville:', error);
+                            citySearchBtn.disabled = false;
+                            citySearchBtn.innerHTML = '<i class="fas fa-search"></i>';
+                            addToast('Erreur lors de la recherche. Veuillez réessayer.', 'error');
+                        });
+                } catch (err) {
+                    console.error('❌ Erreur globale:', err);
+                    citySearchBtn.disabled = false;
+                    citySearchBtn.innerHTML = '<i class="fas fa-search"></i>';
+                }
+            };
+            
+            // Gestion des événements
+            citySearchBtn.addEventListener('click', searchCity);
+            
+            cityFilterInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    searchCity();
+                }
+            });
+        }
+        
+        // Fonction pour ajouter des toasts (notifications)
+        function addToast(message, type = 'info') {
+            // Créer le conteneur s'il n'existe pas
+            let toastContainer = document.getElementById('toast-container');
+            if (!toastContainer) {
+                toastContainer = document.createElement('div');
+                toastContainer.id = 'toast-container';
+                toastContainer.style.position = 'fixed';
+                toastContainer.style.bottom = '20px';
+                toastContainer.style.right = '20px';
+                toastContainer.style.zIndex = '9999';
+                document.body.appendChild(toastContainer);
+            }
+            
+            // Créer le toast
+            const toast = document.createElement('div');
+            toast.className = 'toast show';
+            toast.style.backgroundColor = type === 'error' ? '#f8d7da' : 
+                                           type === 'warning' ? '#fff3cd' :
+                                           type === 'success' ? '#d4edda' : '#cff4fc';
+            toast.style.color = type === 'error' ? '#842029' :
+                                type === 'warning' ? '#664d03' :
+                                type === 'success' ? '#0f5132' : '#055160';
+            toast.style.borderRadius = '4px';
+            toast.style.padding = '12px';
+            toast.style.marginBottom = '10px';
+            toast.style.boxShadow = '0 2px 10px rgba(0,0,0,0.1)';
+            toast.style.minWidth = '250px';
+            toast.style.border = `1px solid ${type === 'error' ? '#f5c2c7' : 
+                                             type === 'warning' ? '#ffecb5' :
+                                             type === 'success' ? '#badbcc' : '#b6effb'}`;
+            
+            toast.innerHTML = `
+                <div style="display: flex; align-items: center; justify-content: space-between;">
+                    <span>${message}</span>
+                    <button style="background: none; border: none; font-size: 18px; cursor: pointer; margin-left: 10px;">&times;</button>
+                </div>
+            `;
+            
+            // Ajouter le toast au conteneur
+            toastContainer.appendChild(toast);
+            
+            // Gérer la fermeture
+            const closeBtn = toast.querySelector('button');
+            closeBtn.addEventListener('click', () => {
+                toast.remove();
+            });
+            
+            // Supprimer après 5 secondes
+            setTimeout(() => {
+                toast.remove();
+            }, 5000);
+        }
+    });
+</script>
 
 <!-- Script pour l'initialisation mobile -->
 <script>
@@ -357,6 +703,29 @@
             const clonedForm = filterForm.cloneNode(true);
             clonedForm.id = 'mobile-filter-form';
             mobileFilterContainer.appendChild(clonedForm);
+            
+            // Configurer le bouton de recherche de ville pour le formulaire mobile
+            const mobileCityInput = clonedForm.querySelector('#city-filter');
+            const mobileCityBtn = clonedForm.querySelector('#city-search-btn');
+            
+            if (mobileCityInput && mobileCityBtn) {
+                mobileCityBtn.id = 'mobile-city-search-btn';
+                
+                // Réutiliser la même logique que pour la version desktop
+                mobileCityBtn.addEventListener('click', function() {
+                    // Copier la valeur dans le champ desktop pour la cohérence
+                    const desktopCityInput = document.querySelector('#city-filter');
+                    if (desktopCityInput) {
+                        desktopCityInput.value = mobileCityInput.value;
+                    }
+                    
+                    // Déclencher le clic sur le bouton desktop
+                    const desktopCityBtn = document.querySelector('#city-search-btn');
+                    if (desktopCityBtn) {
+                        desktopCityBtn.click();
+                    }
+                });
+            }
             
             // Synchroniser les événements entre les deux formulaires
             clonedForm.addEventListener('submit', function(e) {
@@ -387,6 +756,51 @@
                 filterToggle.innerHTML = '<i class="fas fa-filter me-1"></i> Filtres';
             });
         }
+    });
+</script>
+
+<!-- Script pour mettre à jour le rayon et les coordonnées -->
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Synchroniser le sélecteur de rayon avec le champ caché
+        const radiusSelector = document.getElementById('radius-selector');
+        const radiusInput = document.getElementById('radius-input');
+        
+        if (radiusSelector && radiusInput) {
+            // Définir initialement la valeur du sélecteur à partir du champ caché si défini
+            if (radiusInput.value) {
+                Array.from(radiusSelector.options).forEach(option => {
+                    if (option.value === radiusInput.value) {
+                        option.selected = true;
+                    }
+                });
+            }
+            
+            // Mettre à jour le champ caché quand le sélecteur change
+            radiusSelector.addEventListener('change', function() {
+                radiusInput.value = this.value;
+                console.log('🔄 Rayon mis à jour:', this.value);
+            });
+        }
+        
+        // Mettre à jour les champs cachés lat/lng avec les valeurs actuelles de UserLocation
+        const updateHiddenFields = () => {
+            const latInput = document.getElementById('lat-input');
+            const lngInput = document.getElementById('lng-input');
+            
+            if (latInput && lngInput && typeof UserLocation !== 'undefined') {
+                const coords = UserLocation.getSavedLocation();
+                if (coords && coords.latitude && coords.longitude) {
+                    latInput.value = coords.latitude;
+                    lngInput.value = coords.longitude;
+                    console.log('✅ Champs de coordonnées mis à jour avec la position sauvegardée:', coords);
+                }
+            }
+        };
+        
+        // Appeler une fois au chargement et configurer une mise à jour périodique
+        setTimeout(updateHiddenFields, 1000);
+        setInterval(updateHiddenFields, 5000);
     });
 </script>
 {% endblock %} 

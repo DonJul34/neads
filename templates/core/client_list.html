@@ -110,61 +110,12 @@
                         </td>
                         <td>
                             <div class="btn-group">
-                                <a href="{% url 'admin_user_edit' client.id %}" class="btn btn-sm btn-outline-primary">
+                                <a href="{% url 'gestion_user_edit' client.id %}" class="btn btn-sm btn-outline-primary">
                                     <i class="fas fa-edit"></i>
                                 </a>
                                 <a href="mailto:{{ client.email }}" class="btn btn-sm btn-outline-secondary">
                                     <i class="fas fa-envelope"></i>
                                 </a>
-                                <button type="button" class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#toggleStatusModal-{{ client.id }}">
-                                    {% if client.is_active %}
-                                    <i class="fas fa-ban"></i>
-                                    {% else %}
-                                    <i class="fas fa-check"></i>
-                                    {% endif %}
-                                </button>
-                            </div>
-                            
-                            <!-- Modal pour désactiver/activer le compte -->
-                            <div class="modal fade" id="toggleStatusModal-{{ client.id }}" tabindex="-1" aria-hidden="true">
-                                <div class="modal-dialog">
-                                    <div class="modal-content">
-                                        <div class="modal-header">
-                                            <h5 class="modal-title">
-                                                {% if client.is_active %}
-                                                Désactiver le compte
-                                                {% else %}
-                                                Activer le compte
-                                                {% endif %}
-                                            </h5>
-                                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                                        </div>
-                                        <div class="modal-body">
-                                            <p>
-                                                {% if client.is_active %}
-                                                Êtes-vous sûr de vouloir désactiver le compte de <strong>{{ client.get_full_name }}</strong> ?
-                                                <br><br>Le client ne pourra plus se connecter à la plateforme.
-                                                {% else %}
-                                                Êtes-vous sûr de vouloir réactiver le compte de <strong>{{ client.get_full_name }}</strong> ?
-                                                <br><br>Le client pourra à nouveau se connecter à la plateforme.
-                                                {% endif %}
-                                            </p>
-                                        </div>
-                                        <div class="modal-footer">
-                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
-                                            <form action="{% url 'admin_toggle_user_status' client.id %}" method="post">
-                                                {% csrf_token %}
-                                                <button type="submit" class="btn {% if client.is_active %}btn-danger{% else %}btn-success{% endif %}">
-                                                    {% if client.is_active %}
-                                                    Désactiver
-                                                    {% else %}
-                                                    Activer
-                                                    {% endif %}
-                                                </button>
-                                            </form>
-                                        </div>
-                                    </div>
-                                </div>
                             </div>
                         </td>
                     </tr>

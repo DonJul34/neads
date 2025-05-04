@@ -1,3 +1,4 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="fr">
 
@@ -8,335 +9,732 @@
     {% block title %}NEADS - Plateforme de Créateurs{% endblock %}
   </title>
 
+  <!-- Google Fonts - Poppins for all typography -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  
   <!-- Bootstrap CSS -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
 
-  <!-- Tailwind CSS pour les composants légers -->
+  <!-- Tailwind CSS for lighter components -->
   <script src="https://cdn.tailwindcss.com"></script>
 
-  <!-- Font Awesome pour les icônes -->
+  <!-- Font Awesome for icons -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
 
-  <!-- Leaflet CSS pour les cartes -->
+  <!-- Leaflet CSS for maps -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 
-  <!-- CSS personnalisé -->
+  <!-- AOS (Animate On Scroll) for elegant animations -->
+  <link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+
+  <!-- Custom CSS -->
   <style>
     :root {
-      --primary-color: #17142f;
-      --secondary-color: #6a49dc;
-      --accent-color: #8974e8;
-      --accent-color-2: #6a49dc;
-      --text-color: #333333;
-      --light-bg: #f5f5f7;
-      --card-bg: #ffffff;
-      --border-radius: 0.5rem;
-      --shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
-      --hover-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+      /* Core colors - NEADS palette */
+      --primary-color: #17142F;
+      --secondary-color: #4C35A8;
+      --tertiary-color: #2C215F;
+      --accent-color: #4C35A8;
+      --accent-color-light: #f0edff;
+      --primary-gradient: linear-gradient(135deg, #17142F 0%, #4C35A8 100%);
+      --secondary-gradient: linear-gradient(135deg, #2C215F 0%, #4C35A8 100%);
+      
+      /* Text colors */
+      --text-primary: #17142F;
+      --text-secondary: #2C215F;
+      --text-light: #4C35A8;
+      --text-white: #ffffff;
+      
+      /* Background colors */
+      --bg-primary: #f8f9ff;
+      --bg-secondary: #ffffff;
+      --bg-dark: #17142F;
+      --bg-card: #ffffff;
+      
+      /* UI elements */
+      --border-radius-sm: 0.5rem;
+      --border-radius-md: 0.8rem;
+      --border-radius-lg: 1.2rem;
+      --shadow-sm: 0 4px 8px rgba(76, 53, 168, 0.08);
+      --shadow-md: 0 8px 24px rgba(76, 53, 168, 0.12);
+      --shadow-lg: 0 12px 32px rgba(76, 53, 168, 0.16);
+      --shadow-inset: inset 0 2px 6px rgba(76, 53, 168, 0.1);
+      
+      /* Transitions */
+      --transition-normal: all 0.3s ease;
+      --transition-slow: all 0.5s ease;
+      
+      /* Footer gradient - blues */
+      --footer-gradient: linear-gradient(135deg, #17142F 0%, #2C215F 50%, #4C35A8 100%);
     }
 
+    /* Global styles */
+    html {
+      scroll-behavior: smooth;
+    }
+    
     body {
-      font-family: "Inter", sans-serif;
-      color: var(--text-color);
-      background-color: var(--light-bg);
-      padding-top: 20px;
+      font-family: 'Poppins', sans-serif;
+      color: var(--text-primary);
+      background-color: var(--bg-primary);
+      padding-top: 0;
+      line-height: 1.6;
+    }
+    
+    h1, h2, h3, h4, h5, h6 {
+      font-family: 'Poppins', sans-serif;
+      font-weight: 600;
+      letter-spacing: -0.02em;
     }
 
-    .gradient-text {
-      background: linear-gradient(90deg,
-          var(--accent-color-2) 40%,
-          #6a49dc 72.31%,
-          var(--accent-color) 100%);
-      background-clip: text;
-      color: transparent !important;
+    p {
+      color: var(--text-secondary);
     }
 
-    /* NEW - Style du menu burger */
+    /* === Header & Navigation === */
+    .neads-header {
+      background: var(--primary-gradient);
+      padding: 1rem 0;
+      box-shadow: var(--shadow-sm);
+      position: sticky;
+      top: 0;
+      width: 100%;
+      z-index: 1000;
+    }
+
+    .header-container {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .neads-logo {
+      font-family: 'Poppins', sans-serif;
+      font-weight: 700;
+      font-size: 1.8rem;
+      color: var(--text-white);
+      letter-spacing: -0.03em;
+    }
+    
+    .neads-logo img {
+      height: 50px;
+    }
+
+    .nav-action-buttons {
+      display: flex;
+      gap: 1rem;
+      align-items: center;
+    }
+
+    /* Burger menu styling */
     #burger-menu {
-      position: fixed !important;
-      top: 20px !important;
-      right: 20px !important;
-      width: 60px !important;
-      height: 60px !important;
-      background-color: var(--primary-color) !important;
-      border-radius: 50% !important;
-      display: flex !important;
-      align-items: center !important;
-      justify-content: center !important;
-      z-index: 99999 !important;
-      /* Super élevé pour être au-dessus de tout */
-      cursor: pointer !important;
-      box-shadow: 0 3px 10px rgba(0, 0, 0, 0.4) !important;
-      transition: transform 0.3s !important;
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      box-shadow: var(--shadow-md);
+      transition: var(--transition-normal);
+      border: none;
+      color: white;
     }
 
     #burger-menu:hover {
-      transform: scale(1.1) !important;
+      transform: rotate(90deg);
+      background: rgba(255, 255, 255, 0.3);
+      box-shadow: var(--shadow-lg);
     }
 
     #burger-menu i {
-      color: white !important;
-      font-size: 24px !important;
+      font-size: 1.2rem;
+      color: var(--text-white);
     }
 
+    /* Menu panel */
     #menu-panel {
-      position: fixed !important;
-      top: 0 !important;
-      right: -300px !important;
-      /* Caché par défaut */
-      width: 300px !important;
-      height: 100vh !important;
-      background-color: var(--primary-color) !important;
-      z-index: 99998 !important;
-      transition: right 0.3s ease-in-out !important;
-      box-shadow: -5px 0 15px rgba(0, 0, 0, 0.3) !important;
-      overflow-y: auto !important;
-      padding: 80px 20px 20px 20px !important;
+      position: fixed;
+      top: 0;
+      right: -350px;
+      width: 350px;
+      height: 100vh;
+      background-color: var(--bg-secondary);
+      z-index: 10000;
+      transition: var(--transition-slow);
+      box-shadow: var(--shadow-lg);
+      overflow-y: auto;
+      padding: 2.5rem 1.5rem;
+      border-left: 1px solid rgba(76, 53, 168, 0.1);
     }
-
+    
     #menu-panel.open {
-      right: 0 !important;
+      right: 0;
     }
-
-    #menu-panel .menu-header {
-      margin-bottom: 20px !important;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.2) !important;
-      padding-bottom: 15px !important;
-    }
-
-    #menu-panel .menu-title {
-      color: white !important;
-      font-size: 1.5rem !important;
-      font-weight: bold !important;
-    }
-
-    #menu-panel .menu-items {
-      list-style: none !important;
-      padding: 0 !important;
-      margin: 0 !important;
-    }
-
-    #menu-panel .menu-item {
-      margin-bottom: 10px !important;
-    }
-
-    #menu-panel .menu-link {
-      display: block !important;
-      padding: 12px 15px !important;
-      color: rgba(255, 255, 255, 0.85) !important;
-      text-decoration: none !important;
-      border-radius: 5px !important;
-      transition: all 0.2s !important;
-    }
-
-    #menu-panel .menu-link:hover {
-      background-color: rgba(255, 255, 255, 0.1) !important;
-      color: white !important;
-    }
-
-    #menu-panel .menu-section-title {
-      color: rgba(255, 255, 255, 0.6) !important;
-      font-size: 0.9rem !important;
-      text-transform: uppercase !important;
-      margin: 20px 0 10px 10px !important;
-    }
-
-    #menu-panel .menu-divider {
-      height: 1px !important;
-      background-color: rgba(255, 255, 255, 0.2) !important;
-      margin: 15px 0 !important;
-    }
-
-    #menu-panel .user-info {
-      display: flex !important;
-      align-items: center !important;
-      padding: 15px !important;
-      background-color: rgba(255, 255, 255, 0.05) !important;
-      border-radius: 8px !important;
-      margin-bottom: 15px !important;
-      color: white !important;
-    }
-
-    #menu-panel .user-badge {
-      margin-left: 10px !important;
-      padding: 3px 8px !important;
-      border-radius: 50px !important;
-      font-size: 0.8rem !important;
-    }
-
-    /* Style pour l'overlay qui assombrit le reste de la page */
+    
     #menu-overlay {
-      position: fixed !important;
-      top: 0 !important;
-      left: 0 !important;
-      width: 100% !important;
-      height: 100% !important;
-      background-color: rgba(0, 0, 0, 0.5) !important;
-      z-index: 99997 !important;
-      display: none !important;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(23, 20, 47, 0.7);
+      backdrop-filter: blur(4px);
+      z-index: 9999;
+      display: none;
+      transition: var(--transition-normal);
     }
-
+    
     #menu-overlay.open {
-      display: block !important;
+      display: block;
     }
 
-    /* Fin des styles du menu burger */
+    .menu-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 2rem;
+      padding-bottom: 1rem;
+      border-bottom: 1px solid rgba(106, 73, 220, 0.1);
+    }
+    
+    .menu-title {
+      font-family: 'Poppins', sans-serif;
+      font-size: 1.8rem;
+      font-weight: 700;
+      background: var(--primary-gradient);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+    }
+    
+    .menu-close {
+      cursor: pointer;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background-color: var(--accent-color-light);
+      transition: var(--transition-normal);
+    }
+    
+    .menu-close:hover {
+      background-color: var(--accent-color);
+      color: white;
+    }
 
+    .user-info {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      padding: 1.25rem;
+      background-color: var(--accent-color-light);
+      border-radius: var(--border-radius-md);
+      margin-bottom: 1.5rem;
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .user-info::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: var(--accent-gradient);
+      opacity: 0.1;
+      z-index: 0;
+    }
+    
+    .user-avatar {
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      background-color: var(--accent-color);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-weight: bold;
+      font-size: 1.25rem;
+      z-index: 1;
+    }
+    
+    .user-details {
+      flex: 1;
+      z-index: 1;
+    }
+    
+    .user-email {
+      font-size: 0.9rem;
+      font-weight: 500;
+      margin-bottom: 0.25rem;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 200px;
+    }
+    
+    .user-badge {
+      display: inline-block;
+      padding: 0.25rem 0.75rem;
+      border-radius: 100px;
+      font-size: 0.7rem;
+      font-weight: 600;
+      color: white;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    
+    .badge-admin {
+      background-color: #dc3545;
+    }
+    
+    .badge-consultant {
+      background-color: var(--accent-color);
+    }
+    
+    .badge-client {
+      background-color: var(--secondary-color);
+    }
+    
+    .badge-creator {
+      background-color: #ff9f1c;
+    }
+
+    .menu-section-title {
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      color: var(--text-light);
+      margin: 1.5rem 0 0.75rem 0.5rem;
+      letter-spacing: 0.05em;
+    }
+    
+    .menu-items {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+    
+    .menu-item {
+      margin-bottom: 0.5rem;
+    }
+    
+    .menu-link {
+      display: flex;
+      align-items: center;
+      padding: 0.75rem 1rem;
+      border-radius: var(--border-radius-sm);
+      color: var(--text-secondary);
+      text-decoration: none;
+      transition: var(--transition-normal);
+      font-weight: 500;
+    }
+    
+    .menu-link:hover {
+      background-color: var(--accent-color-light);
+      color: var(--secondary-color);
+      transform: translateX(5px);
+    }
+    
+    .menu-link i {
+      width: 24px;
+      text-align: center;
+      margin-right: 0.75rem;
+      color: var(--text-light);
+      transition: var(--transition-normal);
+    }
+    
+    .menu-link:hover i {
+      color: var(--secondary-color);
+    }
+    
+    .menu-divider {
+      height: 1px;
+      background-color: rgba(106, 73, 220, 0.1);
+      margin: 1.5rem 0;
+    }
+
+    /* Page title styling */
+    .page-header {
+      margin-bottom: 2rem;
+    }
+    
+    .page-title {
+      font-size: 2.25rem;
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+      background: var(--accent-gradient);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+      display: inline-block;
+    }
+    
+    .page-description {
+      font-size: 1.1rem;
+      color: var(--text-secondary);
+      max-width: 700px;
+    }
+
+    /* Button styling */
+    .btn {
+      padding: 0.6rem 1.5rem;
+      font-weight: 500;
+      border-radius: var(--border-radius-sm);
+      transition: var(--transition-normal);
+      position: relative;
+      overflow: hidden;
+      font-size: 0.95rem;
+    }
+    
+    .btn::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, rgba(255,255,255,0.2), rgba(255,255,255,0));
+      transition: var(--transition-normal);
+    }
+    
+    .btn:hover::before {
+      left: 100%;
+    }
+    
     .btn-primary {
       background-color: var(--secondary-color);
       border-color: var(--secondary-color);
-      transition: all 0.3s ease;
     }
-
-    .btn-primary:hover,
-    .btn-primary:focus {
-      background-color: #5b3ec7;
-      border-color: #5b3ec7;
-      transform: translateY(-2px);
-      box-shadow: 0 4px 10px rgba(106, 73, 220, 0.3);
+    
+    .btn-primary:hover {
+      background-color: var(--tertiary-color);
+      border-color: var(--tertiary-color);
     }
-
+    
     .btn-outline-primary {
       color: var(--secondary-color);
       border-color: var(--secondary-color);
-      transition: all 0.3s ease;
     }
-
-    .btn-outline-primary:hover,
-    .btn-outline-primary:focus {
+    
+    .btn-outline-primary:hover {
       background-color: var(--secondary-color);
       border-color: var(--secondary-color);
-      transform: translateY(-2px);
-      box-shadow: 0 4px 10px rgba(106, 73, 220, 0.3);
     }
-
-    .badge {
-      font-weight: 500;
-      padding: 0.35em 0.65em;
-      border-radius: 0.25rem;
-    }
-
+    
+    /* Card styling */
     .card {
-      transition: transform 0.3s ease, box-shadow 0.3s ease;
-      border-radius: var(--border-radius);
       border: none;
-      box-shadow: var(--shadow);
-    }
-
-    .card:hover {
-      transform: translateY(-5px);
-      box-shadow: var(--hover-shadow);
-    }
-
-    .star-rating {
-      color: #ffb400;
-    }
-
-    .media-container {
-      border-radius: var(--border-radius);
+      border-radius: var(--border-radius-md);
+      background-color: var(--bg-card);
+      box-shadow: var(--shadow-sm);
+      transition: var(--transition-normal);
       overflow: hidden;
+      height: 100%;
     }
-
-    .creator-profile img {
+    
+    .card:hover {
+      box-shadow: var(--shadow-md);
+      transform: translateY(-5px);
+    }
+    
+    .card-img-top {
+      height: 200px;
       object-fit: cover;
-      border-radius: 50%;
+    }
+    
+    .card-badge {
+      position: absolute;
+      top: 1rem;
+      right: 1rem;
+      padding: 0.35rem 0.75rem;
+      border-radius: 100px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      box-shadow: var(--shadow-sm);
+    }
+    
+    .card-title {
+      font-weight: 600;
+      font-size: 1.25rem;
+      margin-bottom: 0.5rem;
+    }
+    
+    .card-meta {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 0.5rem;
+      font-size: 0.85rem;
+      color: var(--text-light);
     }
 
-    #map {
-      height: 400px;
-      border-radius: var(--border-radius);
+    /* Form styling */
+    .form-control, .form-select {
+      border-radius: var(--border-radius-sm);
+      padding: 0.65rem 1rem;
+      border: 1px solid rgba(106, 73, 220, 0.2);
+      background-color: var(--bg-secondary);
+      transition: var(--transition-normal);
+      color: var(--text-primary);
+      font-size: 0.95rem;
     }
-
-    /* Custom styles for form controls */
-    .form-control,
-    .form-select {
-      border-radius: 0.5rem;
-      padding: 0.5rem 1rem;
-      border: 1px solid #e0e0e0;
-      transition: border-color 0.3s ease, box-shadow 0.3s ease;
-    }
-
-    .form-control:focus,
-    .form-select:focus {
+    
+    .form-control:focus, .form-select:focus {
       border-color: var(--accent-color);
-      box-shadow: 0 0 0 0.2rem rgba(106, 73, 220, 0.25);
+      box-shadow: var(--shadow-inset);
+      background-color: var(--accent-color-light);
     }
-
-    /* Custom checkbox */
+    
+    .form-label {
+      font-weight: 500;
+      color: var(--text-secondary);
+      margin-bottom: 0.5rem;
+      font-size: 0.9rem;
+    }
+    
+    .form-check-input {
+      width: 1.2rem;
+      height: 1.2rem;
+      margin-top: 0.15rem;
+      border: 2px solid rgba(106, 73, 220, 0.3);
+      background-color: var(--bg-secondary);
+    }
+    
     .form-check-input:checked {
-      background-color: var(--accent-color);
-      border-color: var(--accent-color);
+      background-color: var(--secondary-color);
+      border-color: var(--secondary-color);
+    }
+    
+    .form-check-label {
+      font-weight: 400;
+      color: var(--text-secondary);
+    }
+
+    /* Badge styling */
+    .badge {
+      padding: 0.35em 0.65em;
+      font-weight: 600;
+      border-radius: 6px;
+      text-transform: capitalize;
+      font-size: 0.75rem;
+    }
+    
+    .badge.bg-primary {
+      background-color: var(--secondary-color) !important;
+    }
+    
+    .badge.bg-secondary {
+      background-color: var(--accent-color) !important;
+    }
+    
+    .badge.bg-success {
+      background-color: #28a745 !important;
+    }
+    
+    .badge.bg-danger {
+      background-color: #dc3545 !important;
+    }
+    
+    .badge.bg-warning {
+      background-color: #ffc107 !important;
+      color: var(--text-primary);
+    }
+    
+    .badge.bg-info {
+      background-color: #17a2b8 !important;
+    }
+    
+    .badge.bg-light {
+      background-color: #f8f9fa !important;
+      color: var(--text-secondary);
+    }
+    
+    .badge.bg-dark {
+      background-color: #343a40 !important;
     }
 
     /* Alert styling */
     .alert {
-      border-radius: var(--border-radius);
       border: none;
-      box-shadow: var(--shadow);
+      border-radius: var(--border-radius-md);
+      box-shadow: var(--shadow-sm);
+      padding: 1rem 1.25rem;
+      border-left: 4px solid transparent;
     }
-
-    /* Custom badge colors */
-    .badge.bg-danger {
-      background-color: #dc3545 !important;
+    
+    .alert-success {
+      background-color: #effaf3;
+      border-left-color: #28a745;
+      color: #0f5132;
     }
-
-    .badge.bg-info {
-      background-color: var(--accent-color) !important;
+    
+    .alert-danger {
+      background-color: #fbf0f1;
+      border-left-color: #dc3545;
+      color: #842029;
     }
-
-    .badge.bg-success {
-      background-color: var(--secondary-color) !important;
+    
+    .alert-warning {
+      background-color: #fff8e6;
+      border-left-color: #ffc107;
+      color: #664d03;
     }
-
-    .badge.bg-warning {
-      background-color: #ff9f1c !important;
-      color: #fff;
+    
+    .alert-info {
+      background-color: #e7f6fd;
+      border-left-color: #17a2b8;
+      color: #055160;
     }
 
     /* Footer styling */
     footer {
-      background-color: var(--primary-color) !important;
-      color: #fff;
-      border-top: none !important;
+      background: var(--footer-gradient);
+      color: var(--text-white);
+      padding: 4rem 0 1rem;
+      margin-top: 3rem;
     }
-
-    footer p {
+    
+    .footer-logo {
+      font-family: 'Poppins', sans-serif;
+      font-weight: 700;
+      font-size: 1.5rem;
+      margin-bottom: 1rem;
+      color: var(--text-white);
+    }
+    
+    .footer-logo img {
+      height: 50px;
+      margin-bottom: 1rem;
+    }
+    
+    .footer-text {
       color: rgba(255, 255, 255, 0.8);
+      margin-bottom: 1.5rem;
+    }
+    
+    .footer-social {
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+    }
+    
+    .social-icon {
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.1);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-white);
+      transition: var(--transition-normal);
+    }
+    
+    .social-icon:hover {
+      background: rgba(255, 255, 255, 0.2);
+      transform: translateY(-3px);
+      color: var(--text-white);
+    }
+    
+    .footer-links h5 {
+      color: var(--text-white);
+      font-weight: 600;
+      margin-bottom: 1.25rem;
+      position: relative;
+      display: inline-block;
+    }
+    
+    .footer-links h5::after {
+      content: '';
+      position: absolute;
+      bottom: -8px;
+      left: 0;
+      width: 40px;
+      height: 2px;
+      background-color: var(--accent-color);
+    }
+    
+    .footer-links ul {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+    
+    .footer-links li {
+      margin-bottom: 0.75rem;
+    }
+    
+    .footer-links a {
+      color: rgba(255, 255, 255, 0.8);
+      text-decoration: none;
+      transition: var(--transition-normal);
+    }
+    
+    .footer-links a:hover {
+      color: var(--text-white);
+      transform: translateX(3px);
+    }
+    
+    .footer-bottom {
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+      padding-top: 1.5rem;
+      margin-top: 3rem;
+      text-align: center;
+      font-size: 0.85rem;
+      color: rgba(255, 255, 255, 0.6);
     }
 
-    /* Dropdown customization */
-    .dropdown-menu {
-      border-radius: var(--border-radius);
-      border: none;
-      box-shadow: var(--hover-shadow);
+    /* Responsive tweaks */
+    @media (max-width: 992px) {
+      .page-title {
+        font-size: 1.75rem;
+      }
+      
+      .page-description {
+        font-size: 1rem;
+      }
+      
+      #menu-panel {
+        width: 300px;
+      }
     }
-
-    .dropdown-item:hover,
-    .dropdown-item:focus {
-      background-color: #f0ebff;
-      color: var(--secondary-color);
-    }
-
-    /* Pagination styling */
-    .pagination .page-link {
-      color: var(--secondary-color);
-      border-color: #e0e0e0;
-    }
-
-    .pagination .page-item.active .page-link {
-      background-color: var(--secondary-color);
-      border-color: var(--secondary-color);
-    }
-
-    .pagination .page-link:focus {
-      box-shadow: 0 0 0 0.2rem rgba(106, 73, 220, 0.25);
-    }
-
-    /* Responsive */
+    
     @media (max-width: 768px) {
+      .page-title {
+        font-size: 1.5rem;
+      }
+      
       .container {
-        padding-left: 1rem;
-        padding-right: 1rem;
+        padding-left: 1.25rem;
+        padding-right: 1.25rem;
+      }
+      
+      #menu-panel {
+        width: 100%;
+        right: -100%;
+      }
+      
+      .user-email {
+        max-width: 150px;
+      }
+    }
+    
+    @media (max-width: 576px) {
+      .page-title {
+        font-size: 1.35rem;
+      }
+      
+      .btn {
+        padding: 0.5rem 1.25rem;
+        font-size: 0.85rem;
       }
     }
   </style>
@@ -345,251 +743,354 @@
 </head>
 
 <body>
-  <!-- NEW - Menu burger -->
-  <div id="burger-menu">
-    <i class="fas fa-bars"></i>
-  </div>
+  <!-- Modern Header -->
+  <header class="neads-header">
+    <div class="container">
+      <div class="header-container">
+        <a href="{% url 'home' %}" class="neads-logo">
+          <img src="{% static 'img/logo-removebg-preview.png' %}" alt="NEADS Logo">
+        </a>
+        
+        <div class="nav-action-buttons">
+          {% if user.is_authenticated %}
+          
+          {% if user.role == 'admin' %}
+          <!-- Liens pour les administrateurs -->
+          <a href="{% url 'home' %}" class="btn btn-sm btn-outline-light me-1">
+            <i class="fas fa-home me-1"></i> Accueil
+          </a>
+          <a href="{% url 'gallery_view' %}" class="btn btn-sm btn-outline-light me-1">
+            <i class="fas fa-th-large me-1"></i> Galerie créateurs
+          </a>
+          <a href="{% url 'management_dashboard' %}" class="btn btn-sm btn-outline-light me-1">
+            <i class="fas fa-cogs me-1"></i> Gestion NEADS
+          </a>
+          <a href="{% url 'admin:index' %}" class="btn btn-sm btn-outline-light me-1">
+            <i class="fas fa-users-cog me-1"></i> Gestion consultants
+          </a>
+          
+          {% elif user.role == 'consultant' %}
+          <!-- Liens pour les consultants -->
+          <a href="{% url 'home' %}" class="btn btn-sm btn-outline-light me-1">
+            <i class="fas fa-home me-1"></i> Accueil
+          </a>
+          <a href="{% url 'gallery_view' %}" class="btn btn-sm btn-outline-light me-1">
+            <i class="fas fa-th-large me-1"></i> Galerie créateurs
+          </a>
+          <a href="{% url 'management_dashboard' %}" class="btn btn-sm btn-outline-light me-1">
+            <i class="fas fa-cogs me-1"></i> Gestion NEADS
+          </a>
+          
+          {% elif user.role == 'client' %}
+          <!-- Liens pour les clients -->
+          <a href="{% url 'home' %}" class="btn btn-sm btn-outline-light me-1">
+            <i class="fas fa-home me-1"></i> Accueil
+          </a>
+          <a href="{% url 'gallery_view' %}" class="btn btn-sm btn-outline-light me-1">
+            <i class="fas fa-th-large me-1"></i> Galerie créateurs
+          </a>
+          
+          {% endif %}
+          {% endif %}
+          
+          <!-- Burger Menu -->
+          <button id="burger-menu">
+            <i class="fas fa-bars"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+  </header>
 
-  <!-- NEW - Panel de menu -->
+  <!-- Side menu panel -->
   <div id="menu-panel">
     <div class="menu-header">
       <div class="menu-title">NEADS</div>
+      <div class="menu-close">
+        <i class="fas fa-times"></i>
+      </div>
     </div>
 
     {% if user.is_authenticated %}
     <div class="user-info">
-      {{ user.email }}
-      {% if user.role == 'admin' %}
-      <span class="user-badge" style="background-color: #dc3545;">Admin</span>
-      {% elif user.role == 'consultant' %}
-      <span class="user-badge" style="background-color: var(--accent-color);">Consultant</span>
-      {% elif user.role == 'client' %}
-      <span class="user-badge" style="background-color: var(--secondary-color);">Client</span>
-      {% elif user.role == 'creator' %}
-      <span class="user-badge" style="background-color: #ff9f1c;">Créateur</span>
-      {% endif %}
+      <div class="user-avatar">
+        {{ user.first_name|first|upper }}{{ user.last_name|first|upper }}
+      </div>
+      <div class="user-details">
+        <div class="user-email">{{ user.email }}</div>
+        <div class="user-badge badge-{{ user.role }}">{{ user.get_role_display }}</div>
+      </div>
     </div>
     {% endif %}
 
     <ul class="menu-items">
       {% if user.is_authenticated %}
-
-      {% if user.role == 'client' %}
-      <!-- Navigation pour les clients -->
+      
+      {% if user.role == 'admin' %}
+      <!-- Menu pour les administrateurs -->
       <div class="menu-section-title">Navigation</div>
       <li class="menu-item">
+        <a class="menu-link" href="{% url 'home' %}">
+          <i class="fas fa-home"></i>Accueil
+        </a>
+      </li>
+      <li class="menu-item">
         <a class="menu-link" href="{% url 'gallery_view' %}">
-          <i class="fas fa-image me-2"></i>Galerie Créateurs
+          <i class="fas fa-th-large"></i>Galerie créateurs
         </a>
       </li>
       <li class="menu-item">
-        <a class="menu-link" href="{% url 'map_view' %}">
-          <i class="fas fa-map-marker-alt me-2"></i>Carte
+        <a class="menu-link" href="{% url 'management_dashboard' %}">
+          <i class="fas fa-cogs"></i>Gestion NEADS
         </a>
       </li>
       <li class="menu-item">
-        <a class="menu-link" href="{% url 'search_view' %}">
-          <i class="fas fa-search me-2"></i>Recherche
+        <a class="menu-link" href="{% url 'admin:index' %}">
+          <i class="fas fa-users-cog"></i>Gestion consultants
         </a>
       </li>
-
+      
       {% elif user.role == 'consultant' %}
-      <!-- Navigation pour les consultants -->
+      <!-- Menu pour les consultants -->
       <div class="menu-section-title">Navigation</div>
       <li class="menu-item">
+        <a class="menu-link" href="{% url 'home' %}">
+          <i class="fas fa-home"></i>Accueil
+        </a>
+      </li>
+      <li class="menu-item">
         <a class="menu-link" href="{% url 'gallery_view' %}">
-          <i class="fas fa-image me-2"></i>Galerie Créateurs
+          <i class="fas fa-th-large"></i>Galerie créateurs
         </a>
       </li>
-      <li class="menu-item">
-        <a class="menu-link" href="{% url 'map_view' %}">
-          <i class="fas fa-map-marker-alt me-2"></i>Carte
-        </a>
-      </li>
-      <li class="menu-item">
-        <a class="menu-link" href="{% url 'search_view' %}">
-          <i class="fas fa-search me-2"></i>Recherche
-        </a>
-      </li>
-      <li class="menu-item">
-        <a class="menu-link" href="{% url 'favorites_view' %}">
-          <i class="fas fa-heart me-2"></i>Favoris
-        </a>
-      </li>
-
-      <div class="menu-section-title">Administration</div>
       <li class="menu-item">
         <a class="menu-link" href="{% url 'management_dashboard' %}">
-          <i class="fas fa-cogs me-2"></i>Gestion NEADS
+          <i class="fas fa-cogs"></i>Gestion NEADS
         </a>
       </li>
-
-      {% elif user.role == 'admin' %}
-      <!-- Navigation pour les administrateurs -->
+      
+      {% elif user.role == 'client' %}
+      <!-- Menu pour les clients -->
       <div class="menu-section-title">Navigation</div>
       <li class="menu-item">
+        <a class="menu-link" href="{% url 'home' %}">
+          <i class="fas fa-home"></i>Accueil
+        </a>
+      </li>
+      <li class="menu-item">
         <a class="menu-link" href="{% url 'gallery_view' %}">
-          <i class="fas fa-image me-2"></i>Galerie Créateurs
+          <i class="fas fa-th-large"></i>Galerie créateurs
         </a>
       </li>
-      <li class="menu-item">
-        <a class="menu-link" href="{% url 'map_view' %}">
-          <i class="fas fa-map-marker-alt me-2"></i>Carte
-        </a>
-      </li>
-      <li class="menu-item">
-        <a class="menu-link" href="{% url 'search_view' %}">
-          <i class="fas fa-search me-2"></i>Recherche
-        </a>
-      </li>
-      <li class="menu-item">
-        <a class="menu-link" href="{% url 'favorites_view' %}">
-          <i class="fas fa-heart me-2"></i>Favoris
-        </a>
-      </li>
-
-      <div class="menu-section-title">Administration</div>
-      <li class="menu-item">
-        <a class="menu-link" href="{% url 'management_dashboard' %}">
-          <i class="fas fa-cogs me-2"></i>Gestion NEADS
-        </a>
-      </li>
-      <li class="menu-item">
-        <a class="menu-link" href="/admin/" target="_blank">
-          <i class="fas fa-shield-alt me-2"></i>Administration Django
-        </a>
-      </li>
-
+      
       {% elif user.role == 'creator' %}
-      <!-- Navigation pour les créateurs -->
-      <div class="menu-section-title">Mon Espace</div>
-      {% if user.creator_profile %}
-      <li class="menu-item">
-        <a class="menu-link" href="{% url 'creator_detail' creator_id=user.creator_profile.id %}">
-          <i class="fas fa-user me-2"></i>Mon profil
-        </a>
-      </li>
-      {% else %}
-      <li class="menu-item">
-        <a class="menu-link" href="{% url 'creator_add' %}">
-          <i class="fas fa-plus-circle me-2"></i>Créer mon profil
-        </a>
-      </li>
-      {% endif %}
+      <!-- Menu pour les créateurs - pas de section navigation -->
       {% endif %}
 
       <div class="menu-divider"></div>
 
       <div class="menu-section-title">Mon compte</div>
-      <li class="menu-item">
-        <a class="menu-link" href="{% url 'profile' %}">
-          <i class="fas fa-user-circle me-2"></i>Mon profil
-        </a>
-      </li>
-      {% if user.role == 'creator' and user.creator_profile %}
+      {% if user.role == 'creator' %}
+      <!-- Pour les créateurs -->
+      {% if user.creator_profile %}
       <li class="menu-item">
         <a class="menu-link" href="{% url 'creator_detail' creator_id=user.creator_profile.id %}">
-          <i class="fas fa-id-card me-2"></i>Ma fiche créateur
+          <i class="fas fa-user"></i>Mon profil
         </a>
       </li>
       {% endif %}
+      {% else %}
+      <!-- Pour les autres rôles -->
+      <li class="menu-item">
+        <a class="menu-link" href="{% url 'profile' %}">
+          <i class="fas fa-user-circle"></i>Mon profil
+        </a>
+      </li>
+      {% endif %}
+      
       <li class="menu-item">
         <a class="menu-link" href="{% url 'logout' %}">
-          <i class="fas fa-sign-out-alt me-2"></i>Déconnexion
+          <i class="fas fa-sign-out-alt"></i>Déconnexion
         </a>
       </li>
 
       {% else %}
-      <!-- Non authentifié -->
+      <!-- Menu pour utilisateurs non authentifiés -->
+      <div class="menu-section-title">Navigation</div>
+      <li class="menu-item">
+        <a class="menu-link" href="{% url 'home' %}">
+          <i class="fas fa-home"></i>Accueil
+        </a>
+      </li>
+      <li class="menu-item">
+        <a class="menu-link" href="{% url 'gallery_view' %}">
+          <i class="fas fa-th-large"></i>Galerie créateurs
+        </a>
+      </li>
+      
+      <div class="menu-divider"></div>
+      
+      <div class="menu-section-title">Compte</div>
       <li class="menu-item">
         <a class="menu-link" href="{% url 'login' %}">
-          <i class="fas fa-sign-in-alt me-2"></i>Connexion
+          <i class="fas fa-sign-in-alt"></i>Connexion
         </a>
       </li>
       <li class="menu-item">
         <a class="menu-link" href="{% url 'temp_login_request' %}">
-          <i class="fas fa-user-plus me-2"></i>Inscription
+          <i class="fas fa-user-plus"></i>Inscription
         </a>
       </li>
       {% endif %}
     </ul>
   </div>
 
-  <!-- NEW - Overlay pour le menu -->
+  <!-- Menu overlay -->
   <div id="menu-overlay"></div>
 
-  <!-- Contenu principal -->
-  <main class="py-4">
+  <!-- Main content -->
+  <main class="py-5">
     <div class="container">
-      {% if messages %} {% for message in messages %}
-      <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
-        {{ message }}
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-      </div>
-      {% endfor %} {% endif %} {% block content %}{% endblock %}
+      {% if messages %}
+        {% for message in messages %}
+        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+          {{ message }}
+          <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+        {% endfor %}
+      {% endif %}
+      
+      {% block content %}{% endblock %}
     </div>
   </main>
 
-  <!-- Pied de page -->
-  <footer class="py-4 mt-5">
+  <!-- Enhanced footer -->
+  <footer>
     <div class="container">
       <div class="row">
-        <div class="col-md-6">
-          <p class="mb-0">&copy; 2025 NEADS - Tous droits réservés</p>
-        </div>
-        <div class="col-md-6 text-md-end">
-          <p class="mb-0">
-            Une application pour la gestion des créateurs de contenu
+        <div class="col-lg-4 mb-4 mb-lg-0">
+          <div class="footer-logo">
+            <img src="{% static 'img/logo-removebg-preview.png' %}" alt="NEADS Logo">
+          </div>
+          <p class="footer-text">
+            La plateforme qui connecte les marques aux meilleurs créateurs de contenu adaptés à leurs besoins et projets.
           </p>
+          <div class="footer-social">
+            <a href="#" class="social-icon"><i class="fab fa-facebook-f"></i></a>
+            <a href="#" class="social-icon"><i class="fab fa-twitter"></i></a>
+            <a href="#" class="social-icon"><i class="fab fa-instagram"></i></a>
+            <a href="#" class="social-icon"><i class="fab fa-linkedin-in"></i></a>
+          </div>
         </div>
+        
+        <div class="col-lg-2 col-md-4 col-6 mb-4 mb-md-0">
+          <div class="footer-links">
+            <h5>Liens</h5>
+            <ul>
+              <li><a href="{% url 'home' %}">Accueil</a></li>
+              <li><a href="{% url 'gallery_view' %}">Galerie</a></li>
+              <li><a href="{% url 'map_search' %}">Carte</a></li>
+            </ul>
+          </div>
+        </div>
+        
+        <div class="col-lg-2 col-md-4 col-6 mb-4 mb-md-0">
+          <div class="footer-links">
+            <h5>Support</h5>
+            <ul>
+              <li><a href="#">FAQ</a></li>
+              <li><a href="#">Aide</a></li>
+              <li><a href="#">Conditions</a></li>
+              <li><a href="#">Confidentialité</a></li>
+            </ul>
+          </div>
+        </div>
+        
+        <div class="col-lg-4 col-md-4">
+          <div class="footer-links">
+            <h5>Contact</h5>
+            <ul>
+              <li><a href="mailto:contact@neads.com">contact@neads.com</a></li>
+              <li><a href="tel:+33123456789">+33 1 23 45 67 89</a></li>
+              <li><a href="#">Paris, France</a></li>
+            </ul>
+          </div>
+        </div>
+      </div>
+      
+      <div class="footer-bottom">
+        <p>&copy; {% now "Y" %} NEADS. Tous droits réservés. Une application pour la gestion des créateurs de contenu.</p>
       </div>
     </div>
   </footer>
 
-  <!-- Bootstrap Bundle avec Popper -->
+  <!-- Bootstrap Bundle with Popper -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
-  <!-- Leaflet JS pour les cartes -->
+  <!-- Leaflet JS for maps -->
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  
+  <!-- AOS (Animate On Scroll) -->
+  <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+  <script>
+    // Initialize AOS animations
+    document.addEventListener('DOMContentLoaded', function() {
+      AOS.init({
+        duration: 800,
+        easing: 'ease-in-out',
+        once: true
+      });
+    });
+  </script>
 
-  <!-- NEW - JavaScript pour le menu burger -->
+  <!-- Menu handler -->
   <script>
     document.addEventListener('DOMContentLoaded', function () {
       const burgerMenu = document.getElementById('burger-menu');
       const menuPanel = document.getElementById('menu-panel');
       const menuOverlay = document.getElementById('menu-overlay');
+      const menuClose = document.querySelector('.menu-close');
 
-      // Ouvrir/fermer le menu au clic sur le burger
+      // Open/close menu on burger click
       burgerMenu.addEventListener('click', function () {
-        menuPanel.classList.toggle('open');
-        menuOverlay.classList.toggle('open');
-
-        // Changer l'icône
+        menuPanel.classList.add('open');
+        menuOverlay.classList.add('open');
+        
+        // Change icon
         const icon = burgerMenu.querySelector('i');
-        if (menuPanel.classList.contains('open')) {
-          icon.classList.remove('fa-bars');
-          icon.classList.add('fa-times');
-        } else {
-          icon.classList.remove('fa-times');
-          icon.classList.add('fa-bars');
-        }
+        icon.classList.remove('fa-bars');
+        icon.classList.add('fa-times');
       });
 
-      // Fermer le menu au clic sur l'overlay
+      // Close menu on overlay click
       menuOverlay.addEventListener('click', function () {
         menuPanel.classList.remove('open');
         menuOverlay.classList.remove('open');
-
-        // Remettre l'icône du burger
+        
+        // Reset burger icon
         const icon = burgerMenu.querySelector('i');
         icon.classList.remove('fa-times');
         icon.classList.add('fa-bars');
       });
+      
+      // Close menu on X button click
+      if (menuClose) {
+        menuClose.addEventListener('click', function () {
+          menuPanel.classList.remove('open');
+          menuOverlay.classList.remove('open');
+          
+          // Reset burger icon
+          const icon = burgerMenu.querySelector('i');
+          icon.classList.remove('fa-times');
+          icon.classList.add('fa-bars');
+        });
+      }
     });
   </script>
 
-  <!-- Scripts supplémentaires spécifiques à la page -->
+  <!-- Additional page-specific scripts -->
   {% block extra_js %}{% endblock %}
 </body>
 
+</html>
 </html>

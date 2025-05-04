@@ -32,15 +32,25 @@ class LocationForm(forms.ModelForm):
         
     def clean(self):
         cleaned_data = super().clean()
+        full_address = cleaned_data.get('full_address')
         latitude = cleaned_data.get('latitude')
         longitude = cleaned_data.get('longitude')
         
-        # Assouplir la validation pour permettre la saisie manuelle de l'adresse
-        if not latitude or not longitude:
-            # On ne déclenche pas d'erreur pour permettre la saisie manuelle
-            pass
-            
+        # Si l'adresse est fournie mais pas les coordonnées
+        if full_address and (latitude is None or longitude is None):
+            # Nous sommes plus souples ici pour permettre les tests
+            # mais en production, on pourrait bloquer la soumission
+            self.add_warning('full_address', "L'adresse n'a pas pu être géolocalisée. Veuillez sélectionner une adresse dans les suggestions.")
+        
         return cleaned_data
+    
+    def add_warning(self, field, message):
+        """Ajoute un avertissement sans bloquer la soumission du formulaire."""
+        if not hasattr(self, '_warnings'):
+            self._warnings = {}
+        if field not in self._warnings:
+            self._warnings[field] = []
+        self._warnings[field].append(message)
 
 
 class CreatorForm(forms.ModelForm):
@@ -190,36 +200,39 @@ class CreatorForm(forms.ModelForm):
 
 
 class CreatorSearchForm(forms.Form):
-    query = forms.CharField(required=False, label="Recherche par nom")
+    """Formulaire pour la recherche et le filtrage des créateurs."""
+    query = forms.CharField(required=False, label="Recherche")
     domains = forms.ModelMultipleChoiceField(
-        queryset=Domain.objects.all(),
+        queryset=Domain.objects.all(), 
+        required=False, 
         widget=forms.CheckboxSelectMultiple,
-        required=False,
-        label="Domaines"
+        label="Domaines d'expertise"
     )
-    min_age = forms.IntegerField(required=False, min_value=13, max_value=100, label="Âge minimum")
-    max_age = forms.IntegerField(required=False, min_value=13, max_value=100, label="Âge maximum")
+    min_age = forms.IntegerField(required=False, min_value=18, max_value=99, label="Âge minimum")
+    max_age = forms.IntegerField(required=False, min_value=18, max_value=99, label="Âge maximum")
     gender = forms.ChoiceField(
-        choices=[('', 'Tous')] + list(Creator.GENDER_CHOICES),
-        required=False,
+        choices=[('', 'Tous')] + list(Creator.GENDER_CHOICES), 
+        required=False, 
         label="Genre"
     )
     content_type = forms.ChoiceField(
-        choices=[('', 'Tous')] + list(Creator.CONTENT_TYPE_CHOICES),
+        choices=[
+            ('', 'Tous'),
+            ('photo', 'Photo'),
+            ('video', 'Vidéo'),
+            ('audio', 'Audio'),
+            ('text', 'Texte'),
+            ('mixed', 'Mixte')
+        ],
         required=False,
         label="Type de contenu"
     )
+    min_rating = forms.IntegerField(required=False, min_value=1, max_value=5, label="Note minimum")
+    can_invoice = forms.BooleanField(required=False, label="Peut facturer")
+    verified_only = forms.BooleanField(required=False, label="Vérifiés uniquement")
+    favorites_only = forms.BooleanField(required=False, label="Favoris uniquement")
     country = forms.CharField(required=False, label="Pays")
     city = forms.CharField(required=False, label="Ville")
-    min_rating = forms.DecimalField(
-        required=False, 
-        min_value=0, 
-        max_value=5,
-        decimal_places=1,
-        label="Note minimum"
-    )
-    can_invoice = forms.BooleanField(required=False, label="Peut facturer")
-    verified_only = forms.BooleanField(required=False, label="Vérifiés NEADS uniquement")
     
     def clean(self):
         cleaned_data = super().clean()
@@ -346,4 +359,303 @@ class FavoriteForm(forms.ModelForm):
         fields = ['notes']
         widgets = {
             'notes': forms.Textarea(attrs={'class': 'form-control', 'rows': 3, 'placeholder': 'Notes personnelles (facultatif)'})
-        } 
+        }
+
+
+class CreatorRegistrationForm(forms.Form):
+    """
+    Formulaire d'inscription pour les créateurs qui ne sont pas encore inscrits.
+    Ce formulaire permet de créer à la fois un compte utilisateur et un profil créateur.
+    """
+    # Informations personnelles
+    first_name = forms.CharField(
+        max_length=50,
+        label="Prénom",
+        widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Prénom'}),
+        required=True
+    )
+    
+    last_name = forms.CharField(
+        max_length=50,
+        label="Nom",
+        widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Nom'}),
+        required=True
+    )
+    
+    gender = forms.ChoiceField(
+        choices=Creator.GENDER_CHOICES,
+        label="Genre",
+        widget=forms.Select(attrs={'class': 'form-select'}),
+        required=True
+    )
+    
+    birth_year = forms.IntegerField(
+        label="Année de naissance",
+        widget=forms.NumberInput(attrs={
+            'class': 'form-control',
+            'min': '1923',
+            'max': datetime.date.today().year - 13,
+            'placeholder': 'Année de naissance'
+        }),
+        required=True
+    )
+    
+    # Contact
+    email = forms.EmailField(
+        label="E-mail",
+        widget=forms.EmailInput(attrs={'class': 'form-control', 'placeholder': 'votre@email.com'}),
+        required=True
+    )
+    
+    phone = forms.CharField(
+        max_length=20,
+        label="Téléphone",
+        widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': '+33612345678'}),
+        required=True
+    )
+    
+    # Localisation
+    full_address = forms.CharField(
+        max_length=255,
+        label="Adresse complète",
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'Commencez à taper votre adresse...',
+            'id': 'id_full_address',
+            'autocomplete': 'off',  # Désactiver l'autocomplétion du navigateur
+            'spellcheck': 'false',  # Désactiver le correcteur orthographique
+            'aria-describedby': 'addressHelp'
+        }),
+        required=True,
+        help_text="Saisissez votre adresse et sélectionnez une suggestion"
+    )
+    
+    latitude = forms.FloatField(widget=forms.HiddenInput(attrs={'id': 'id_latitude'}), required=False)
+    longitude = forms.FloatField(widget=forms.HiddenInput(attrs={'id': 'id_longitude'}), required=False)
+    
+    # Réseaux sociaux
+    tiktok_link = forms.URLField(
+        required=False,
+        widget=forms.URLInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'https://www.tiktok.com/@votreprofil'
+        }),
+        label="Compte TikTok"
+    )
+    
+    instagram_link = forms.URLField(
+        required=False,
+        widget=forms.URLInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'https://www.instagram.com/votreprofil'
+        }),
+        label="Compte Instagram"
+    )
+    
+    youtube_link = forms.URLField(
+        required=False,
+        widget=forms.URLInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'https://www.youtube.com/@votrechaine'
+        }),
+        label="Compte YouTube"
+    )
+    
+    # Informations professionnelles
+    baseline = forms.CharField(
+        max_length=50,
+        label="Baseline",
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'Créateur de contenu UGC',
+            'maxlength': '50'
+        }),
+        required=True,
+        help_text="ex : Créateur de contenu UGC"
+    )
+    
+    bio = forms.CharField(
+        label="À propos de toi",
+        widget=forms.Textarea(attrs={
+            'class': 'form-control', 
+            'rows': 5,
+            'placeholder': 'Parlez de vous, de votre expérience...',
+            'minlength': '400',
+            'maxlength': '1000'
+        }),
+        required=True,
+        help_text="min. 400 caractères, max. 1000"
+    )
+    
+    equipment = forms.CharField(
+        label="Matériel utilisé",
+        widget=forms.Textarea(attrs={
+            'class': 'form-control', 
+            'rows': 3,
+            'placeholder': 'Caméras, logiciels, accessoires...'
+        }),
+        required=True
+    )
+    
+    previous_clients = forms.CharField(
+        label="Marques avec lesquelles tu as travaillé",
+        widget=forms.Textarea(attrs={
+            'class': 'form-control', 
+            'rows': 3,
+            'placeholder': 'Listez les marques...'
+        }),
+        required=True
+    )
+    
+    # Options
+    can_invoice = forms.ChoiceField(
+        choices=[
+            (True, "Oui"),
+            (False, "Non")
+        ],
+        label="Statut pour facturer",
+        widget=forms.RadioSelect(),
+        required=True
+    )
+    
+    # Domaines d'expertise
+    domains = forms.ModelMultipleChoiceField(
+        queryset=Domain.objects.all().order_by('name'),
+        widget=forms.CheckboxSelectMultiple(attrs={'class': 'domains-checkbox'}),
+        required=True,
+        label="Domaines",
+        help_text="Sélectionne 5 domaines maximum"
+    )
+    
+    # Photo de profil
+    featured_image = forms.ImageField(
+        label="Photo de profil",
+        required=True,
+        widget=forms.FileInput(attrs={'class': 'form-control'})
+    )
+    
+    # Portfolio - Vidéos individuelles
+    video_file1 = forms.FileField(
+        label="Vidéo UGC 1",
+        required=True,
+        widget=forms.FileInput(attrs={
+            'class': 'form-control',
+            'accept': 'video/mp4,video/quicktime'
+        }),
+        help_text="Format MP4 uniquement (100Mo max)"
+    )
+    
+    video_file2 = forms.FileField(
+        label="Vidéo UGC 2",
+        required=True,
+        widget=forms.FileInput(attrs={
+            'class': 'form-control',
+            'accept': 'video/mp4,video/quicktime'
+        })
+    )
+    
+    video_file3 = forms.FileField(
+        label="Vidéo UGC 3",
+        required=True,
+        widget=forms.FileInput(attrs={
+            'class': 'form-control',
+            'accept': 'video/mp4,video/quicktime'
+        })
+    )
+    
+    # Vidéos supplémentaires (optionnelles)
+    video_file4 = forms.FileField(
+        label="Vidéo UGC 4 (optionnelle)",
+        required=False,
+        widget=forms.FileInput(attrs={
+            'class': 'form-control',
+            'accept': 'video/mp4,video/quicktime'
+        })
+    )
+    
+    video_file5 = forms.FileField(
+        label="Vidéo UGC 5 (optionnelle)",
+        required=False,
+        widget=forms.FileInput(attrs={
+            'class': 'form-control',
+            'accept': 'video/mp4,video/quicktime'
+        })
+    )
+    
+    # Images individuelles
+    image_file1 = forms.ImageField(
+        label="Photo UGC 1",
+        required=True,
+        widget=forms.FileInput(attrs={
+            'class': 'form-control',
+            'accept': 'image/jpeg,image/png,image/gif'
+        }),
+        help_text="Format JPG, PNG ou GIF (5Mo max)"
+    )
+    
+    image_file2 = forms.ImageField(
+        label="Photo UGC 2",
+        required=True,
+        widget=forms.FileInput(attrs={
+            'class': 'form-control',
+            'accept': 'image/jpeg,image/png,image/gif'
+        })
+    )
+    
+    image_file3 = forms.ImageField(
+        label="Photo UGC 3",
+        required=True,
+        widget=forms.FileInput(attrs={
+            'class': 'form-control',
+            'accept': 'image/jpeg,image/png,image/gif'
+        })
+    )
+    
+    # Conditions générales
+    accept_terms = forms.BooleanField(
+        required=True,
+        label="J'accepte les conditions générales d'utilisation",
+        widget=forms.CheckboxInput(attrs={'class': 'form-check-input'})
+    )
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        
+    def clean_domains(self):
+        domains = self.cleaned_data.get('domains')
+        if domains and len(domains) > 5:
+            raise ValidationError("Vous ne pouvez sélectionner que 5 domaines maximum.")
+        return domains
+        
+    def clean_birth_year(self):
+        birth_year = self.cleaned_data.get('birth_year')
+        # Calculer l'âge approximatif
+        current_year = datetime.date.today().year
+        age = current_year - birth_year
+        
+        if age < 13:
+            raise ValidationError("Vous devez avoir au moins 13 ans pour vous inscrire.")
+        if age > 100:
+            raise ValidationError("Veuillez entrer une année de naissance valide.")
+        
+        return birth_year
+    
+    def clean_email(self):
+        email = self.cleaned_data.get('email')
+        # Vérifier si l'email existe déjà
+        from neads.core.models import User
+        if User.objects.filter(email=email).exists():
+            raise ValidationError("Un compte avec cet email existe déjà. Veuillez vous connecter.")
+        return email
+        
+    def clean(self):
+        cleaned_data = super().clean()
+        full_address = cleaned_data.get('full_address')
+        latitude = cleaned_data.get('latitude')
+        longitude = cleaned_data.get('longitude')
+        
+        # Si l'adresse est fournie mais pas les coordonnées
+        if full_address and (not latitude or not longitude):
+            self.add_error('full_address', "Veuillez sélectionner une adresse dans les suggestions pour permettre la géolocalisation.")
+        
+        return cleaned_data 

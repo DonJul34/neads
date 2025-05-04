@@ -3,8 +3,10 @@ anyio==4.9.0
 asgiref==3.8.1
 certifi==2025.1.31
 charset-normalizer==3.4.1
+crispy-bootstrap5==2025.4
 Django==5.2
 django-cors-headers==4.7.0
+django-crispy-forms==2.4
 djangorestframework==3.16.0
 et_xmlfile==2.0.0
 eval_type_backport==0.2.2

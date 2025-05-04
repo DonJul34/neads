@@ -3,100 +3,273 @@
 {% block title %}NEADS - Galerie des Créateurs{% endblock %}
 
 {% block extra_css %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/nouislider@14.6.3/distribute/nouislider.min.css">
 <style>
+    /* Gallery page specific styling */
+    .page-header .page-title {
+        font-size: 2.25rem;
+        font-weight: 700;
+        margin-bottom: 0.5rem;
+        background: var(--accent-gradient);
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+        display: inline-block;
+    }
+    
+    /* Filter sidebar styling */
     .filter-sidebar {
         position: sticky;
         top: 20px;
+        max-height: calc(100vh - 40px);
+        overflow-y: auto;
+        border-radius: var(--border-radius-md);
+        background-color: var(--bg-card);
+        box-shadow: var(--shadow-sm);
+        border: 1px solid rgba(106, 73, 220, 0.1);
+        transition: var(--transition-normal);
+        overflow: hidden;
+    }
+    
+    .filter-sidebar:hover {
+        box-shadow: var(--shadow-md);
+    }
+    
+    .filter-sidebar .card-body {
+        padding: 1.25rem 1rem;
+    }
+    
+    .filter-sidebar h2 {
+        font-weight: 600;
+        position: relative;
+        padding-bottom: 0.5rem;
+        margin-bottom: 1rem;
+        font-size: 1.1rem;
+    }
+    
+    .filter-sidebar h2::after {
+        content: '';
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        width: 60px;
+        height: 3px;
+        background: var(--accent-gradient);
+        border-radius: 10px;
     }
 
+    /* Filter group styling */
+    .filter-group {
+        margin-bottom: 1rem;
+    }
+    
+    .filter-group .form-check {
+        padding-left: 1.8rem;
+    }
+    
+    .filter-group .form-check-input {
+        margin-left: -1.8rem;
+    }
+    
+    .filter-header {
+        font-size: 0.9rem;
+        font-weight: 600;
+        margin-bottom: 0.6rem;
+        color: var(--text-primary);
+        display: flex;
+        align-items: center;
+    }
+    
+    .filter-header i {
+        margin-right: 0.5rem;
+        color: var(--secondary-color);
+        font-size: 1.1rem;
+    }
+    
+    /* Creator card styling */
     .creator-card {
         height: 100%;
-        transition: transform 0.2s ease-in-out;
+        border-radius: var(--border-radius-md);
+        background-color: var(--bg-card);
+        box-shadow: var(--shadow-sm);
+        transition: var(--transition-normal);
+        overflow: hidden;
+        border: 1px solid rgba(106, 73, 220, 0.05);
     }
-
+    
     .creator-card:hover {
+        box-shadow: var(--shadow-md);
         transform: translateY(-5px);
     }
-
+    
     .creator-img-container {
         height: 200px;
         overflow: hidden;
-        border-top-left-radius: 0.25rem;
-        border-top-right-radius: 0.25rem;
     }
-
+    
     .creator-img-container img {
         width: 100%;
         height: 100%;
         object-fit: cover;
+        transition: var(--transition-normal);
     }
-
-    .domain-badge {
-        font-size: 0.7rem;
-        padding: 0.2rem 0.5rem;
-        margin-right: 0.25rem;
-        margin-bottom: 0.25rem;
-        display: inline-block;
-        border-radius: 0.25rem;
-        background-color: var(--light-bg);
+    
+    .creator-card:hover .creator-img-container img {
+        transform: scale(1.05);
     }
-
-    .star-rating {
-        color: var(--accent-color);
+    
+    .creator-card .card-body {
+        padding: 1.25rem;
     }
-
-    .verified-icon {
-        color: var(--primary-color);
-    }
-
-    /* Styles pour les filtres */
-    .filter-group {
-        margin-bottom: 1.5rem;
-    }
-
-    .filter-header {
+    
+    .creator-card .card-title {
         font-weight: 600;
+        font-size: 1.1rem;
         margin-bottom: 0.5rem;
     }
-
-    /* Loader */
-    .loader {
-        display: none;
-        text-align: center;
-        padding: 2rem;
+    
+    .domain-badge {
+        display: inline-block;
+        padding: 0.25rem 0.6rem;
+        margin-right: 0.25rem;
+        margin-bottom: 0.25rem;
+        font-size: 0.7rem;
+        font-weight: 500;
+        border-radius: 6px;
+        background-color: var(--accent-color-light);
+        color: var(--secondary-color);
+        transition: var(--transition-normal);
     }
-
-    .spinner-border {
-        color: var(--primary-color);
+    
+    .domain-badge:hover {
+        background-color: var(--secondary-color);
+        color: white;
+        transform: translateY(-2px);
     }
-
-    /* Style pour le slider d'âge */
+    
+    .domain-container {
+        display: flex;
+        flex-wrap: wrap;
+    }
+    
+    .creators-grid.list-view .domain-container {
+        display: inline-flex;
+        align-items: center;
+        flex-wrap: wrap;
+    }
+    
+    .creators-grid {
+        transition: all 0.3s ease-out;
+    }
+    
+    .creator-card {
+        transition: all 0.3s ease-in-out;
+    }
+    
+    /* List view specific domain badges */
+    .creators-grid.list-view .domain-badge {
+        margin-right: 0.3rem;
+        margin-bottom: 0.3rem;
+        font-size: 0.68rem;
+        padding: 0.2rem 0.5rem;
+    }
+    
+    .star-rating {
+        color: #ffc107;
+        display: inline-flex;
+        align-items: center;
+    }
+    
+    .verified-icon {
+        color: var(--secondary-color);
+        transition: var(--transition-normal);
+    }
+    
+    .verified-icon:hover {
+        transform: scale(1.2);
+    }
+    
+    /* Domain checkboxes styling */
+    .scrollable-checkboxes {
+        max-height: 150px;
+        overflow-y: auto;
+        padding: 0.5rem 0.5rem 0.5rem 1.5rem;
+        background-color: var(--bg-primary);
+        border-radius: var(--border-radius-sm);
+        border: 1px solid rgba(106, 73, 220, 0.1);
+    }
+    
+    .scrollable-checkboxes::-webkit-scrollbar {
+        width: 4px;
+    }
+    
+    .scrollable-checkboxes::-webkit-scrollbar-track {
+        background: rgba(106, 73, 220, 0.05);
+        border-radius: 10px;
+    }
+    
+    .scrollable-checkboxes::-webkit-scrollbar-thumb {
+        background: var(--accent-color);
+        border-radius: 10px;
+    }
+    
+    .domain-checkbox-container {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 2px 0;
+        margin-left: -1.2rem;
+    }
+    
+    .domain-checkbox-container label {
+        font-size: 0.85rem;
+        margin-left: 0.3rem;
+        margin-right: 0.2rem;
+    }
+    
+    .domain-count {
+        font-size: 0.65rem;
+        color: var(--text-light);
+        background-color: var(--accent-color-light);
+        border-radius: 100px;
+        padding: 0.1rem 0.4rem;
+        margin-left: 3px;
+    }
+    
+    /* Age range slider */
     .range-slider-container {
         padding: 0 10px;
-        margin-top: 30px;
-        margin-bottom: 10px;
+        margin-top: 1rem;
     }
-
+    
     .range-slider {
         width: 100%;
         height: 5px;
-        background: #ddd;
+        background: var(--accent-color-light);
         border-radius: 5px;
         position: relative;
     }
     
-    /* Styles spécifiques pour noUiSlider */
     .noUi-connect {
-        background: var(--primary-color);
+        background: var(--accent-gradient);
     }
     
     .noUi-handle {
-        width: 18px !important;
-        height: 18px !important;
+        width: 20px !important;
+        height: 20px !important;
         border-radius: 50%;
-        background: var(--primary-color);
-        box-shadow: none;
+        background: var(--secondary-color);
+        box-shadow: var(--shadow-sm);
         cursor: pointer;
+        top: -8px !important;
+        right: -10px !important;
+        border: 2px solid white !important;
+        transition: var(--transition-normal);
+    }
+    
+    .noUi-handle:hover {
+        transform: scale(1.2);
+        box-shadow: var(--shadow-md);
     }
     
     .noUi-handle:before, 
@@ -104,17 +277,34 @@
         display: none;
     }
 
+    .noUi-horizontal {
+        height: 5px;
+    }
+
+    .noUi-target {
+        border: none;
+        box-shadow: none;
+    }
+
     .range-values {
         display: flex;
         justify-content: space-between;
         margin-top: 10px;
-        font-size: 0.8rem;
+        font-weight: 500;
     }
-
-    /* Style pour les étoiles de notation */
+    
+    .range-values span {
+        background-color: var(--accent-color-light);
+        padding: 3px 10px;
+        border-radius: 100px;
+        font-size: 0.85rem;
+    }
+    
+    /* Rating stars */
     .rating-stars {
         display: inline-flex;
         direction: rtl;
+        margin-top: 0.3rem;
     }
 
     .rating-stars input {
@@ -122,92 +312,302 @@
     }
 
     .rating-stars label {
-        color: #ddd;
-        font-size: 1.5rem;
-        padding: 0 2px;
+        color: #e0e0e0;
+        font-size: 1.2rem;
+        padding: 0 3px;
         cursor: pointer;
+        transition: var(--transition-normal);
     }
 
     .rating-stars label:hover,
     .rating-stars label:hover~label,
     .rating-stars input:checked~label {
-        color: var(--accent-color);
+        color: #ffc107;
+        transform: scale(1.2);
     }
-
-    /* Style pour les checkboxes de domaines */
-    .domain-checkbox-container {
+    
+    /* View toggle buttons */
+    .view-toggle-buttons {
+        display: flex;
+        gap: 10px;
+    }
+    
+    .view-toggle-btn {
+        width: 40px;
+        height: 40px;
+        border-radius: var(--border-radius-sm);
         display: flex;
         align-items: center;
-        justify-content: space-between;
-        padding: 4px 0;
+        justify-content: center;
+        color: var(--text-secondary);
+        border: 1px solid rgba(106, 73, 220, 0.2);
+        background-color: var(--bg-secondary);
+        transition: var(--transition-normal);
     }
-
-    .domain-count {
-        font-size: 0.7rem;
-        color: #6c757d;
-        background-color: #f8f9fa;
-        border-radius: 10px;
-        padding: 0.1rem 0.5rem;
-        margin-left: 5px;
+    
+    .view-toggle-btn:hover {
+        background-color: var(--accent-color-light);
+        color: var(--secondary-color);
+        border-color: var(--accent-color);
+    }
+    
+    .view-toggle-btn.active {
+        background: var(--accent-gradient);
+        color: white;
+        border-color: transparent;
+        box-shadow: var(--shadow-sm);
+    }
+    
+    /* List view styling */
+    .creators-grid.list-view {
+        display: block !important;
+    }
+    
+    .creators-grid.list-view > .col-md-6,
+    .creators-grid.list-view > .col-lg-4 {
+        width: 100% !important;
+        max-width: 100% !important;
+        flex: 0 0 100% !important;
+    }
+    
+    .creators-grid.list-view .creator-card {
+        display: flex !important;
+        flex-direction: row !important;
+        height: auto !important;
+        margin-bottom: 1rem !important;
+        overflow: hidden !important;
+    }
+    
+    .creators-grid.list-view .creator-img-container {
+        width: 180px !important;
+        min-height: 180px !important;
+        max-height: 180px !important;
+        flex-shrink: 0 !important;
+        border-top-right-radius: 0 !important;
+        border-bottom-left-radius: var(--border-radius-md) !important;
+    }
+    
+    .creators-grid.list-view .card-body {
+        flex: 1 !important;
+        display: flex !important;
+        flex-direction: column !important;
+        padding: 1.5rem !important;
+        position: relative !important;
+    }
+    
+    .creators-grid.list-view .card-title {
+        font-size: 1.25rem !important;
+        display: flex !important;
+        align-items: center !important;
+        margin-bottom: 0.5rem !important;
+    }
+    
+    .creators-grid.list-view .verified-icon {
+        margin-left: 0.5rem !important;
+    }
+    
+    .creators-grid.list-view .creator-info {
+        display: flex !important;
+        flex-wrap: wrap !important;
+        gap: 1.5rem !important;
+        margin-bottom: 0.75rem !important;
+    }
+    
+    .creators-grid.list-view .creator-details {
+        display: flex !important;
+        flex-direction: column !important;
+        gap: 0.25rem !important;
+    }
+    
+    .creators-grid.list-view .creator-details p {
+        margin-bottom: 0 !important;
+    }
+    
+    .creators-grid.list-view .card-meta {
+        display: flex !important;
+        justify-content: space-between !important;
+        align-items: center !important;
+        margin-top: auto !important;
+        padding-top: 0.75rem !important;
+        border-top: 1px solid rgba(106, 73, 220, 0.1) !important;
+    }
+    
+    /* Pagination styling */
+    .pagination {
+        margin-top: 2rem;
+    }
+    
+    .pagination .page-item .page-link {
+        color: var(--text-secondary);
+        background-color: var(--bg-secondary);
+        border-color: rgba(106, 73, 220, 0.1);
+        transition: var(--transition-normal);
+        font-weight: 500;
+    }
+    
+    .pagination .page-item .page-link:hover {
+        background-color: var(--accent-color-light);
+        color: var(--secondary-color);
+        z-index: 1;
+    }
+    
+    .pagination .page-item.active .page-link {
+        background: var(--accent-gradient);
+        color: white;
+        border-color: var(--secondary-color);
+    }
+    
+    .pagination .page-item.disabled .page-link {
+        color: var(--text-light);
+        pointer-events: none;
+        background-color: var(--bg-secondary);
+        border-color: rgba(106, 73, 220, 0.05);
+    }
+    
+    /* Loading indicator */
+    .loader {
+        display: none;
+        text-align: center;
+        padding: 3rem 1rem;
+    }
+    
+    .loader .spinner-border {
+        color: var(--secondary-color);
+        width: 3rem;
+        height: 3rem;
+        margin-bottom: 1rem;
+    }
+    
+    .loader p {
+        color: var(--text-secondary);
+        font-weight: 500;
+    }
+    
+    /* Empty state */
+    .empty-state {
+        text-align: center;
+        padding: 3rem 2rem;
+        background-color: var(--bg-secondary);
+        border-radius: var(--border-radius-md);
+        border: 1px dashed rgba(106, 73, 220, 0.2);
+    }
+    
+    .empty-state i {
+        font-size: 3rem;
+        color: var(--accent-color);
+        margin-bottom: 1.5rem;
+    }
+    
+    .empty-state h3 {
+        font-weight: 600;
+        margin-bottom: 1rem;
+        color: var(--text-primary);
+    }
+    
+    .empty-state p {
+        color: var(--text-secondary);
+        max-width: 400px;
+        margin: 0 auto;
+    }
+    
+    /* Mobile List View */
+    @media (max-width: 992px) {
+        .creators-grid.list-view .creator-card {
+            flex-direction: row !important;
+        }
+        
+        .creators-grid.list-view .creator-img-container {
+            width: 160px !important;
+            min-height: 160px !important;
+            max-height: 160px !important;
+        }
+        
+        .creators-grid.list-view .card-body {
+            padding: 1rem !important;
+        }
+        
+        .creators-grid.list-view .creator-info {
+            flex-direction: column !important;
+            gap: 0.5rem !important;
+        }
+    }
+    
+    @media (max-width: 576px) {
+        .creators-grid.list-view .creator-card {
+            flex-direction: column !important;
+        }
+        
+        .creators-grid.list-view .creator-img-container {
+            width: 100% !important;
+            height: 180px !important;
+        }
     }
 </style>
-<!-- Inclure noUiSlider CSS -->
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/nouislider@14.6.3/distribute/nouislider.min.css">
 {% endblock %}
 
 {% block content %}
 <div data-user-role="{{ user.role }}" id="user-role-info" class="d-none"></div>
 
-<div class="mb-4">
-    <h1 class="h2">Galerie des Créateurs</h1>
-    <p class="text-muted">{{ total_creators }} créateurs disponibles pour vos projets UGC</p>
+<!-- Page Header -->
+<div class="page-header" data-aos="fade-up">
+    <h1 class="page-title">Galerie des Créateurs</h1>
+    <p class="page-description">{{ total_creators }} créateurs disponibles pour vos projets de contenu</p>
 </div>
 
 <div class="row">
     <!-- Sidebar de filtres -->
-    <div class="col-lg-3 mb-4">
-        <div class="card border-0 shadow-sm filter-sidebar">
-            <div class="card-body p-3">
-                <h2 class="h5 mb-3">Filtres</h2>
+    <div class="col-lg-3 mb-4" data-aos="fade-up" data-aos-delay="100">
+        <div class="filter-sidebar">
+            <div class="card-body">
+                <h2>
+                    <i class="fas fa-filter me-2"></i>Filtres
+                </h2>
 
                 <form id="filter-form" method="get">
                     <!-- Recherche par texte -->
                     <div class="filter-group">
-                        <label for="search-input" class="filter-header">Recherche</label>
+                        <p class="filter-header">
+                            <i class="fas fa-search"></i> Recherche
+                        </p>
                         <input type="text" id="search-input" name="query" class="form-control"
                             placeholder="Nom ou prénom du créateur" value="{{ request.GET.query }}">
                     </div>
 
                     <!-- Filtres par domaine -->
                     <div class="filter-group">
-                        <p class="filter-header">Domaines</p>
-                        <div id="domain-checkboxes" class="scrollable-checkboxes" style="max-height: 150px; overflow-y: auto;">
+                        <p class="filter-header">
+                            <i class="fas fa-tags"></i> Domaines d'expertise
+                        </p>
+                        <div id="domain-checkboxes" class="scrollable-checkboxes">
                             <!-- Rempli dynamiquement par JavaScript -->
                         </div>
                     </div>
 
                     <!-- Filtres par caractéristiques -->
                     <div class="filter-group">
-                        <p class="filter-header">Caractéristiques</p>
+                        <p class="filter-header">
+                            <i class="fas fa-user-tag"></i> Caractéristiques
+                        </p>
 
-                        <div class="mb-2">
-                            <label for="{{ form.gender.id_for_label }}" class="form-label small">Genre</label>
-                            {{ form.gender }}
+                        <div class="row mb-2">
+                            <div class="col-md-6">
+                                <label for="{{ form.gender.id_for_label }}" class="form-label small">Genre</label>
+                                {{ form.gender }}
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <label for="{{ form.content_type.id_for_label }}" class="form-label small">Type de contenu</label>
+                                {{ form.content_type }}
+                            </div>
                         </div>
 
                         <div class="mb-2">
-                            <label for="{{ form.content_type.id_for_label }}" class="form-label small">Type de
-                                contenu</label>
-                            {{ form.content_type }}
-                        </div>
-
-                        <div class="mb-3">
                             <label class="form-label small">Âge</label>
                             <div class="range-slider-container">
                                 <div class="range-slider" id="age-slider"></div>
                                 <div class="range-values">
-                                    <span id="age-min-value">{{ min_creator_age }}</span>
-                                    <span id="age-max-value">{{ max_creator_age }}</span>
+                                    <span id="age-min-value">{{ request.GET.min_age|default:min_creator_age }}</span>
+                                    <span id="age-max-value">{{ request.GET.max_age|default:max_creator_age }}</span>
                                 </div>
                                 <input type="hidden" id="min-age-input" name="min_age" value="{{ request.GET.min_age|default:min_creator_age }}">
                                 <input type="hidden" id="max-age-input" name="max_age" value="{{ request.GET.max_age|default:max_creator_age }}">
@@ -217,23 +617,32 @@
 
                     <!-- Autres filtres -->
                     <div class="filter-group">
-                        <p class="filter-header">Options additionnelles</p>
+                        <p class="filter-header">
+                            <i class="fas fa-sliders-h"></i> Options additionnelles
+                        </p>
 
-                        <div class="form-check mb-2">
+                        <div class="form-check mb-1">
                             {{ form.can_invoice }}
-                            <label class="form-check-label" for="{{ form.can_invoice.id_for_label }}">
+                            <label class="form-check-label small" for="{{ form.can_invoice.id_for_label }}">
                                 Peut facturer
                             </label>
                         </div>
 
-                        <div class="form-check mb-2">
+                        <div class="form-check mb-1">
                             {{ form.verified_only }}
-                            <label class="form-check-label" for="{{ form.verified_only.id_for_label }}">
+                            <label class="form-check-label small" for="{{ form.verified_only.id_for_label }}">
                                 Vérifiés uniquement
                             </label>
                         </div>
+                        
+                        <div class="form-check mb-1">
+                            <input type="checkbox" class="form-check-input" id="favorites-only" name="favorites_only" {% if request.GET.favorites_only %}checked{% endif %}>
+                            <label class="form-check-label small" for="favorites-only">
+                                <i class="fas fa-heart text-danger me-1"></i> Favoris uniquement
+                            </label>
+                        </div>
 
-                        <div class="mb-3">
+                        <div class="mb-2">
                             <label class="form-label small">Note minimum</label>
                             <div class="rating-stars">
                                 <input type="radio" id="star5" name="min_rating" value="5" {% if request.GET.min_rating == '5' %}checked{% endif %} />
@@ -254,12 +663,12 @@
                         </div>
                     </div>
 
-                    <div class="d-grid gap-2">
+                    <div class="d-grid gap-2 mt-4">
                         <button type="submit" class="btn btn-primary">
-                            <i class="fas fa-filter me-1"></i> Appliquer les filtres
+                            <i class="fas fa-filter me-2"></i> Appliquer les filtres
                         </button>
-                        <a href="{% url 'gallery_view' %}" class="btn btn-outline-secondary">
-                            <i class="fas fa-times me-1"></i> Réinitialiser
+                        <a href="{% url 'gallery_view' %}" class="btn btn-outline-primary">
+                            <i class="fas fa-undo-alt me-2"></i> Réinitialiser
                         </a>
                     </div>
                 </form>
@@ -268,19 +677,19 @@
     </div>
 
     <!-- Grille de créateurs -->
-    <div class="col-lg-9">
+    <div class="col-lg-9" data-aos="fade-up" data-aos-delay="200">
         <div class="d-flex justify-content-between align-items-center mb-4">
-            <div class="btn-group">
-                <button type="button" class="btn btn-outline-primary active" id="grid-view">
+            <div class="view-toggle-buttons">
+                <button type="button" class="view-toggle-btn active" id="grid-view" title="Vue grille">
                     <i class="fas fa-th-large"></i>
                 </button>
-                <button type="button" class="btn btn-outline-primary" id="list-view">
+                <button type="button" class="view-toggle-btn" id="list-view" title="Vue liste">
                     <i class="fas fa-list"></i>
                 </button>
             </div>
 
             <a href="{% url 'map_view' %}?{{ request.GET.urlencode }}" class="btn btn-outline-primary">
-                <i class="fas fa-map-marker-alt me-1"></i> Voir sur la carte
+                <i class="fas fa-map-marker-alt me-2"></i> Voir sur la carte
             </a>
         </div>
 
@@ -288,7 +697,7 @@
         <div class="row" id="creators-grid">
             {% for creator in creators %}
             <div class="col-md-6 col-lg-4 mb-4">
-                <div class="card border-0 shadow-sm creator-card">
+                <div class="card creator-card">
                     <div class="creator-img-container">
                         {% if creator.featured_image %}
                         <img src="{{ creator.featured_image.url }}" alt="{{ creator.full_name }}" loading="lazy">
@@ -311,48 +720,57 @@
 
                     <div class="card-body">
                         <div class="d-flex justify-content-between align-items-center mb-2">
-                            <h3 class="h5 mb-0">
+                            <h3 class="card-title mb-0">
                                 {% if user.role == 'client' %}
                                     {{ creator.first_name }} {{ creator.last_name|first }}.
                                 {% else %}
                                     {{ creator.full_name }}
                                 {% endif %}
+                                {% if creator.verified_by_neads %}
+                                <span class="verified-icon ms-2" data-bs-toggle="tooltip" title="Vérifié par NEADS">
+                                    <i class="fas fa-check-circle"></i>
+                                </span>
+                                {% endif %}
                             </h3>
-                            {% if creator.verified_by_neads %}
-                            <span class="verified-icon" data-bs-toggle="tooltip" title="Vérifié par NEADS">
-                                <i class="fas fa-check-circle"></i>
-                            </span>
-                            {% endif %}
                         </div>
 
-                        <p class="text-muted small mb-2">
-                            {{ creator.age }} ans, {{ creator.get_gender_display }}
-                            {% if creator.location %}
-                            <br>{{ creator.location }}
-                            {% endif %}
-                        </p>
-
-                        <div class="mb-2">
-                            {% for domain in creator.domains.all %}
-                            <span class="domain-badge">{{ domain.name }}</span>
-                            {% endfor %}
+                        <div class="creator-info">
+                            <div class="creator-details">
+                                <p class="text-muted small mb-1">
+                                    <i class="fas fa-user-circle me-1"></i> {{ creator.age }} ans, {{ creator.get_gender_display }}
+                                </p>
+                                {% if creator.location %}
+                                <p class="text-muted small mb-1">
+                                    <i class="fas fa-map-marker-alt me-1"></i> {{ creator.location }}
+                                </p>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="domain-container">
+                                {% for domain in creator.domains.all|slice:":3" %}
+                                <span class="domain-badge">{{ domain.name }}</span>
+                                {% endfor %}
+                                {% if creator.domains.count > 3 %}
+                                <span class="domain-badge">+{{ creator.domains.count|add:"-3" }}</span>
+                                {% endif %}
+                            </div>
                         </div>
 
-                        <div class="star-rating mb-3">
-                            {% for i in "12345" %}
-                            {% if forloop.counter <= creator.average_rating %}
-                            <i class="fas fa-star"></i>
-                            {% elif forloop.counter <= creator.average_rating|add:0.5 %}
-                            <i class="fas fa-star-half-alt"></i>
-                            {% else %}
-                            <i class="far fa-star"></i>
-                            {% endif %}
-                            {% endfor %}
-                            <span class="ms-1 text-muted">({{ creator.total_ratings }})</span>
-                        </div>
-
-                        <div class="d-grid">
-                            <a href="{% url 'creator_detail' creator.id %}" class="btn btn-outline-primary">
+                        <div class="card-meta">
+                            <div class="star-rating">
+                                {% for i in "12345" %}
+                                {% if forloop.counter <= creator.average_rating %}
+                                <i class="fas fa-star"></i>
+                                {% elif forloop.counter <= creator.average_rating|add:0.5 %}
+                                <i class="fas fa-star-half-alt"></i>
+                                {% else %}
+                                <i class="far fa-star"></i>
+                                {% endif %}
+                                {% endfor %}
+                                <span class="ms-1 small">({{ creator.total_ratings }})</span>
+                            </div>
+                            
+                            <a href="{% url 'creator_detail' creator.id %}" class="btn btn-sm btn-primary">
                                 Voir le profil
                             </a>
                         </div>
@@ -364,7 +782,7 @@
 
         <!-- Pagination -->
         {% if creators.has_other_pages %}
-        <nav aria-label="Pagination" class="mt-4">
+        <nav aria-label="Pagination">
             <ul class="pagination justify-content-center">
                 {% if creators.has_previous %}
                 <li class="page-item">
@@ -435,10 +853,10 @@
             <p class="mt-3">Chargement des créateurs...</p>
         </div>
         {% else %}
-        <div class="alert alert-light text-center p-5">
-            <i class="fas fa-search fa-3x mb-3 text-muted"></i>
-            <h3 class="h4">Aucun créateur trouvé</h3>
-            <p class="mb-0">Essayez d'ajuster vos filtres pour voir plus de résultats.</p>
+        <div class="empty-state">
+            <i class="fas fa-search"></i>
+            <h3>Aucun créateur trouvé</h3>
+            <p>Essayez d'ajuster vos filtres pour voir plus de résultats ou contactez-nous pour trouver un créateur adapté à vos besoins.</p>
         </div>
         {% endif %}
     </div>
@@ -472,167 +890,340 @@
             });
         });
 
-        // Bascule entre vue grille et liste
+        // Bascule entre vue grille et liste avec animation
         const gridView = document.getElementById('grid-view');
         const listView = document.getElementById('list-view');
         const creatorsGrid = document.getElementById('creators-grid');
 
         if (gridView && listView && creatorsGrid) {
+            // Fonction pour ajouter un effet de transition lors du changement de vue
+            function animateViewChange(toListView) {
+                // Sauvegarder la position de défilement actuelle
+                const scrollPosition = window.scrollY;
+                
+                // Ajouter une classe pour l'animation "fade out"
+                creatorsGrid.style.opacity = '0.5';
+                creatorsGrid.style.transform = 'scale(0.98)';
+                
+                setTimeout(() => {
+                    // Changer la vue
+                    if (toListView) {
+                        listView.classList.add('active');
+                        gridView.classList.remove('active');
+                        creatorsGrid.classList.add('list-view');
+                        console.log('Vue liste activée, classes appliquées:', creatorsGrid.className);
+                    } else {
+                        gridView.classList.add('active');
+                        listView.classList.remove('active');
+                        creatorsGrid.classList.remove('list-view');
+                        console.log('Vue grille activée, classes appliquées:', creatorsGrid.className);
+                    }
+                    
+                    // Forcer le recalcul du style
+                    void creatorsGrid.offsetWidth;
+                    
+                    // Appliquer manuellement la disposition sur les éléments internes
+                    const creatorCards = creatorsGrid.querySelectorAll('.col-md-6, .col-lg-4');
+                    creatorCards.forEach(card => {
+                        if (toListView) {
+                            card.style.width = '100%';
+                            card.style.maxWidth = '100%';
+                            card.style.flex = '0 0 100%';
+                            
+                            // Appliquer les styles directement aux cards
+                            const creatorCard = card.querySelector('.creator-card');
+                            const imgContainer = card.querySelector('.creator-img-container');
+                            const cardBody = card.querySelector('.card-body');
+                            
+                            if (creatorCard) {
+                                creatorCard.style.display = 'flex';
+                                creatorCard.style.flexDirection = 'row';
+                                creatorCard.style.height = 'auto';
+                            }
+                            
+                            if (imgContainer) {
+                                imgContainer.style.width = '180px';
+                                imgContainer.style.minHeight = '180px';
+                                imgContainer.style.maxHeight = '180px';
+                                imgContainer.style.flexShrink = '0';
+                            }
+                            
+                            if (cardBody) {
+                                cardBody.style.flex = '1';
+                                cardBody.style.display = 'flex';
+                                cardBody.style.flexDirection = 'column';
+                                cardBody.style.padding = '1.5rem';
+                            }
+                        } else {
+                            card.style.width = '';
+                            card.style.maxWidth = '';
+                            card.style.flex = '';
+                            
+                            // Réinitialiser les styles des cards
+                            const creatorCard = card.querySelector('.creator-card');
+                            const imgContainer = card.querySelector('.creator-img-container');
+                            const cardBody = card.querySelector('.card-body');
+                            
+                            if (creatorCard) {
+                                creatorCard.style.display = '';
+                                creatorCard.style.flexDirection = '';
+                                creatorCard.style.height = '';
+                            }
+                            
+                            if (imgContainer) {
+                                imgContainer.style.width = '';
+                                imgContainer.style.minHeight = '';
+                                imgContainer.style.maxHeight = '';
+                                imgContainer.style.flexShrink = '';
+                            }
+                            
+                            if (cardBody) {
+                                cardBody.style.flex = '';
+                                cardBody.style.display = '';
+                                cardBody.style.flexDirection = '';
+                                cardBody.style.padding = '';
+                            }
+                        }
+                    });
+                    
+                    // "Fade in" après le changement
+                    setTimeout(() => {
+                        creatorsGrid.style.opacity = '1';
+                        creatorsGrid.style.transform = 'scale(1)';
+                        // Restaurer la position de défilement
+                        window.scrollTo(0, scrollPosition);
+                    }, 50);
+                }, 200);
+            }
+
             gridView.addEventListener('click', function () {
-                gridView.classList.add('active');
-                listView.classList.remove('active');
-                creatorsGrid.classList.remove('list-view');
-                localStorage.setItem('creatorView', 'grid');
+                if (!this.classList.contains('active')) {
+                    document.body.style.cursor = 'wait';
+                    animateViewChange(false);
+                    localStorage.setItem('creatorView', 'grid');
+                    setTimeout(() => {
+                        document.body.style.cursor = 'default';
+                    }, 300);
+                }
             });
 
             listView.addEventListener('click', function () {
-                listView.classList.add('active');
-                gridView.classList.remove('active');
-                creatorsGrid.classList.add('list-view');
-                localStorage.setItem('creatorView', 'list');
+                if (!this.classList.contains('active')) {
+                    document.body.style.cursor = 'wait';
+                    animateViewChange(true);
+                    localStorage.setItem('creatorView', 'list');
+                    setTimeout(() => {
+                        document.body.style.cursor = 'default';
+                    }, 300);
+                }
             });
 
             // Restaurer la vue préférée
             const savedView = localStorage.getItem('creatorView');
             if (savedView === 'list') {
-                listView.click();
-            }
-        }
-        
-        // Charger et afficher les domaines triés par nombre d'utilisations
-        const domainCheckboxesContainer = document.getElementById('domain-checkboxes');
-        const selectedDomains = "{{ request.GET.domains|default:'' }}".split(',');
-        
-        if (domainCheckboxesContainer) {
-            try {
-                // Récupérer les données des domaines depuis la variable JS
-                const domainsData = JSON.parse('{{ domains_json|safe }}');
+                // Plutôt que simplement cliquer sur le bouton, appliquons directement les styles
+                listView.classList.add('active');
+                gridView.classList.remove('active');
+                creatorsGrid.classList.add('list-view');
                 
-                // Trier les domaines par nombre d'utilisations (ordre décroissant)
-                domainsData.sort((a, b) => b.count - a.count);
-                
-                // Générer le HTML pour chaque domaine
-                domainsData.forEach(domain => {
-                    const isChecked = selectedDomains.includes(domain.id.toString());
+                // Appliquer les styles directement aux éléments
+                const creatorCards = creatorsGrid.querySelectorAll('.col-md-6, .col-lg-4');
+                creatorCards.forEach(card => {
+                    card.style.width = '100%';
+                    card.style.maxWidth = '100%';
+                    card.style.flex = '0 0 100%';
                     
-                    const domainHTML = `
-                        <div class="form-check domain-checkbox-container">
-                            <div>
-                                <input class="form-check-input domain-checkbox" type="checkbox" name="domains"
-                                    value="${domain.id}" id="domain_${domain.id}" ${isChecked ? 'checked' : ''}>
-                                <label class="form-check-label" for="domain_${domain.id}">
-                                    ${domain.name}
-                                </label>
-                            </div>
-                            <span class="domain-count">${domain.count}</span>
-                        </div>
-                    `;
+                    const creatorCard = card.querySelector('.creator-card');
+                    const imgContainer = card.querySelector('.creator-img-container');
+                    const cardBody = card.querySelector('.card-body');
                     
-                    domainCheckboxesContainer.insertAdjacentHTML('beforeend', domainHTML);
-                });
-            } catch (error) {
-                console.error("Erreur lors du chargement des domaines:", error);
-                // Afficher un message d'erreur
-                domainCheckboxesContainer.innerHTML = '<div class="alert alert-warning small">Impossible de charger les domaines</div>';
-            }
-        }
-
-        // Initialisation du slider d'âge
-        const ageMin = parseInt("{{ min_creator_age }}") || 18;
-        const ageMax = parseInt("{{ max_creator_age }}") || 80;
-        const currentMinAge = parseInt("{{ request.GET.min_age }}") || ageMin;
-        const currentMaxAge = parseInt("{{ request.GET.max_age }}") || ageMax;
-
-        // Configuration et initialisation du slider d'âge avec noUiSlider
-        const ageSlider = document.getElementById('age-slider');
-        if (ageSlider) {
-            // Vérifier si noUiSlider est disponible
-            if (typeof noUiSlider !== 'undefined') {
-                noUiSlider.create(ageSlider, {
-                    start: [currentMinAge, currentMaxAge],
-                    connect: true,
-                    step: 1,
-                    range: {
-                        'min': ageMin,
-                        'max': ageMax
+                    if (creatorCard) {
+                        creatorCard.style.display = 'flex';
+                        creatorCard.style.flexDirection = 'row';
+                        creatorCard.style.height = 'auto';
+                    }
+                    
+                    if (imgContainer) {
+                        imgContainer.style.width = '180px';
+                        imgContainer.style.minHeight = '180px';
+                        imgContainer.style.maxHeight = '180px';
+                        imgContainer.style.flexShrink = '0';
+                    }
+                    
+                    if (cardBody) {
+                        cardBody.style.flex = '1';
+                        cardBody.style.display = 'flex';
+                        cardBody.style.flexDirection = 'column';
+                        cardBody.style.padding = '1.5rem';
                     }
                 });
-
-                const ageMinValue = document.getElementById('age-min-value');
-                const ageMaxValue = document.getElementById('age-max-value');
-                const minAgeInput = document.getElementById('min-age-input');
-                const maxAgeInput = document.getElementById('max-age-input');
-
-                ageSlider.noUiSlider.on('update', function (values, handle) {
-                    const minVal = Math.round(values[0]);
-                    const maxVal = Math.round(values[1]);
-                    
-                    ageMinValue.textContent = minVal;
-                    ageMaxValue.textContent = maxVal;
-                    
-                    minAgeInput.value = minVal;
-                    maxAgeInput.value = maxVal;
-                });
+                
+                console.log('Vue liste chargée depuis localStorage');
             } else {
-                // Fallback si noUiSlider n'est pas disponible
-                console.warn("noUiSlider n'est pas disponible. Un fallback a été activé.");
-                
-                // Créer une solution de rechange simple avec deux inputs number
-                ageSlider.innerHTML = '';
-                const container = document.createElement('div');
-                container.className = 'row';
-                
-                const minCol = document.createElement('div');
-                minCol.className = 'col-6';
-                const minInput = document.createElement('input');
-                minInput.type = 'number';
-                minInput.className = 'form-control';
-                minInput.name = 'min_age';
-                minInput.value = currentMinAge;
-                minInput.min = ageMin;
-                minInput.max = ageMax;
-                minCol.appendChild(minInput);
-                
-                const maxCol = document.createElement('div');
-                maxCol.className = 'col-6';
-                const maxInput = document.createElement('input');
-                maxInput.type = 'number';
-                maxInput.className = 'form-control';
-                maxInput.name = 'max_age';
-                maxInput.value = currentMaxAge;
-                maxInput.min = ageMin;
-                maxInput.max = ageMax;
-                maxCol.appendChild(maxInput);
-                
-                container.appendChild(minCol);
-                container.appendChild(maxCol);
-                ageSlider.parentNode.appendChild(container);
-                
-                // Masquer les éléments inutiles
-                document.getElementById('age-min-value').style.display = 'none';
-                document.getElementById('age-max-value').style.display = 'none';
-                
-                // Supprimer les inputs cachés
-                document.getElementById('min-age-input').remove();
-                document.getElementById('max-age-input').remove();
+                // Par défaut, s'assurer que la vue grille est active 
+                // (en cas de premier chargement)
+                gridView.classList.add('active');
+                listView.classList.remove('active');
+                creatorsGrid.classList.remove('list-view');
+                console.log('Vue grille chargée par défaut');
             }
-        }
+            
+            // Charger et afficher les domaines triés par nombre d'utilisations
+            const domainCheckboxesContainer = document.getElementById('domain-checkboxes');
+            const selectedDomains = "{{ request.GET.domains|default:'' }}".split(',');
+            
+            if (domainCheckboxesContainer) {
+                try {
+                    // Récupérer les données des domaines depuis la variable JS
+                    const domainsData = JSON.parse('{{ domains_json|safe }}');
+                    
+                    // Trier les domaines par nombre d'utilisations (ordre décroissant)
+                    domainsData.sort((a, b) => b.count - a.count);
+                    
+                    // Générer le HTML pour chaque domaine
+                    domainsData.forEach(domain => {
+                        const isChecked = selectedDomains.includes(domain.id.toString());
+                        
+                        const domainHTML = `
+                            <div class="form-check domain-checkbox-container">
+                                <div class="d-flex align-items-center">
+                                    <input class="form-check-input domain-checkbox" type="checkbox" name="domains"
+                                        value="${domain.id}" id="domain_${domain.id}" ${isChecked ? 'checked' : ''}>
+                                    <label class="form-check-label" for="domain_${domain.id}">
+                                        ${domain.name}
+                                    </label>
+                                </div>
+                                <span class="domain-count ms-1">${domain.count}</span>
+                            </div>
+                        `;
+                        
+                        domainCheckboxesContainer.insertAdjacentHTML('beforeend', domainHTML);
+                    });
+                } catch (error) {
+                    console.error("Erreur lors du chargement des domaines:", error);
+                    // Afficher un message d'erreur
+                    domainCheckboxesContainer.innerHTML = '<div class="alert alert-warning small">Impossible de charger les domaines</div>';
+                }
+            }
 
-        // Initialisation des étoiles de notation
-        const ratingStars = document.querySelectorAll('.rating-stars input');
-        ratingStars.forEach(star => {
-            star.addEventListener('change', function() {
-                // Visuel pour montrer quelle note est sélectionnée
-                ratingStars.forEach(s => {
-                    const label = document.querySelector(`label[for="${s.id}"]`);
-                    if (parseInt(s.value) <= parseInt(this.value)) {
-                        label.querySelector('i').className = 'fas fa-star';
-                    } else {
-                        label.querySelector('i').className = 'far fa-star';
-                    }
+            // Initialisation du slider d'âge
+            const ageMin = parseInt("{{ min_creator_age }}") || 18;
+            const ageMax = parseInt("{{ max_creator_age }}") || 80;
+            const currentMinAge = parseInt("{{ request.GET.min_age }}") || ageMin;
+            const currentMaxAge = parseInt("{{ request.GET.max_age }}") || ageMax;
+
+            // Configuration et initialisation du slider d'âge avec noUiSlider
+            const ageSlider = document.getElementById('age-slider');
+            if (ageSlider) {
+                // Vérifier si noUiSlider est disponible
+                if (typeof noUiSlider !== 'undefined') {
+                    noUiSlider.create(ageSlider, {
+                        start: [currentMinAge, currentMaxAge],
+                        connect: true,
+                        step: 1,
+                        range: {
+                            'min': ageMin,
+                            'max': ageMax
+                        },
+                        format: {
+                            to: function (value) {
+                                return Math.round(value);
+                            },
+                            from: function (value) {
+                                return Math.round(value);
+                            }
+                        }
+                    });
+
+                    const ageMinValue = document.getElementById('age-min-value');
+                    const ageMaxValue = document.getElementById('age-max-value');
+                    const minAgeInput = document.getElementById('min-age-input');
+                    const maxAgeInput = document.getElementById('max-age-input');
+
+                    ageSlider.noUiSlider.on('update', function (values, handle) {
+                        const minVal = values[0];
+                        const maxVal = values[1];
+                        
+                        ageMinValue.textContent = minVal;
+                        ageMaxValue.textContent = maxVal;
+                        
+                        minAgeInput.value = minVal;
+                        maxAgeInput.value = maxVal;
+                    });
+                } else {
+                    // Fallback si noUiSlider n'est pas disponible
+                    console.warn("noUiSlider n'est pas disponible. Un fallback a été activé.");
+                    
+                    // Créer une solution de rechange simple avec deux inputs number
+                    ageSlider.innerHTML = '';
+                    const container = document.createElement('div');
+                    container.className = 'row';
+                    
+                    const minCol = document.createElement('div');
+                    minCol.className = 'col-6';
+                    const minInput = document.createElement('input');
+                    minInput.type = 'number';
+                    minInput.className = 'form-control';
+                    minInput.name = 'min_age';
+                    minInput.value = currentMinAge;
+                    minInput.min = ageMin;
+                    minInput.max = ageMax;
+                    minCol.appendChild(minInput);
+                    
+                    const maxCol = document.createElement('div');
+                    maxCol.className = 'col-6';
+                    const maxInput = document.createElement('input');
+                    maxInput.type = 'number';
+                    maxInput.className = 'form-control';
+                    maxInput.name = 'max_age';
+                    maxInput.value = currentMaxAge;
+                    maxInput.min = ageMin;
+                    maxInput.max = ageMax;
+                    maxCol.appendChild(maxInput);
+                    
+                    container.appendChild(minCol);
+                    container.appendChild(maxCol);
+                    ageSlider.parentNode.appendChild(container);
+                    
+                    // Masquer les éléments inutiles
+                    document.getElementById('age-min-value').style.display = 'none';
+                    document.getElementById('age-max-value').style.display = 'none';
+                    
+                    // Supprimer les inputs cachés
+                    document.getElementById('min-age-input').remove();
+                    document.getElementById('max-age-input').remove();
+                }
+            }
+
+            // Initialisation des étoiles de notation
+            const ratingStars = document.querySelectorAll('.rating-stars input');
+            ratingStars.forEach(star => {
+                star.addEventListener('change', function() {
+                    // Visuel pour montrer quelle note est sélectionnée
+                    ratingStars.forEach(s => {
+                        const label = document.querySelector(`label[for="${s.id}"]`);
+                        if (parseInt(s.value) <= parseInt(this.value)) {
+                            label.querySelector('i').className = 'fas fa-star';
+                        } else {
+                            label.querySelector('i').className = 'far fa-star';
+                        }
+                    });
                 });
             });
-        });
+            
+            // Initialiser les tooltips de Bootstrap
+            if (typeof bootstrap !== 'undefined' && bootstrap.Tooltip) {
+                const tooltipTriggerList = [].slice.call(document.querySelectorAll('[title]'));
+                tooltipTriggerList.forEach(function(tooltipTriggerEl) {
+                    new bootstrap.Tooltip(tooltipTriggerEl);
+                });
+            }
+            
+            // Effet de transition AOS pour le chargement initial
+            if (typeof AOS !== 'undefined') {
+                AOS.refresh();
+            }
+        }
     });
 </script>
 {% endblock %}

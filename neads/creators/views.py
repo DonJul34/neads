@@ -174,6 +174,12 @@ def gallery_view(request):
             creators = creators.filter(can_invoice=True)
         if data.get('verified_only'):
             creators = creators.filter(verified_by_neads=True)
+        
+        # Filtre des favoris
+        if data.get('favorites_only') and request.user.is_authenticated:
+            # Récupérer les IDs des créateurs favoris de l'utilisateur
+            favorite_creator_ids = Favorite.objects.filter(user=request.user).values_list('creator_id', flat=True)
+            creators = creators.filter(id__in=favorite_creator_ids)
     
     # Pagination
     paginator = Paginator(creators, 12)  # 12 créateurs par page
@@ -256,121 +262,70 @@ def gallery_view(request):
 @login_required
 def creator_detail(request, creator_id):
     """
-    Vue détaillée d'un créateur avec son portfolio et ses informations.
-    Accès différenciés selon le rôle de l'utilisateur.
+    Affiche la fiche détaillée d'un créateur.
     """
     creator = get_object_or_404(Creator, id=creator_id)
-    logger.info(f"Vue creator_detail: Accès au profil {creator_id} par {request.user.email} (role: {request.user.role})")
     
-    # Vérifier les restrictions d'accès pour les créateurs
-    # Un créateur ne peut voir que sa propre fiche
-    if request.user.role == 'creator':
-        try:
-            # Vérifier si l'utilisateur est lié au profil créateur consulté
-            if not hasattr(request.user, 'creator_profile') or request.user.creator_profile.id != creator_id:
-                logger.warning(f"Vue creator_detail: Tentative d'accès non autorisée au profil {creator_id} par {request.user.email}")
-                return HttpResponseForbidden("Vous n'êtes pas autorisé à consulter ce profil.")
-            logger.info(f"Vue creator_detail: Accès autorisé au profil {creator_id} par son propriétaire")
-        except Exception as e:
-            # Journaliser l'erreur et renvoyer une erreur d'accès
-            logger.error(f"Vue creator_detail: Erreur de vérification d'accès créateur: {str(e)}")
-            return HttpResponseForbidden("Vous n'avez pas accès à ce profil.")
-    
-    # Charger médias triés par type et ordre
-    images = creator.media.filter(media_type='image').order_by('order')
-    videos = creator.media.filter(media_type='video').order_by('order')
-    
-    # Filtrer les médias sans fichiers pour éviter les erreurs
-    valid_images = []
-    for image in images:
-        if has_valid_file(image):
-            valid_images.append(image)
-            
-    valid_videos = []
-    for video in videos:
-        if has_valid_file(video):
-            valid_videos.append(video)
-    
-    # Informations de notation - afficher tous les avis, plus uniquement ceux vérifiés
-    ratings = creator.ratings.all().order_by('-created_at')
-    rating_breakdown = {
-        5: ratings.filter(rating=5).count(),
-        4: ratings.filter(rating=4).count(),
-        3: ratings.filter(rating=3).count(),
-        2: ratings.filter(rating=2).count(),
-        1: ratings.filter(rating=1).count(),
-    }
-    
-    # Vérifier si l'utilisateur a déjà noté ce créateur
-    user_rating = None
-    is_favorite = False
+    # Log de l'accès
     if request.user.is_authenticated:
-        user_rating = creator.ratings.filter(user=request.user).first()
-        is_favorite = Favorite.objects.filter(user=request.user, creator=creator).exists()
+        logger.info(f"Vue creator_detail: Accès au profil {creator_id} par {request.user.email} (role: {request.user.role})")
     
-    # Formulaires - conditions selon les rôles
+    # Vérifier si le créateur est dans les favoris de l'utilisateur
+    is_favorite = False
+    if request.user.is_authenticated and not request.user.role == 'client':
+        is_favorite = Favorite.objects.filter(creator=creator, user=request.user).exists()
+    
+    # Vérifier les permissions d'accès
+    # Restriction pour les créateurs: peuvent uniquement voir leur propre profil
+    if request.user.is_authenticated and request.user.role == 'creator':
+        if not hasattr(request.user, 'creator_profile') or request.user.creator_profile.id != creator_id:
+            messages.error(request, "En tant que créateur, vous ne pouvez accéder qu'à votre propre profil.")
+            return redirect('gallery_view')
+    
+    # Pour le développement uniquement
+    # Pour la production, cette vérification doit être décommentée
+    # if not creator.verified_by_neads and not (request.user.is_authenticated and (request.user.role == 'admin' or request.user.role == 'consultant')):
+    #     raise Http404("Ce créateur n'est pas encore vérifié.")
+    
+    # Récupérer les médias du créateur
+    videos = creator.media.filter(media_type='video').order_by('-upload_date')
+    photos = creator.media.filter(media_type='image').order_by('-upload_date')
+    
+    # Récupérer les avis sur le créateur
+    ratings = Rating.objects.filter(creator=creator).order_by('-created_at')
     rating_form = None
+    
+    # Afficher le formulaire d'avis uniquement pour les consultants et admin
+    if request.user.is_authenticated and (request.user.role == 'admin' or request.user.role == 'consultant'):
+        # Vérifie si l'utilisateur a déjà donné un avis
+        user_rating = Rating.objects.filter(creator=creator, user=request.user).first()
+        if user_rating:
+            rating_form = RatingForm(instance=user_rating)
+        else:
+            rating_form = RatingForm()
+    
+    # Formulaire d'ajout aux favoris pour les consultants et admin
     favorite_form = None
+    favorite = None
+    if request.user.is_authenticated and (request.user.role == 'admin' or request.user.role == 'consultant'):
+        favorite = Favorite.objects.filter(creator=creator, user=request.user).first()
+        if favorite:
+            favorite_form = FavoriteForm(instance=favorite)
+        else:
+            favorite_form = FavoriteForm()
     
-    # Les consultants, admins et clients peuvent noter les créateurs
-    if request.user.role in ['admin', 'consultant', 'client']:
-        rating_form = RatingForm(instance=user_rating)
-        # Si c'est un client, le message d'avertissement est plus visible
-        if request.user.role == 'client':
-            rating_form.fields['has_experience'].help_text = """
-                <div class="alert alert-warning mt-2">
-                    <i class="fas fa-exclamation-triangle"></i> Pour garantir la qualité des avis, vous devez obligatoirement avoir travaillé avec ce créateur pour le noter.
-                    Les avis non vérifiés ou suspectés d'être infondés pourront être supprimés.
-                </div>
-            """
-    
-    # Seuls les consultants et admins peuvent ajouter aux favoris
-    if request.user.role in ['admin', 'consultant']:
-        favorite_form = FavoriteForm()
-    
-    # Déterminer si l'utilisateur peut modifier la fiche
-    can_edit = False
-    if request.user.role in ['admin', 'consultant'] or (request.user.role == 'creator' and hasattr(request.user, 'creator_profile') and request.user.creator_profile.id == creator_id):
-        can_edit = True
-    
-    # Déterminer si l'utilisateur peut envoyer un message au créateur
-    can_message = request.user.role in ['admin', 'consultant']
-    
-    # Déterminer si l'utilisateur peut voir les informations personnelles
-    can_view_personal_info = request.user.role != 'client'
-    
-    # Pour les clients, masquer le nom de famille (sauf première lettre)
-    if request.user.role == 'client':
-        last_name_masked = creator.last_name[0] + '.' if creator.last_name else ''
-    else:
-        last_name_masked = creator.last_name
-    
-    # Déterminer si l'utilisateur peut gérer les avis
-    can_manage_reviews = request.user.role in ['admin', 'consultant']
-    
-    # Déterminer si l'utilisateur peut vérifier le profil
-    can_verify_profile = request.user.role in ['admin']
-    
+    # Le contexte à passer au template
     context = {
         'creator': creator,
-        'images': valid_images,
-        'videos': valid_videos,
+        'videos': videos,
+        'photos': photos,
+        'domains': creator.domains.all(),
         'ratings': ratings,
-        'rating_breakdown': rating_breakdown,
         'rating_form': rating_form,
         'favorite_form': favorite_form,
-        'user_rating': user_rating,
         'is_favorite': is_favorite,
-        'can_edit': can_edit,
-        'can_message': can_message,
-        'can_view_personal_info': can_view_personal_info,
-        'is_client': request.user.role == 'client',
-        'is_creator': request.user.role == 'creator',
-        'is_admin': request.user.role == 'admin',
-        'is_consultant': request.user.role == 'consultant',
-        'last_name_masked': last_name_masked,
-        'can_manage_reviews': can_manage_reviews,
-        'can_verify_profile': can_verify_profile,
+        'favorite': favorite,
+        'google_api_key': settings.GOOGLE_PLACES_API_KEY,
     }
     
     return render(request, 'creators/creator_detail.html', context)
@@ -954,6 +909,13 @@ def api_map_search(request):
     if min_rating and min_rating.isdigit():
         creators = creators.filter(average_rating__gte=float(min_rating))
     
+    # Filtre des favoris
+    favorites_only = request.GET.get('favorites_only')
+    if favorites_only == 'on' and request.user.is_authenticated:
+        # Récupérer les IDs des créateurs favoris de l'utilisateur
+        favorite_creator_ids = Favorite.objects.filter(user=request.user).values_list('creator_id', flat=True)
+        creators = creators.filter(id__in=favorite_creator_ids)
+    
     # Filtres géographiques
     city = request.GET.get('city')
     if city:
@@ -1274,9 +1236,14 @@ def favorites_view(request):
     favorites = Favorite.objects.filter(user=request.user).select_related('creator')
     total_favorites = favorites.count()
     
+    # Extraire les créateurs à partir des favorites
+    creators = [favorite.creator for favorite in favorites]
+    
     context = {
         'favorites': favorites,
+        'creators': creators,
         'total_favorites': total_favorites,
+        'total_creators': total_favorites,
     }
     
     return render(request, 'creators/favorites.html', context)

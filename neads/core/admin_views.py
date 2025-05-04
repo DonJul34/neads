@@ -416,6 +416,39 @@ def toggle_user_status(request, user_id):
 
 @login_required
 @role_required(['admin', 'consultant'])
+def delete_user(request, user_id):
+    """
+    Supprimer définitivement un utilisateur
+    """
+    user = get_object_or_404(User, id=user_id)
+    is_admin = request.user.role == 'admin'
+    
+    # Empêcher un consultant de supprimer un admin ou un autre consultant
+    if not is_admin and (user.role == 'admin' or user.role == 'consultant'):
+        messages.error(request, "Vous n'avez pas les droits pour supprimer cet utilisateur.")
+        return redirect('admin_user_list')
+    
+    # Empêcher la suppression de son propre compte
+    if user == request.user:
+        messages.error(request, "Vous ne pouvez pas supprimer votre propre compte.")
+        return redirect('admin_user_list')
+    
+    # Récupérer les informations pour le message de confirmation
+    username = user.get_full_name()
+    email = user.email
+    
+    try:
+        # Supprimer l'utilisateur
+        user.delete()
+        messages.success(request, f"L'utilisateur {username} ({email}) a été définitivement supprimé.")
+    except Exception as e:
+        messages.error(request, f"Erreur lors de la suppression : {str(e)}")
+    
+    return redirect('admin_user_list')
+
+
+@login_required
+@role_required(['admin', 'consultant'])
 def client_create(request):
     """
     Vue frontend pour la création d'un client par un consultant ou un admin.

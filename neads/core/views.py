@@ -10,6 +10,8 @@ from django.conf import settings
 from django.contrib import messages
 from django.core.paginator import Paginator
 from django.db.models import Q
+import datetime
+import logging
 
 from .models import User, UserProfile
 from .forms import LoginForm, TemporaryLoginForm, UserProfileForm, SetPasswordForm, ClientCreationForm
@@ -164,50 +166,178 @@ def login_view(request):
 
 def temporary_login_request(request):
     """
-    Vue pour demander un lien de connexion temporaire.
+    Vue pour demander un lien de connexion temporaire ou s'inscrire en tant que créateur.
+    Cette vue gère deux cas d'usage:
+    1. Demande de lien de connexion temporaire pour les clients existants (par défaut)
+    2. Inscription des nouveaux créateurs (avec le paramètre ?creator=1)
     """
-    if request.method == 'POST':
-        form = TemporaryLoginForm(request.POST)
-        if form.is_valid():
-            email = form.cleaned_data['email']
-            
-            # Récupérer ou créer l'utilisateur
-            user, created = User.objects.get_or_create(
-                email=email,
-                defaults={
-                    'role': 'client',  # Défaut pour les nouveaux utilisateurs
-                }
-            )
-            
-            # Générer un token temporaire
-            token = user.generate_temp_login_token()
-            
-            # Construire le lien de connexion
-            temp_login_url = request.build_absolute_uri(
-                reverse('temp_login', kwargs={'token': token, 'email': email})
-            )
-            
-            # Envoyer l'email
-            subject = 'Votre lien de connexion NEADS'
-            message = render_to_string('core/emails/temp_login_email.html', {
-                'user': user,
-                'temp_login_url': temp_login_url,
-                'expiry_hours': 24,
-            })
-            
-            send_mail(
-                subject=subject,
-                message=message,
-                from_email=settings.DEFAULT_FROM_EMAIL,
-                recipient_list=[email],
-                html_message=message,
-            )
-            
-            return render(request, 'core/temp_login_sent.html', {'email': email})
-    else:
-        form = TemporaryLoginForm()
+    # Vérifier si nous sommes dans le contexte d'inscription créateur
+    is_creator_signup = request.GET.get('creator', '0') == '1'
+    
+    if is_creator_signup:
+        from neads.creators.forms import CreatorRegistrationForm
+        from neads.creators.models import Creator, Location, Media
         
-    return render(request, 'core/temp_login_request.html', {'form': form})
+        if request.method == 'POST':
+            form = CreatorRegistrationForm(request.POST, request.FILES)
+            if form.is_valid():
+                # Récupérer les données du formulaire
+                data = form.cleaned_data
+                
+                # 1. Créer l'utilisateur
+                from neads.core.models import User
+                user = User.objects.create(
+                    email=data['email'],
+                    first_name=data['first_name'],
+                    last_name=data['last_name'],
+                    role='creator',  # Rôle créateur
+                    is_active=True,  # Compte actif immédiatement
+                )
+                
+                # 2. Créer la localisation
+                location = Location.objects.create(
+                    full_address=data['full_address'],
+                    latitude=data.get('latitude'),
+                    longitude=data.get('longitude')
+                )
+                
+                # 3. Créer le profil créateur
+                creator = Creator.objects.create(
+                    user=user,
+                    first_name=data['first_name'],
+                    last_name=data['last_name'],
+                    age=datetime.date.today().year - data['birth_year'],
+                    gender=data['gender'],
+                    email=data['email'],
+                    phone=data['phone'],
+                    location=location,
+                    youtube_link=data.get('youtube_link', ''),
+                    tiktok_link=data.get('tiktok_link', ''),
+                    instagram_link=data.get('instagram_link', ''),
+                    bio=data['bio'],
+                    equipment=data['equipment'],
+                    can_invoice=data['can_invoice'] == 'True',
+                    previous_clients=data['previous_clients'],
+                    featured_image=data['featured_image'],
+                    verified_by_neads=False,  # Non vérifié par défaut
+                )
+                
+                # 4. Ajouter les domaines
+                creator.domains.set(data['domains'])
+                
+                # 5. Traiter les uploads du portfolio
+                # Traiter les vidéos individuelles
+                for i in range(1, 6):
+                    field_name = f'video_file{i}'
+                    if field_name in request.FILES:
+                        video_file = request.FILES[field_name]
+                        media = Media.objects.create(
+                            creator=creator,
+                            title=f"Vidéo {i}",
+                            media_type='video',
+                            video_file=video_file,
+                            is_verified=False
+                        )
+                
+                # Traiter les images individuelles
+                for i in range(1, 4):
+                    field_name = f'image_file{i}'
+                    if field_name in request.FILES:
+                        image_file = request.FILES[field_name]
+                        media = Media.objects.create(
+                            creator=creator,
+                            title=f"Image {i}",
+                            media_type='image',
+                            file=image_file,
+                            is_verified=False
+                        )
+                
+                # 6. Générer un token temporaire pour la connexion
+                token = user.generate_temp_login_token()
+                
+                # 7. Envoyer un email de confirmation
+                temp_login_url = request.build_absolute_uri(
+                    reverse('temp_login', kwargs={'token': token, 'email': user.email})
+                )
+                
+                subject = 'Bienvenue sur NEADS ! Confirmez votre profil créateur'
+                message = render_to_string('core/emails/creator_confirmation_email.html', {
+                    'user': user,
+                    'creator': creator,
+                    'temp_login_url': temp_login_url,
+                    'expiry_hours': 24,
+                })
+                
+                send_mail(
+                    subject=subject,
+                    message=message,
+                    from_email=settings.DEFAULT_FROM_EMAIL,
+                    recipient_list=[user.email],
+                    html_message=message,
+                )
+                
+                # 8. Journaliser
+                logger = logging.getLogger(__name__)
+                logger.info(f"Nouveau créateur inscrit: {creator.full_name} (ID: {creator.id}, Email: {user.email})")
+                
+                # 9. Rediriger vers une page de confirmation
+                messages.success(request, "Votre profil créateur a été créé avec succès ! Un email de confirmation vous a été envoyé.")
+                return redirect('home')
+        else:
+            form = CreatorRegistrationForm()
+        
+        context = {
+            'form': form,
+            'is_creator_signup': True,
+            'google_api_key': settings.GOOGLE_PLACES_API_KEY,
+        }
+        
+        return render(request, 'core/creator_signup.html', context)
+    
+    else:
+        # Code existant pour le login temporaire
+        if request.method == 'POST':
+            form = TemporaryLoginForm(request.POST)
+            if form.is_valid():
+                email = form.cleaned_data['email']
+                
+                # Récupérer ou créer l'utilisateur
+                user, created = User.objects.get_or_create(
+                    email=email,
+                    defaults={
+                        'role': 'client',  # Défaut pour les nouveaux utilisateurs
+                    }
+                )
+                
+                # Générer un token temporaire
+                token = user.generate_temp_login_token()
+                
+                # Construire le lien de connexion
+                temp_login_url = request.build_absolute_uri(
+                    reverse('temp_login', kwargs={'token': token, 'email': email})
+                )
+                
+                # Envoyer l'email
+                subject = 'Votre lien de connexion NEADS'
+                message = render_to_string('core/emails/temp_login_email.html', {
+                    'user': user,
+                    'temp_login_url': temp_login_url,
+                    'expiry_hours': 24,
+                })
+                
+                send_mail(
+                    subject=subject,
+                    message=message,
+                    from_email=settings.DEFAULT_FROM_EMAIL,
+                    recipient_list=[email],
+                    html_message=message,
+                )
+                
+                return render(request, 'core/temp_login_sent.html', {'email': email})
+        else:
+            form = TemporaryLoginForm()
+        
+        return render(request, 'core/temp_login_request.html', {'form': form, 'is_creator_signup': False})
 
 
 def temporary_login(request, token, email):

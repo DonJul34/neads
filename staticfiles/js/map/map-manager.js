@@ -94,17 +94,25 @@ const MapManager = (() => {
 
         console.log('✅ Leaflet library detected, creating map instance');
 
-        // Créer la carte avec la position par défaut (sera mise à jour)
-        const initialCoords = UserLocation.getSavedLocation();
-        console.log('ℹ️ Initial coordinates from saved location:', initialCoords);
+        // Position par défaut sur Paris
+        const parisCoords = {
+            latitude: 48.8566,
+            longitude: 2.3522
+        };
+        console.log('ℹ️ Initial coordinates set to Paris:', parisCoords);
 
         performance.startTimer('mapCreate');
-        map = L.map(mapElement).setView([initialCoords.latitude, initialCoords.longitude], 11);
+        map = L.map(mapElement).setView([parisCoords.latitude, parisCoords.longitude], 11);
+
+        // Exposer la carte comme variable globale pour la compatibilité
+        window.map = map;
+        console.log('✅ Map object exposed globally for compatibility');
+
         performance.metrics.mapInitTime = performance.endTimer('mapCreate');
         console.log('✅ Leaflet map instance created');
 
         // Enregistrer l'état initial de la carte
-        mapState.center = [initialCoords.latitude, initialCoords.longitude];
+        mapState.center = [parisCoords.latitude, parisCoords.longitude];
         mapState.zoom = 11;
 
         // Ajouter le fond de carte
@@ -125,16 +133,6 @@ const MapManager = (() => {
         // Ajouter les contrôles de zoom
         L.control.scale().addTo(map);
         console.log('✅ Map controls added');
-
-        // Configurer le clic sur la carte pour changer la position
-        map.on('click', (e) => {
-            console.log('🔄 Map clicked at:', e.latlng.lat.toFixed(6) + ', ' + e.latlng.lng.toFixed(6));
-            mapState.lastInteraction = Date.now();
-            updateUserPosition({
-                latitude: e.latlng.lat,
-                longitude: e.latlng.lng
-            });
-        });
 
         // Surveiller les interactions avec la carte
         map.on('zoomend', () => {
@@ -158,17 +156,24 @@ const MapManager = (() => {
                 currentRadius = parseInt(e.target.value);
                 console.log('🔄 Radius changed to:', currentRadius + 'km');
                 performance.startTimer('radiusUpdate');
+
+                // Mettre à jour le cercle de recherche
                 updateSearchArea();
-                filterCreatorsByDistance();
+
+                // Forcer un rechargement complet des données avec le nouveau rayon
+                console.log('🔄 Reloading data with new radius');
+                loadCreatorsData();
+
                 performance.endTimer('radiusUpdate');
             });
         } else {
             console.warn('⚠️ Radius selector not found in DOM');
         }
 
-        // Obtenir la position de l'utilisateur et initialiser la carte
-        console.log('🔄 Getting user position to initialize map...');
-        getUserPositionAndInitialize();
+        // Initialiser la position utilisateur à Paris et charger les données
+        console.log('🔄 Setting initial position to Paris...');
+        updateUserPosition(parisCoords);
+        loadCreatorsData();
 
         const initTime = performance.endTimer('initialize');
         console.log(`✅ MapManager initialization complete in ${initTime}ms`);
@@ -178,103 +183,60 @@ const MapManager = (() => {
     };
 
     /**
-     * Récupère la position de l'utilisateur et initialise la carte
+     * Met à jour la position utilisateur sur la carte
+     * @param {Object} coords - Coordonnées avec lat/lng ou latitude/longitude
+     * @param {number} zoom - Niveau de zoom optionnel (si non fourni, utilise le zoom actuel)
      */
-    const getUserPositionAndInitialize = () => {
-        performance.startTimer('getUserPosition');
-        console.log('🔄 getUserPositionAndInitialize called');
-        showLoading(true);
-        UserLocation.getUserLocation(
-            (coords) => {
-                console.log('✅ User location obtained:', coords);
-                const positionTime = performance.endTimer('getUserPosition');
-                console.log(`📊 User position obtained in ${positionTime}ms`);
+    const updateUserPosition = (coords, zoom) => {
+        console.log('🔄 updateUserPosition called with coords:', coords);
 
-                updateUserPosition(coords);
-                console.log('🔄 Initiating data loading after user position update');
-                loadCreatorsData();
-            },
-            (error) => {
-                // En cas d'erreur, utiliser la position par défaut
-                performance.endTimer('getUserPosition');
-                console.warn("⚠️ Error getting user location, using default position. Error:", error);
-                const defaultCoords = UserLocation.getSavedLocation();
-                console.log('ℹ️ Using default coordinates:', defaultCoords);
-                updateUserPosition(defaultCoords);
-                console.log('🔄 Initiating data loading with default position');
-                loadCreatorsData();
-            }
-        );
-    };
+        // Normaliser les coordonnées (accepter lat/lng ou latitude/longitude)
+        const lat = coords.lat || coords.latitude;
+        const lng = coords.lng || coords.longitude;
 
-    /**
-     * Met à jour la position de l'utilisateur sur la carte
-     * @param {Object} coords - Coordonnées (latitude, longitude)
-     */
-    const updateUserPosition = (coords) => {
-        performance.startTimer('updatePosition');
-        console.log('🔄 MapManager.updateUserPosition called with:', coords);
-
-        // Valider les coordonnées
-        if (!coords || typeof coords.latitude !== 'number' || typeof coords.longitude !== 'number') {
-            console.error('❌ Invalid coordinates provided to updateUserPosition:', coords);
-            alert('Coordonnées invalides. Veuillez réessayer.');
-            performance.endTimer('updatePosition');
+        if (!lat || !lng) {
+            console.error('❌ Invalid coordinates provided:', coords);
             return;
         }
 
-        // Vérifier si les coordonnées sont dans des limites raisonnables
-        if (coords.latitude < -90 || coords.latitude > 90 || coords.longitude < -180 || coords.longitude > 180) {
-            console.error('❌ Coordinates out of bounds:', coords);
-            alert('Coordonnées hors limites. Latitude doit être entre -90 et 90, longitude entre -180 et 180.');
-            performance.endTimer('updatePosition');
-            return;
-        }
+        // Convertir en nombres si ce sont des chaînes
+        const latitude = parseFloat(lat);
+        const longitude = parseFloat(lng);
 
-        // Sauvegarder la position
-        try {
-            UserLocation.saveManualLocation(coords);
-        } catch (error) {
-            console.error('❌ Error saving location:', error);
-        }
+        console.log(`🔄 Updating user position to: ${latitude}, ${longitude}`);
 
-        // Mettre à jour/créer le marqueur de l'utilisateur
+        // Centre la carte sur les nouvelles coordonnées
+        map.setView([latitude, longitude], zoom || map.getZoom());
+
+        // Met à jour le marqueur de position utilisateur
         if (currentUserMarker) {
-            console.log('ℹ️ Updating existing user marker position to:', [coords.latitude, coords.longitude]);
-            currentUserMarker.setLatLng([coords.latitude, coords.longitude]);
+            currentUserMarker.setLatLng([latitude, longitude]);
         } else {
-            console.log('ℹ️ Creating new user marker at:', [coords.latitude, coords.longitude]);
+            // Créer le marqueur s'il n'existe pas
             const userIcon = L.divIcon({
                 className: 'user-location-marker',
-                html: '<div class="user-marker-inner"><i class="fas fa-user"></i></div>',
+                html: '<div class="user-marker-inner"><i class="fas fa-street-view"></i></div>',
                 iconSize: [30, 30],
                 iconAnchor: [15, 15]
             });
 
-            try {
-                currentUserMarker = L.marker([coords.latitude, coords.longitude], {
-                    icon: userIcon,
-                    zIndexOffset: 1000
-                }).addTo(map);
-
-                currentUserMarker.bindPopup("Votre position<br><small>(cliquez ailleurs pour déplacer)</small>");
-                console.log('✅ User marker created and added to map');
-            } catch (error) {
-                console.error('❌ Error creating user marker:', error);
-            }
+            currentUserMarker = L.marker([latitude, longitude], {
+                icon: userIcon,
+                zIndexOffset: 1000
+            }).addTo(map);
         }
 
-        // Centrer la carte sur la nouvelle position
-        console.log('🔄 Centering map on user position:', [coords.latitude, coords.longitude]);
-        try {
-            map.setView([coords.latitude, coords.longitude], mapState.zoom || 11);
-            console.log('✅ Map centered successfully');
-        } catch (error) {
-            console.error('❌ Error centering map:', error);
-        }
+        // Stocker les coordonnées pour référence ultérieure
+        mapState.center = [latitude, longitude];
 
-        // Mettre à jour l'état de la carte
-        mapState.center = [coords.latitude, coords.longitude];
+        // Sauvegarder la position dans UserLocation pour les filtres de distance
+        if (typeof UserLocation !== 'undefined' && UserLocation.saveManualLocation) {
+            console.log('🔄 Saving location to UserLocation:', latitude, longitude);
+            UserLocation.saveManualLocation({
+                latitude: latitude,
+                longitude: longitude
+            });
+        }
 
         // Mettre à jour le cercle de recherche
         updateSearchArea();
@@ -282,8 +244,9 @@ const MapManager = (() => {
         // Filtrer les créateurs par distance
         filterCreatorsByDistance();
 
-        const positionUpdateTime = performance.endTimer('updatePosition');
-        console.log(`✅ User position updated successfully in ${positionUpdateTime}ms`);
+        // Recharger les données des créateurs
+        console.log('🔄 Reloading creators data for new position');
+        loadCreatorsData();
     };
 
     /**
@@ -329,9 +292,13 @@ const MapManager = (() => {
 
         // Ajouter les coordonnées de l'utilisateur
         const coords = UserLocation.getSavedLocation();
-        searchParams.append('lat', coords.latitude);
-        searchParams.append('lng', coords.longitude);
-        searchParams.append('radius', currentRadius);
+        console.log('🔄 Using coordinates for data loading:', coords);
+        searchParams.set('lat', coords.latitude);  // Utiliser set au lieu de append pour éviter les doublons
+        searchParams.set('lng', coords.longitude);
+        searchParams.set('radius', currentRadius);
+
+        // Ajouter un timestamp pour éviter le cache
+        searchParams.set('_t', Date.now());
 
         // Mise à jour de l'URL pour utiliser l'endpoint API qui existe réellement
         const url = `/creators/api/creators/map-search/?${searchParams.toString()}`;
@@ -342,10 +309,15 @@ const MapManager = (() => {
         const startTime = Date.now();
         performance.metrics.apiCalls++;
 
+        // Vider les marqueurs existants avant de charger les nouveaux
+        markers.clearLayers();
+        console.log('✅ Cleared existing markers before loading new data');
+
         fetch(url, {
             method: 'GET',
             headers: {
-                'X-Requested-With': 'XMLHttpRequest'
+                'X-Requested-With': 'XMLHttpRequest',
+                'Cache-Control': 'no-cache, no-store, must-revalidate'
             }
         })
             .then(response => {
@@ -833,16 +805,70 @@ const MapManager = (() => {
         return foundMarker;
     };
 
+    /**
+     * Recharge les données des créateurs en tenant compte des paramètres d'URL actuels
+     */
+    const reloadData = () => {
+        console.log('🔄 reloadData called');
+        loadCreatorsData();
+    };
+
+    /**
+     * Définit explicitement le rayon de recherche
+     * @param {number} radius - Rayon en kilomètres
+     */
+    const setRadius = (radius) => {
+        console.log('🔄 setRadius called with:', radius, 'km');
+
+        // Valider et définir le rayon
+        if (typeof radius === 'number' && radius > 0) {
+            currentRadius = radius;
+
+            // Mettre à jour le sélecteur de rayon dans l'interface
+            if (radiusSelector) {
+                // Trouver l'option correspondante
+                let optionFound = false;
+                for (let i = 0; i < radiusSelector.options.length; i++) {
+                    if (parseInt(radiusSelector.options[i].value) === radius) {
+                        radiusSelector.selectedIndex = i;
+                        optionFound = true;
+                        break;
+                    }
+                }
+
+                // Si aucune option correspondante, ajouter une nouvelle option
+                if (!optionFound) {
+                    const newOption = document.createElement('option');
+                    newOption.value = radius;
+                    newOption.textContent = radius + ' km';
+                    radiusSelector.appendChild(newOption);
+                    radiusSelector.value = radius;
+                }
+            }
+
+            // Mettre à jour l'affichage du cercle de recherche
+            updateSearchArea();
+
+            console.log('✅ Rayon défini à', radius, 'km');
+            return true;
+        } else {
+            console.error('❌ Rayon invalide:', radius);
+            return false;
+        }
+    };
+
     // Exposer l'API publique
     return {
         initialize,
         updateUserPosition,
         loadCreatorsData,
+        reloadData,
         updateSearchArea,
         renderCreators,
         findCreatorMarker,
         addCreatorMarker,
-        getMapStats
+        getMapStats,
+        setRadius
     };
 })();
 

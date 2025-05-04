@@ -11,6 +11,27 @@ const UserLocation = (() => {
         longitude: 2.3522
     };
 
+    // Coordonnées géographiques des principales villes françaises
+    // Permet d'éviter les appels API pour les recherches courantes
+    const COMMON_CITIES = {
+        'paris': { latitude: 48.8566, longitude: 2.3522 },
+        'marseille': { latitude: 43.2965, longitude: 5.3698 },
+        'lyon': { latitude: 45.7578, longitude: 4.8320 },
+        'toulouse': { latitude: 43.6047, longitude: 1.4442 },
+        'nice': { latitude: 43.7102, longitude: 7.2620 },
+        'nantes': { latitude: 47.2184, longitude: -1.5536 },
+        'montpellier': { latitude: 43.6112, longitude: 3.8767 },
+        'strasbourg': { latitude: 48.5734, longitude: 7.7521 },
+        'bordeaux': { latitude: 44.8378, longitude: -0.5792 },
+        'lille': { latitude: 50.6292, longitude: 3.0573 },
+        'rennes': { latitude: 48.1173, longitude: -1.6778 },
+        'grenoble': { latitude: 45.1885, longitude: 5.7245 },
+        'angers': { latitude: 47.4784, longitude: -0.5630 },
+        'dijon': { latitude: 47.3220, longitude: 5.0415 },
+        'nîmes': { latitude: 43.8367, longitude: 4.3601 },
+        'aix-en-provence': { latitude: 43.5298, longitude: 5.4474 }
+    };
+
     console.log('📊 Default location set to:', DEFAULT_LOCATION);
 
     /**
@@ -212,14 +233,41 @@ const UserLocation = (() => {
     const searchLocation = (query, callback) => {
         console.log('🔄 searchLocation called with query:', query);
 
-        if (!query || query.length < 3) {
+        if (!query || query.length < 2) {
             console.log('ℹ️ Query too short, returning empty results');
             callback([]);
             return;
         }
 
-        // URL de l'API Nominatim avec paramètres
-        const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=5&addressdetails=1&accept-language=fr`;
+        // Vérifier si c'est une ville courante (insensible à la casse)
+        const normalizedQuery = query.trim().toLowerCase();
+        const commonCity = Object.keys(COMMON_CITIES).find(city => {
+            return normalizedQuery === city ||
+                normalizedQuery.includes(city) ||
+                city.includes(normalizedQuery);
+        });
+
+        if (commonCity) {
+            console.log('✅ Ville trouvée dans le dictionnaire des villes courantes:', commonCity);
+            const coords = COMMON_CITIES[commonCity];
+
+            // Construire un résultat similaire à celui de l'API Nominatim
+            const result = {
+                lat: coords.latitude.toString(),
+                lon: coords.longitude.toString(),
+                display_name: commonCity.charAt(0).toUpperCase() + commonCity.slice(1),
+                name: commonCity.charAt(0).toUpperCase() + commonCity.slice(1),
+                type: 'city',
+                importance: 0.9,
+                is_common_city: true
+            };
+
+            callback([result]);
+            return;
+        }
+
+        // URL de l'API Nominatim avec paramètres optimisés pour la recherche de villes
+        const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=5&addressdetails=1&accept-language=fr&featuretype=city,town,village`;
 
         console.log('🔄 Fetching data from Nominatim API:', url);
         const startTime = Date.now();
@@ -248,103 +296,49 @@ const UserLocation = (() => {
                 console.log(`📊 Found ${data.length} locations:`, data);
 
                 if (!Array.isArray(data)) {
-                    console.error('❌ Invalid response format: expected array but got', typeof data);
-                    callback([]);
-                    return;
+                    throw new Error('Invalid response format from Nominatim API');
                 }
 
                 // Transformer les résultats dans un format plus simple
                 const results = data.map(item => {
-                    // S'assurer que les coordonnées sont des nombres
-                    const lat = parseFloat(item.lat);
-                    const lon = parseFloat(item.lon);
+                    let name = item.display_name;
 
-                    if (isNaN(lat) || isNaN(lon)) {
-                        console.error('❌ Invalid coordinates in result:', item);
-                        return null;
-                    }
-
-                    // Construire un nom plus convivial avec les détails d'adresse si disponibles
-                    let displayName = item.display_name;
-
-                    // Si address details sont disponibles, construire un nom plus court et plus lisible
+                    // Simplifier le nom affiché
                     if (item.address) {
-                        const parts = [];
-
-                        // Ville
                         if (item.address.city || item.address.town || item.address.village) {
-                            parts.push(item.address.city || item.address.town || item.address.village);
-                        }
+                            name = item.address.city || item.address.town || item.address.village;
 
-                        // Quartier/Région
-                        if (item.address.suburb || item.address.county || item.address.state_district) {
-                            parts.push(item.address.suburb || item.address.county || item.address.state_district);
-                        }
-
-                        // Pays
-                        if (item.address.country) {
-                            parts.push(item.address.country);
-                        }
-
-                        if (parts.length > 0) {
-                            displayName = parts.join(', ');
+                            // Ajouter le pays pour clarifier
+                            if (item.address.country) {
+                                name += `, ${item.address.country}`;
+                            }
                         }
                     }
 
                     return {
-                        name: displayName,
-                        latitude: lat,
-                        longitude: lon,
+                        name: name,
+                        lat: parseFloat(item.lat),
+                        lon: parseFloat(item.lon),
                         type: item.type,
                         importance: item.importance
                     };
-                }).filter(result => result !== null);
+                });
 
-                console.log('📊 Transformed results:', results);
+                console.log('✅ Search results processed:', results);
                 callback(results);
             })
             .catch(error => {
-                const totalTime = Date.now() - startTime;
-                console.error(`❌ Error searching location after ${totalTime}ms:`, error);
+                console.error('❌ Error fetching location data:', error);
+
+                // Appeler le callback avec un tableau vide en cas d'erreur
+                callback([]);
+
+                // Afficher un message d'erreur à l'utilisateur si nécessaire
                 console.error('📊 Error details:', {
-                    message: error.message,
                     name: error.name,
-                    stack: error.stack
+                    message: error.message,
+                    url: url
                 });
-
-                // Tenter une approche alternative avec un proxy CORS
-                console.log('🔄 Attempting alternative approach with CORS proxy...');
-                const proxyUrl = `https://cors-anywhere.herokuapp.com/https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=5`;
-
-                fetch(proxyUrl, {
-                    method: 'GET',
-                    headers: {
-                        'Accept': 'application/json',
-                        'Origin': window.location.origin
-                    }
-                })
-                    .then(response => {
-                        if (!response.ok) {
-                            throw new Error(`Proxy HTTP error: ${response.status}`);
-                        }
-                        return response.json();
-                    })
-                    .then(data => {
-                        console.log('✅ Data received via proxy:', data);
-
-                        const results = data.map(item => ({
-                            name: item.display_name,
-                            latitude: parseFloat(item.lat),
-                            longitude: parseFloat(item.lon)
-                        }));
-
-                        callback(results);
-                    })
-                    .catch(proxyError => {
-                        console.error('❌ Proxy approach also failed:', proxyError);
-                        // Fallback à la recherche locale
-                        fallbackLocalSearch(query, callback);
-                    });
             });
     };
 
@@ -389,15 +383,16 @@ const UserLocation = (() => {
         callback(results);
     };
 
-    // API publique
-    console.log('✅ UserLocation module loaded and ready');
+    // Exposer les fonctions publiques
     return {
         getUserLocation,
-        getSavedLocation,
         saveManualLocation,
+        getSavedLocation,
         calculateDistance,
         formatDistance,
-        searchLocation
+        searchLocation,
+        fallbackLocalSearch,
+        COMMON_CITIES
     };
 })();
 

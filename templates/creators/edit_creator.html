@@ -108,6 +108,43 @@ creator.full_name }}{% endblock %} {% block extra_css %}
               </button>
             </div>
           </form>
+          
+          <hr class="my-4">
+          <div class="alert alert-danger">
+            <h5 class="alert-heading"><i class="fas fa-exclamation-triangle me-2"></i>Zone dangereuse</h5>
+            <p>La suppression du profil est une action irréversible. Toutes les données associées à ce créateur seront définitivement perdues.</p>
+            <button type="button" class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#deleteCreatorModal">
+                <i class="fas fa-trash-alt me-1"></i> Supprimer le profil créateur
+            </button>
+          </div>
+          
+          <!-- Modal de confirmation de suppression -->
+          <div class="modal fade" id="deleteCreatorModal" tabindex="-1" aria-labelledby="deleteCreatorModalLabel" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="deleteCreatorModalLabel">Confirmer la suppression</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <p>Êtes-vous sûr de vouloir supprimer définitivement le profil de <strong>{{ creator.full_name }}</strong> ?</p>
+                        <p class="fw-bold text-danger">Cette action est irréversible et toutes les données du créateur seront perdues, incluant :</p>
+                        <ul class="text-danger">
+                            <li>Photos et vidéos du portfolio</li>
+                            <li>Évaluations et avis</li>
+                            <li>Historique des favoris</li>
+                        </ul>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                        <form method="post" action="{% url 'delete_creator' creator.id %}">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-danger">Supprimer définitivement</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>

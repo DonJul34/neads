@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bienvenue sur NEADS !</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .header {
+            background-color: #0d6efd;
+            color: white;
+            padding: 20px;
+            text-align: center;
+            border-radius: 5px 5px 0 0;
+        }
+        .content {
+            background-color: #f7f9fc;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-top: none;
+            border-radius: 0 0 5px 5px;
+        }
+        .btn {
+            display: inline-block;
+            background-color: #0d6efd;
+            color: white;
+            text-decoration: none;
+            padding: 12px 24px;
+            border-radius: 5px;
+            font-weight: bold;
+            margin: 20px 0;
+        }
+        .info {
+            background-color: #e7f3ff;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+        .footer {
+            text-align: center;
+            margin-top: 30px;
+            font-size: 0.9em;
+            color: #6c757d;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Bienvenue sur NEADS !</h1>
+    </div>
+    
+    <div class="content">
+        <p>Bonjour {{ user.first_name }},</p>
+        
+        <p>Nous sommes ravis de vous accueillir parmi nos créateurs de contenu UGC ! Votre profil a été créé avec succès et est désormais en ligne sur notre plateforme.</p>
+        
+        <div class="info">
+            <p><strong>Votre profil :</strong> {{ creator.full_name }}</p>
+            <p><strong>Domaines de création :</strong> {% for domain in creator.domains.all %}{{ domain.name }}{% if not forloop.last %}, {% endif %}{% endfor %}</p>
+        </div>
+        
+        <p>Pour compléter votre inscription et accéder à votre profil, cliquez sur le bouton ci-dessous :</p>
+        
+        <div style="text-align: center;">
+            <a href="{{ temp_login_url }}" class="btn">Accéder à mon profil</a>
+        </div>
+        
+        <p><strong>Note importante :</strong> Ce lien est valable pendant {{ expiry_hours }} heures. Passé ce délai, vous devrez en demander un nouveau.</p>
+        
+        <p>Vous pourrez alors :</p>
+        <ul>
+            <li>Consulter et modifier votre profil</li>
+            <li>Ajouter de nouveaux contenus à votre portfolio</li>
+            <li>Être contacté par nos partenaires pour des collaborations</li>
+        </ul>
+        
+        <p>Notre équipe examinera votre profil dans les prochains jours. Pour toute question, n'hésitez pas à nous contacter à <a href="mailto:contact@neads.fr">contact@neads.fr</a>.</p>
+        
+        <p>À très bientôt sur NEADS !</p>
+    </div>
+    
+    <div class="footer">
+        <p>© 2025 NEADS - Tous droits réservés.</p>
+        <p>Cet email vous a été envoyé suite à votre inscription sur la plateforme NEADS.</p>
+    </div>
+</body>
+</html> 

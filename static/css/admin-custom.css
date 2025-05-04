@@ -1,0 +1,396 @@
+/* Custom Admin CSS for NEADS */
+
+:root {
+    /* Core colors - aligned with the NEADS design system */
+    --primary-color: #17142f;
+    --secondary-color: #6a49dc;
+    --accent-color: #9d7fff;
+    --accent-color-light: #eae6ff;
+    --accent-gradient: linear-gradient(135deg, #6a49dc 0%, #9d7fff 100%);
+
+    /* Text colors */
+    --text-primary: #1f1f3d;
+    --text-secondary: #4b4b72;
+    --text-light: #6e6e94;
+    --text-white: #ffffff;
+
+    /* Background colors */
+    --bg-primary: #f8f9ff;
+    --bg-secondary: #ffffff;
+    --bg-dark: #0f0c25;
+    --bg-card: #ffffff;
+
+    /* UI elements */
+    --border-radius-sm: 0.5rem;
+    --border-radius-md: 0.8rem;
+    --shadow-sm: 0 4px 8px rgba(106, 73, 220, 0.08);
+    --shadow-md: 0 8px 24px rgba(106, 73, 220, 0.12);
+}
+
+/* Typography */
+body {
+    font-family: 'Poppins', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    color: var(--text-primary);
+    background-color: var(--bg-primary);
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+    font-family: 'Outfit', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    font-weight: 600;
+}
+
+/* Header styling */
+#header {
+    background: var(--primary-color);
+    color: var(--text-white);
+    box-shadow: var(--shadow-md);
+    height: auto;
+    padding: 15px 40px;
+}
+
+#header a:link,
+#header a:visited {
+    color: var(--text-white);
+}
+
+#user-tools {
+    font-size: 0.9rem;
+    padding: 2px 10px;
+    background-color: rgba(255, 255, 255, 0.1);
+    border-radius: var(--border-radius-sm);
+}
+
+#branding h1 {
+    font-weight: 700;
+    font-size: 1.8rem;
+}
+
+#branding h1 a:link,
+#branding h1 a:visited {
+    color: var(--text-white);
+}
+
+/* Sidebar styling */
+.sidebar {
+    background-color: var(--bg-secondary);
+    box-shadow: var(--shadow-sm);
+    border-radius: 0 var(--border-radius-md) var(--border-radius-md) 0;
+}
+
+.module h2,
+.module caption,
+.inline-group h2 {
+    background: var(--accent-gradient);
+    color: var(--text-white);
+    padding: 15px;
+    font-size: 1rem;
+    border-radius: var(--border-radius-sm) var(--border-radius-sm) 0 0;
+}
+
+/* Content area styling */
+#content {
+    padding: 30px 40px;
+}
+
+.module {
+    background-color: var(--bg-secondary);
+    border-radius: var(--border-radius-md);
+    box-shadow: var(--shadow-sm);
+    margin-bottom: 25px;
+    border: 1px solid rgba(106, 73, 220, 0.1);
+    overflow: hidden;
+}
+
+.dashboard .module table th {
+    width: 100%;
+}
+
+.dashboard .module table td a {
+    display: block;
+    padding: 10px;
+    color: var(--text-secondary);
+    text-decoration: none;
+    transition: all 0.3s ease;
+}
+
+.dashboard .module table td a:hover {
+    background-color: var(--accent-color-light);
+    color: var(--secondary-color);
+}
+
+/* Form styling */
+.button,
+input[type=submit],
+input[type=button],
+.submit-row input,
+a.button {
+    background: var(--accent-gradient);
+    color: var(--text-white);
+    padding: 10px 15px;
+    border-radius: var(--border-radius-sm);
+    border: none;
+    font-weight: 500;
+    transition: all 0.3s ease;
+}
+
+.button:hover,
+input[type=submit]:hover,
+input[type=button]:hover,
+.submit-row input:hover,
+a.button:hover {
+    background: linear-gradient(135deg, #5938c8 0%, #8e70f1 100%);
+    box-shadow: var(--shadow-sm);
+    transform: translateY(-2px);
+}
+
+.button.default,
+input[type=submit].default,
+.submit-row input.default {
+    background: var(--accent-gradient);
+    font-weight: 600;
+}
+
+.button[disabled],
+input[type=submit][disabled],
+input[type=button][disabled] {
+    opacity: 0.5;
+    background: #999;
+}
+
+/* Form fields styling */
+form input,
+form textarea,
+form select,
+.vTextField {
+    padding: 10px;
+    border-radius: var(--border-radius-sm);
+    border: 1px solid rgba(106, 73, 220, 0.2);
+    background-color: var(--bg-secondary);
+    transition: all 0.3s ease;
+}
+
+form input:focus,
+form textarea:focus,
+form select:focus,
+.vTextField:focus {
+    border-color: var(--accent-color);
+    box-shadow: 0 0 0 0.2rem rgba(106, 73, 220, 0.25);
+    outline: none;
+}
+
+.submit-row {
+    padding: 15px;
+    background-color: var(--accent-color-light);
+    border: none;
+    border-radius: var(--border-radius-sm);
+}
+
+/* Table styling */
+#changelist table {
+    border-radius: var(--border-radius-sm);
+    overflow: hidden;
+}
+
+#changelist table thead th {
+    background-color: var(--accent-color-light);
+    color: var(--text-secondary);
+    padding: 12px 10px;
+    font-weight: 600;
+}
+
+#changelist table tbody tr:hover {
+    background-color: var(--accent-color-light);
+}
+
+.row1 {
+    background-color: var(--bg-secondary);
+}
+
+.row2 {
+    background-color: var(--bg-primary);
+}
+
+/* Action buttons */
+.object-tools a {
+    background: var(--secondary-color);
+    padding: 10px 15px;
+    border-radius: var(--border-radius-sm);
+    font-weight: 500;
+}
+
+.object-tools a:hover,
+.object-tools a:focus {
+    background: var(--accent-color);
+}
+
+/* Breadcrumbs */
+div.breadcrumbs {
+    background: var(--accent-gradient);
+    color: var(--text-white);
+    padding: 15px 40px;
+    font-size: 0.9rem;
+    border: none;
+}
+
+div.breadcrumbs a {
+    color: var(--text-white);
+}
+
+div.breadcrumbs a:hover {
+    color: var(--text-white);
+    text-decoration: underline;
+}
+
+/* Messages */
+ul.messagelist li {
+    background: var(--bg-secondary);
+    border-radius: var(--border-radius-sm);
+    padding: 12px 15px;
+    margin: 0 0 15px 0;
+    border-left: 4px solid var(--secondary-color);
+    box-shadow: var(--shadow-sm);
+}
+
+ul.messagelist li.success {
+    border-left-color: #28a745;
+}
+
+ul.messagelist li.error {
+    border-left-color: #dc3545;
+}
+
+ul.messagelist li.warning {
+    border-left-color: #ffc107;
+}
+
+/* Pagination */
+.paginator {
+    padding: 15px;
+    background-color: var(--bg-secondary);
+    border-radius: var(--border-radius-sm);
+    margin: 15px 0;
+    font-size: 0.9rem;
+}
+
+.paginator a:link,
+.paginator a:visited {
+    padding: 5px 10px;
+    background: var(--accent-color-light);
+    color: var(--secondary-color);
+    border-radius: var(--border-radius-sm);
+    text-decoration: none;
+}
+
+.paginator a:hover {
+    background: var(--secondary-color);
+    color: var(--text-white);
+}
+
+.paginator .this-page {
+    padding: 5px 10px;
+    background: var(--accent-gradient);
+    color: var(--text-white);
+    border-radius: var(--border-radius-sm);
+    font-weight: 600;
+}
+
+/* Calendar and filters */
+.calendarbox,
+.clockbox {
+    background-color: var(--bg-secondary);
+    border-radius: var(--border-radius-sm);
+    box-shadow: var(--shadow-md);
+    padding: 0;
+    border: 1px solid rgba(106, 73, 220, 0.2);
+}
+
+.calendar caption,
+.calendarbox h2 {
+    background: var(--accent-gradient);
+    color: var(--text-white);
+    font-size: 1rem;
+    padding: 10px;
+}
+
+.calendar td a {
+    display: block;
+    padding: 5px;
+    text-decoration: none;
+    color: var(--text-secondary);
+    transition: all 0.3s ease;
+}
+
+.calendar td a:hover {
+    background-color: var(--accent-color-light);
+    color: var(--secondary-color);
+}
+
+.calendar td.selected a {
+    background-color: var(--secondary-color);
+    color: var(--text-white);
+    border-radius: var(--border-radius-sm);
+}
+
+/* Login form */
+.login {
+    background: var(--bg-primary);
+}
+
+.login #container {
+    box-shadow: var(--shadow-md);
+    border-radius: var(--border-radius-md);
+    background-color: var(--bg-secondary);
+    padding: 30px;
+    border: 1px solid rgba(106, 73, 220, 0.1);
+}
+
+.login #header {
+    background: var(--accent-gradient);
+    border-radius: var(--border-radius-md) var(--border-radius-md) 0 0;
+    padding: 20px;
+}
+
+.login .form-row #id_username,
+.login .form-row #id_password {
+    padding: 10px;
+    border-radius: var(--border-radius-sm);
+    border: 1px solid rgba(106, 73, 220, 0.2);
+}
+
+.login .submit-row input {
+    width: 100%;
+    padding: 12px;
+    background: var(--accent-gradient);
+    font-weight: 600;
+}
+
+/* Bold module names */
+.app-neads.model-creator th.field-name a,
+.app-neads.model-domain th.field-name a,
+.app-auth.model-user th.field-username a,
+.app-auth.model-group th.field-name a {
+    font-weight: 600;
+}
+
+/* Delete confirmation page */
+.delete-confirmation form {
+    background-color: var(--bg-secondary);
+    border-radius: var(--border-radius-md);
+    box-shadow: var(--shadow-sm);
+    padding: 20px;
+    border: 1px solid rgba(106, 73, 220, 0.1);
+}
+
+.delete-confirmation form input[type=submit] {
+    background-color: #dc3545;
+    background-image: none;
+}
+
+.delete-confirmation form input[type=submit]:hover {
+    background-color: #c82333;
+}

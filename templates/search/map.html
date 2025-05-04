@@ -9,120 +9,219 @@
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.css" />
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.Default.css" />
 <style>
+    /* Map module styles */
     .map-container {
         position: relative;
         height: 700px;
         width: 100%;
-        border-radius: 8px;
+        border-radius: var(--border-radius-lg);
         overflow: hidden;
-        box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        box-shadow: var(--shadow-lg);
+        margin-bottom: 2rem;
+        background-color: var(--bg-secondary);
+        border: 1px solid rgba(106, 73, 220, 0.1);
     }
     
     #map {
         height: 100%;
         width: 100%;
+        z-index: 1;
     }
     
+    /* Map search panel */
     .map-search-panel {
         position: absolute;
-        top: 10px;
-        left: 10px;
+        top: 15px;
+        left: 15px;
         z-index: 1000;
-        background-color: white;
-        padding: 15px;
-        border-radius: 5px;
-        box-shadow: 0 0 10px rgba(0,0,0,0.2);
-        width: 320px;
-        max-height: 600px;
+        background-color: var(--bg-secondary);
+        padding: 1.5rem;
+        border-radius: var(--border-radius-md);
+        box-shadow: var(--shadow-md);
+        width: 350px;
+        max-height: 670px;
         overflow-y: auto;
+        border: 1px solid rgba(106, 73, 220, 0.1);
+        transition: var(--transition-normal);
+    }
+    
+    .map-search-panel::-webkit-scrollbar {
+        width: 6px;
+    }
+    
+    .map-search-panel::-webkit-scrollbar-track {
+        background: var(--accent-color-light);
+        border-radius: 10px;
+    }
+    
+    .map-search-panel::-webkit-scrollbar-thumb {
+        background: var(--accent-color);
+        border-radius: 10px;
+    }
+    
+    .map-search-panel .input-group {
+        position: relative;
+    }
+    
+    .map-search-panel .input-group .form-control {
+        padding-right: 45px;
+        border-radius: var(--border-radius-sm);
+        background-color: var(--bg-primary);
+        border: 1px solid rgba(106, 73, 220, 0.1);
+        padding: 0.7rem 1rem;
+        box-shadow: var(--shadow-inset);
+    }
+    
+    .map-search-panel .input-group .btn {
+        position: absolute;
+        right: 0;
+        top: 0;
+        bottom: 0;
+        z-index: 5;
+        border-radius: 0 var(--border-radius-sm) var(--border-radius-sm) 0;
+        background: var(--accent-gradient);
+        padding: 0 15px;
     }
     
     .map-filters {
-        margin-top: 10px;
+        margin-top: 1.5rem;
     }
     
+    /* Map controls */
     .map-controls {
         position: absolute;
-        bottom: 20px;
-        left: 20px;
+        bottom: 30px;
+        left: 30px;
         z-index: 999;
         display: flex;
         flex-direction: column;
-        gap: 10px;
+        gap: 15px;
     }
     
     .map-controls button {
-        width: 40px;
-        height: 40px;
+        width: 50px;
+        height: 50px;
         border-radius: 50%;
-        background-color: white;
+        background: var(--accent-gradient);
         border: none;
-        box-shadow: 0 0 5px rgba(0,0,0,0.2);
+        box-shadow: var(--shadow-md);
         display: flex;
         align-items: center;
         justify-content: center;
+        color: white;
         cursor: pointer;
+        transition: var(--transition-normal);
     }
     
-    .radius-control {
-        padding: 10px;
-        background-color: white;
-        border-radius: 5px;
-        box-shadow: 0 0 5px rgba(0,0,0,0.2);
-        margin-top: 10px;
+    .map-controls button:hover {
+        transform: translateY(-3px);
+        box-shadow: var(--shadow-lg);
     }
     
+    .map-controls button i {
+        font-size: 1.2rem;
+    }
+    
+    /* Creators list panel */
     .creators-list {
         position: absolute;
-        top: 10px;
-        right: 10px;
+        top: 15px;
+        right: 15px;
         z-index: 1000;
-        background-color: white;
-        padding: 15px;
-        border-radius: 5px;
-        box-shadow: 0 0 10px rgba(0,0,0,0.1);
-        width: 300px;
-        max-height: 580px;
+        background-color: var(--bg-secondary);
+        padding: 1.5rem;
+        border-radius: var(--border-radius-md);
+        box-shadow: var(--shadow-md);
+        width: 350px;
+        max-height: 670px;
         overflow-y: auto;
+        border: 1px solid rgba(106, 73, 220, 0.1);
+    }
+    
+    .creators-list::-webkit-scrollbar {
+        width: 6px;
+    }
+    
+    .creators-list::-webkit-scrollbar-track {
+        background: var(--accent-color-light);
+        border-radius: 10px;
+    }
+    
+    .creators-list::-webkit-scrollbar-thumb {
+        background: var(--accent-color);
+        border-radius: 10px;
+    }
+    
+    .creators-list h5 {
+        font-size: 1.25rem;
+        margin-bottom: 1.25rem;
+        position: relative;
+        padding-bottom: 0.75rem;
+        font-weight: 600;
+    }
+    
+    .creators-list h5::after {
+        content: '';
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        width: 60px;
+        height: 3px;
+        background: var(--accent-gradient);
+        border-radius: 10px;
     }
     
     .creator-item {
-        padding: 10px;
-        border-bottom: 1px solid #eee;
+        padding: 1rem;
+        border-radius: var(--border-radius-sm);
+        background-color: var(--bg-primary);
+        margin-bottom: 1rem;
         cursor: pointer;
+        transition: var(--transition-normal);
+        position: relative;
+        border: 1px solid rgba(106, 73, 220, 0.05);
     }
     
     .creator-item:hover {
-        background-color: #f8f9fa;
+        background-color: var(--accent-color-light);
+        transform: translateY(-3px);
+        box-shadow: var(--shadow-sm);
     }
     
-    /* Styles pour le slider d'âge */
+    /* Age range slider */
     .range-slider-container {
         padding: 0 10px;
+        margin-top: 1rem;
     }
     
     .range-slider {
         width: 100%;
         height: 5px;
-        background: #ddd;
+        background: var(--accent-color-light);
         border-radius: 5px;
         position: relative;
     }
     
     .noUi-connect {
-        background: var(--primary-color, #007bff);
+        background: var(--accent-gradient);
     }
     
     .noUi-handle {
-        width: 18px !important;
-        height: 18px !important;
+        width: 20px !important;
+        height: 20px !important;
         border-radius: 50%;
-        background: var(--primary-color, #007bff);
-        box-shadow: none;
+        background: var(--secondary-color);
+        box-shadow: var(--shadow-sm);
         cursor: pointer;
-        top: -7px !important;
-        right: -9px !important;
+        top: -8px !important;
+        right: -10px !important;
         border: 2px solid white !important;
+        transition: var(--transition-normal);
+    }
+    
+    .noUi-handle:hover {
+        transform: scale(1.2);
+        box-shadow: var(--shadow-md);
     }
     
     .noUi-handle:before, 
@@ -143,30 +242,65 @@
         display: flex;
         justify-content: space-between;
         margin-top: 10px;
-        font-size: 0.8rem;
+        font-weight: 500;
     }
     
-    /* Styles pour les domaines */
-    .domain-checkbox-container {
+    .range-values span {
+        background-color: var(--accent-color-light);
+        padding: 3px 10px;
+        border-radius: 100px;
+        font-size: 0.85rem;
+    }
+    
+    /* Filter section styles */
+    .filter-section {
+        margin-bottom: 1.5rem;
+    }
+    
+    .filter-header {
+        font-size: 1rem;
+        font-weight: 600;
+        margin-bottom: 1rem;
+        color: var(--text-primary);
         display: flex;
         align-items: center;
-        justify-content: space-between;
-        padding: 4px 0;
-    }
-
-    .domain-count {
-        font-size: 0.7rem;
-        color: #6c757d;
-        background-color: #f8f9fa;
-        border-radius: 10px;
-        padding: 0.1rem 0.5rem;
-        margin-left: 5px;
     }
     
-    /* Style pour les étoiles de notation */
+    .filter-header i {
+        margin-right: 0.5rem;
+        color: var(--secondary-color);
+        font-size: 1.1rem;
+    }
+    
+    /* Domain checkboxes styling */
+    .scrollable-checkboxes {
+        max-height: 180px;
+        overflow-y: auto;
+        padding: 0.75rem;
+        background-color: var(--bg-primary);
+        border-radius: var(--border-radius-sm);
+        border: 1px solid rgba(106, 73, 220, 0.1);
+    }
+    
+    .scrollable-checkboxes::-webkit-scrollbar {
+        width: 4px;
+    }
+    
+    .scrollable-checkboxes::-webkit-scrollbar-track {
+        background: rgba(106, 73, 220, 0.05);
+        border-radius: 10px;
+    }
+    
+    .scrollable-checkboxes::-webkit-scrollbar-thumb {
+        background: var(--accent-color);
+        border-radius: 10px;
+    }
+    
+    /* Rating stars */
     .rating-stars {
         display: inline-flex;
         direction: rtl;
+        margin-top: 0.5rem;
     }
 
     .rating-stars input {
@@ -174,85 +308,145 @@
     }
 
     .rating-stars label {
-        color: #ddd;
+        color: #e0e0e0;
         font-size: 1.5rem;
-        padding: 0 2px;
+        padding: 0 5px;
         cursor: pointer;
+        transition: var(--transition-normal);
     }
 
     .rating-stars label:hover,
     .rating-stars label:hover~label,
     .rating-stars input:checked~label {
-        color: var(--accent-color, #ffc107);
+        color: #ffc107;
+        transform: scale(1.2);
     }
     
-    /* Style pour les en-têtes de filtre */
-    .filter-header {
-        font-size: 0.9rem;
-        font-weight: 600;
-        margin-bottom: 0.5rem;
-        border-bottom: 1px solid #eee;
-        padding-bottom: 0.25rem;
-    }
-    
-    /* Autres styles */
-    .scrollable-checkboxes {
-        max-height: 150px;
-        overflow-y: auto;
-        padding-right: 5px;
-    }
-    
-    .scrollable-checkboxes::-webkit-scrollbar {
-        width: 5px;
-    }
-    
-    .scrollable-checkboxes::-webkit-scrollbar-track {
-        background: #f1f1f1;
-        border-radius: 10px;
-    }
-    
-    .scrollable-checkboxes::-webkit-scrollbar-thumb {
-        background: #ccc;
-        border-radius: 10px;
-    }
-    
-    /* Styles pour la popup du marqueur */
+    /* Marker popup styling */
     .creator-popup {
-        width: 220px;
-        padding: 5px;
+        width: 250px;
+        padding: 0;
+        overflow: hidden;
+        border-radius: var(--border-radius-md);
+        box-shadow: var(--shadow-md);
     }
     
     .creator-popup img {
-        max-width: 100%;
-        border-radius: 5px;
-        margin-bottom: 10px;
+        width: 100%;
+        height: 150px;
+        object-fit: cover;
+        margin-bottom: 0;
+    }
+    
+    .popup-content {
+        padding: 1rem;
     }
     
     .creator-popup h5 {
-        margin-bottom: 5px;
-        font-size: 16px;
+        margin-bottom: 0.5rem;
+        font-size: 1.1rem;
+        font-weight: 600;
+    }
+    
+    .creator-popup .meta-info {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 0.75rem;
+        font-size: 0.85rem;
     }
     
     .creator-popup .star-rating {
         color: #ffc107;
-        font-size: 12px;
+        display: flex;
+        align-items: center;
+    }
+    
+    .creator-popup .distance {
+        background-color: var(--accent-color-light);
+        padding: 2px 8px;
+        border-radius: 100px;
+        font-size: 0.75rem;
+        font-weight: 500;
+    }
+    
+    .creator-popup .domain-tags {
+        margin-bottom: 0.75rem;
     }
     
     .creator-popup .btn {
         width: 100%;
-        margin-top: 5px;
+        margin-top: 0.5rem;
+        background: var(--accent-gradient);
+        border: none;
+        font-weight: 500;
+        padding: 0.5rem;
+    }
+    
+    /* Loading indicator */
+    .loading-indicator {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 2rem;
+    }
+    
+    .loading-indicator .spinner-border {
+        color: var(--secondary-color);
+        width: 3rem;
+        height: 3rem;
+        margin-bottom: 1rem;
+    }
+    
+    .loading-indicator p {
+        color: var(--text-secondary);
+        font-weight: 500;
+    }
+    
+    /* Responsive adjustments */
+    @media (max-width: 1200px) {
+        .map-search-panel,
+        .creators-list {
+            width: 300px;
+        }
+    }
+    
+    @media (max-width: 992px) {
+        .map-container {
+            height: 600px;
+        }
     }
     
     @media (max-width: 768px) {
-        .map-search-panel, .creators-list {
-            position: relative;
-            width: 100%;
-            max-height: 300px;
-            margin-bottom: 10px;
+        .map-container {
+            height: 500px;
         }
         
-        .map-container {
-            height: 400px;
+        .map-search-panel,
+        .creators-list {
+            position: relative;
+            width: 100%;
+            max-height: 400px;
+            top: 0;
+            left: 0;
+            right: 0;
+            margin-bottom: 1rem;
+            box-shadow: var(--shadow-sm);
+        }
+        
+        .creators-list {
+            display: none;
+        }
+        
+        .map-controls {
+            bottom: 20px;
+            left: 20px;
+            gap: 10px;
+        }
+        
+        .map-controls button {
+            width: 40px;
+            height: 40px;
         }
     }
 </style>
@@ -260,181 +454,231 @@
 
 {% block content %}
 <div data-user-role="{{ user.role }}" id="user-role-info" class="d-none"></div>
-<div class="container-fluid py-4">
-    <div class="row mb-4">
-        <div class="col-md-12">
-            <h1>Recherche de créateurs par carte</h1>
-            <p class="lead">Trouvez des créateurs autour de vous ou dans une zone spécifique.</p>
-        </div>
-    </div>
+
+<!-- Page Header -->
+<div class="page-header" data-aos="fade-up">
+    <h1 class="page-title">Recherche par carte</h1>
+    <p class="page-description">Trouvez des créateurs autour de vous ou dans une zone spécifique pour vos projets.</p>
+    <!-- Bouton d'accès à la carte -->
+    <a href="{% url 'gallery_view' %}" class="btn btn-primary mt-3">
+        <i class="fas fa-map-marked-alt me-2"></i> Accéder à la gallerie de créateurs
+    </a>
+</div>
+
+<!-- Map Container with Components -->
+<div class="map-container" data-aos="fade-up" data-aos-delay="100">
+    <!-- Interactive Map -->
+    <div id="map"></div>
     
-    <div class="row">
-        <div class="col-md-12">
-            <div class="map-container">
-                <!-- Carte -->
-                <div id="map"></div>
+    <!-- Search and Filters Panel -->
+    <div class="map-search-panel">
+        <form id="map-search-form" method="get">
+            <div class="input-group mb-3">
+                <input type="text" id="map-search-query" class="form-control" 
+                       name="query" placeholder="Rechercher un créateur..." 
+                       value="{{ request.GET.query }}"
+                       aria-label="Rechercher un créateur">
+                <button class="btn" type="submit">
+                    <i class="fas fa-search"></i>
+                </button>
+            </div>
+            
+            <div id="map-filters" class="map-filters">
+                <!-- Domain Filter Section -->
+                <div class="filter-section">
+                    <h4 class="filter-header">
+                        <i class="fas fa-tags"></i> Domaines d'expertise
+                    </h4>
+                    <div id="domain-checkboxes" class="scrollable-checkboxes">
+                        {% for domain in domains %}
+                        <div class="form-check domain-checkbox-container">
+                            <input class="form-check-input domain-checkbox" type="checkbox" name="domains"
+                                value="{{ domain.id }}" id="domain_{{ domain.id }}" 
+                                {% if domain.id|stringformat:'i' in request.GET.domains|default:'' %}checked{% endif %}>
+                            <label class="form-check-label ms-2" for="domain_{{ domain.id }}">
+                                {{ domain.name }}
+                                <span class="badge bg-light text-dark ms-1">{{ domain.creators.count }}</span>
+                            </label>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
                 
-                <!-- Panneau de recherche -->
-                <div class="map-search-panel">
-                    <form id="map-search-form" method="get">
-                        <div class="input-group mb-3">
-                            <input type="text" id="map-search-query" class="form-control" name="query" placeholder="Rechercher un créateur..." value="{{ request.GET.query }}">
-                            <button class="btn btn-primary" type="submit">
+                <!-- Filtre par ville -->
+                <div class="filter-section city-filter">
+                    <h4 class="filter-header">
+                        <i class="fas fa-map-marker-alt"></i> Recherche par ville
+                    </h4>
+                    <div class="mb-3">
+                        <div class="input-group">
+                            <input type="text" class="form-control" id="city-filter" name="city" 
+                                placeholder="Nom de la ville" value="{{ request.GET.city|default:'' }}">
+                            <button class="btn btn-primary" type="button" id="city-search-btn">
                                 <i class="fas fa-search"></i>
                             </button>
                         </div>
-                        
-                        <div id="map-filters" class="map-filters">
-                            <!-- Filtres par domaine -->
-                            <div class="mb-3">
-                                <p class="filter-header mb-2">Domaines</p>
-                                <div id="domain-checkboxes" class="scrollable-checkboxes" style="max-height: 150px; overflow-y: auto; border: 1px solid #dee2e6; border-radius: 5px; padding: 8px;">
-                                    <!-- Domaines disponibles -->
-                                    {% for domain in domains %}
-                                    <div class="form-check domain-checkbox-container" style="display: flex; align-items: center; margin-bottom: 5px;">
-                                        <input class="form-check-input domain-checkbox" type="checkbox" name="domains"
-                                            value="{{ domain.id }}" id="domain_{{ domain.id }}" 
-                                            {% if domain.id|stringformat:'i' in request.GET.domains|default:'' %}checked{% endif %}>
-                                        <label class="form-check-label ms-2" for="domain_{{ domain.id }}">
-                                            {{ domain.name }}
-                                            <span class="badge bg-light text-dark ms-1">{{ domain.creators.count }}</span>
-                                        </label>
-                                    </div>
-                                    {% endfor %}
-                                </div>
-                            </div>
-                            
-                            <!-- Filtres par caractéristiques -->
-                            <div class="mb-3">
-                                <p class="filter-header mb-2">Caractéristiques</p>
-                                
-                                <div class="mb-2">
-                                    <label for="map-gender-filter" class="form-label small">Genre</label>
-                                    <select id="map-gender-filter" name="gender" class="form-select form-select-sm">
-                                        <option value="">Tous</option>
-                                        <option value="M" {% if request.GET.gender == 'M' %}selected{% endif %}>Homme</option>
-                                        <option value="F" {% if request.GET.gender == 'F' %}selected{% endif %}>Femme</option>
-                                        <option value="O" {% if request.GET.gender == 'O' %}selected{% endif %}>Autre</option>
-                                    </select>
-                                </div>
-                                
-                                <div class="mb-2">
-                                    <label for="map-content-type-filter" class="form-label small">Type de contenu</label>
-                                    <select id="map-content-type-filter" name="content_type" class="form-select form-select-sm">
-                                        <option value="">Tous</option>
-                                        <option value="photo" {% if request.GET.content_type == 'photo' %}selected{% endif %}>Photo</option>
-                                        <option value="video" {% if request.GET.content_type == 'video' %}selected{% endif %}>Vidéo</option>
-                                        <option value="audio" {% if request.GET.content_type == 'audio' %}selected{% endif %}>Audio</option>
-                                        <option value="text" {% if request.GET.content_type == 'text' %}selected{% endif %}>Texte</option>
-                                        <option value="mixed" {% if request.GET.content_type == 'mixed' %}selected{% endif %}>Mixte</option>
-                                    </select>
-                                </div>
-                                
-                                <div class="mb-3">
-                                    <label class="form-label small">Âge</label>
-                                    <div class="range-slider-container">
-                                        <div class="range-slider" id="age-slider"></div>
-                                        <div class="range-values">
-                                            <span id="age-min-value">{{ request.GET.min_age|default:min_creator_age }}</span>
-                                            <span id="age-max-value">{{ request.GET.max_age|default:max_creator_age }}</span>
-                                        </div>
-                                        <input type="hidden" id="min-age-input" name="min_age" value="{{ request.GET.min_age|default:min_creator_age }}">
-                                        <input type="hidden" id="max-age-input" name="max_age" value="{{ request.GET.max_age|default:max_creator_age }}">
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <!-- Autres filtres -->
-                            <div class="mb-3">
-                                <p class="filter-header mb-2">Options additionnelles</p>
-                                
-                                <div class="form-check mb-2">
-                                    <input type="checkbox" class="form-check-input" id="map-can-invoice" name="can_invoice" {% if request.GET.can_invoice %}checked{% endif %}>
-                                    <label class="form-check-label" for="map-can-invoice">
-                                        Peut facturer
-                                    </label>
-                                </div>
-                                
-                                <div class="form-check mb-2">
-                                    <input type="checkbox" class="form-check-input" id="map-verified-only" name="verified_only" {% if request.GET.verified_only %}checked{% endif %}>
-                                    <label class="form-check-label" for="map-verified-only">
-                                        Vérifiés uniquement
-                                    </label>
-                                </div>
-                                
-                                <div class="mb-3">
-                                    <label class="form-label small">Note minimum</label>
-                                    <div class="rating-stars">
-                                        <input type="radio" id="map-star5" name="min_rating" value="5" {% if request.GET.min_rating == '5' %}checked{% endif %} />
-                                        <label for="map-star5" title="5 étoiles"><i class="fas fa-star"></i></label>
-                                        
-                                        <input type="radio" id="map-star4" name="min_rating" value="4" {% if request.GET.min_rating == '4' %}checked{% endif %} />
-                                        <label for="map-star4" title="4 étoiles"><i class="fas fa-star"></i></label>
-                                        
-                                        <input type="radio" id="map-star3" name="min_rating" value="3" {% if request.GET.min_rating == '3' %}checked{% endif %} />
-                                        <label for="map-star3" title="3 étoiles"><i class="fas fa-star"></i></label>
-                                        
-                                        <input type="radio" id="map-star2" name="min_rating" value="2" {% if request.GET.min_rating == '2' %}checked{% endif %} />
-                                        <label for="map-star2" title="2 étoiles"><i class="fas fa-star"></i></label>
-                                        
-                                        <input type="radio" id="map-star1" name="min_rating" value="1" {% if request.GET.min_rating == '1' %}checked{% endif %} />
-                                        <label for="map-star1" title="1 étoile"><i class="fas fa-star"></i></label>
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <!-- Rayon de recherche -->
-                            <div class="mb-3">
-                                <label for="radius-selector" class="form-label small">Rayon de recherche: <span id="radius-value">{{ request.GET.radius|default:'50' }}</span> km</label>
-                                <input type="range" class="form-range" id="radius-selector" name="radius" min="1" max="500" value="{{ request.GET.radius|default:'50' }}" 
-                                    oninput="document.getElementById('radius-value').textContent = this.value">
-                            </div>
-                            
-                            <div class="d-grid gap-2">
-                                <button type="submit" class="btn btn-primary btn-sm">
-                                    <i class="fas fa-filter me-1"></i> Appliquer les filtres
-                                </button>
-                                <a href="{% url 'map_view' %}" class="btn btn-outline-secondary btn-sm">
-                                    <i class="fas fa-undo-alt me-1"></i> Réinitialiser
-                                </a>
-                            </div>
+                        <div class="form-text">
+                            Recherchez les créateurs dans une ville spécifique
                         </div>
-                    </form>
+                    </div>
+                </div>
+                
+                <!-- Creator Characteristics Filter -->
+                <div class="filter-section">
+                    <h4 class="filter-header">
+                        <i class="fas fa-user-tag"></i> Caractéristiques
+                    </h4>
                     
-                    <div class="mt-3 small text-muted">
-                        <span id="results-counter">0</span> créateurs trouvés
-                    </div>
-                </div>
-                
-                <!-- Contrôles de la carte -->
-                <div class="map-controls">
-                    <button id="locate-me-btn" title="Ma position">
-                        <i class="fas fa-location-arrow"></i>
-                    </button>
-                    <button id="fullscreen-btn" title="Plein écran">
-                        <i class="fas fa-expand"></i>
-                    </button>
-                </div>
-                
-                <!-- Liste des créateurs -->
-                <div class="creators-list d-none d-md-block">
-                    <h5>Créateurs à proximité</h5>
-                    <div id="creators-list-container">
-                        <div class="text-center py-4" id="map-loading-indicator">
-                            <div class="spinner-border text-primary" role="status">
-                                <span class="visually-hidden">Chargement...</span>
-                            </div>
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="map-gender-filter" class="form-label">Genre</label>
+                            <select id="map-gender-filter" name="gender" class="form-select">
+                                <option value="">Tous</option>
+                                <option value="M" {% if request.GET.gender == 'M' %}selected{% endif %}>Homme</option>
+                                <option value="F" {% if request.GET.gender == 'F' %}selected{% endif %}>Femme</option>
+                                <option value="O" {% if request.GET.gender == 'O' %}selected{% endif %}>Autre</option>
+                            </select>
                         </div>
-                        <div id="creators-list-content"></div>
+                        
+                        <div class="col-md-6">
+                            <label for="map-content-type-filter" class="form-label">Type de contenu</label>
+                            <select id="map-content-type-filter" name="content_type" class="form-select">
+                                <option value="">Tous</option>
+                                <option value="photo" {% if request.GET.content_type == 'photo' %}selected{% endif %}>Photo</option>
+                                <option value="video" {% if request.GET.content_type == 'video' %}selected{% endif %}>Vidéo</option>
+                                <option value="audio" {% if request.GET.content_type == 'audio' %}selected{% endif %}>Audio</option>
+                                <option value="text" {% if request.GET.content_type == 'text' %}selected{% endif %}>Texte</option>
+                                <option value="mixed" {% if request.GET.content_type == 'mixed' %}selected{% endif %}>Mixte</option>
+                            </select>
+                        </div>
                     </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Âge</label>
+                        <div class="range-slider-container">
+                            <div class="range-slider" id="age-slider"></div>
+                            <div class="range-values">
+                                <span id="age-min-value">{{ request.GET.min_age|default:min_creator_age }}</span>
+                                <span id="age-max-value">{{ request.GET.max_age|default:max_creator_age }}</span>
+                            </div>
+                            <input type="hidden" id="min-age-input" name="min_age" value="{{ request.GET.min_age|default:min_creator_age }}">
+                            <input type="hidden" id="max-age-input" name="max_age" value="{{ request.GET.max_age|default:max_creator_age }}">
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Additional Options -->
+                <div class="filter-section">
+                    <h4 class="filter-header">
+                        <i class="fas fa-sliders-h"></i> Options additionnelles
+                    </h4>
+                    
+                    <div class="form-check mb-3">
+                        <input type="checkbox" class="form-check-input" id="map-favorites-only" name="favorites_only" {% if request.GET.favorites_only %}checked{% endif %}>
+                        <label class="form-check-label" for="map-favorites-only">
+                            <i class="fas fa-heart text-danger me-1"></i> Favoris uniquement
+                        </label>
+                    </div>
+                    
+                    <div class="form-check mb-3">
+                        <input type="checkbox" class="form-check-input" id="map-can-invoice" name="can_invoice" {% if request.GET.can_invoice %}checked{% endif %}>
+                        <label class="form-check-label" for="map-can-invoice">
+                            Peut facturer
+                        </label>
+                    </div>
+                    
+                    <div class="form-check mb-3">
+                        <input type="checkbox" class="form-check-input" id="map-verified-only" name="verified_only" {% if request.GET.verified_only %}checked{% endif %}>
+                        <label class="form-check-label" for="map-verified-only">
+                            Vérifiés uniquement
+                        </label>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label class="form-label">Note minimum</label>
+                        <div class="rating-stars">
+                            <input type="radio" id="map-star5" name="min_rating" value="5" {% if request.GET.min_rating == '5' %}checked{% endif %} />
+                            <label for="map-star5" title="5 étoiles"><i class="fas fa-star"></i></label>
+                            
+                            <input type="radio" id="map-star4" name="min_rating" value="4" {% if request.GET.min_rating == '4' %}checked{% endif %} />
+                            <label for="map-star4" title="4 étoiles"><i class="fas fa-star"></i></label>
+                            
+                            <input type="radio" id="map-star3" name="min_rating" value="3" {% if request.GET.min_rating == '3' %}checked{% endif %} />
+                            <label for="map-star3" title="3 étoiles"><i class="fas fa-star"></i></label>
+                            
+                            <input type="radio" id="map-star2" name="min_rating" value="2" {% if request.GET.min_rating == '2' %}checked{% endif %} />
+                            <label for="map-star2" title="2 étoiles"><i class="fas fa-star"></i></label>
+                            
+                            <input type="radio" id="map-star1" name="min_rating" value="1" {% if request.GET.min_rating == '1' %}checked{% endif %} />
+                            <label for="map-star1" title="1 étoile"><i class="fas fa-star"></i></label>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Search Radius Slider -->
+                <div class="filter-section">
+                    <h4 class="filter-header">
+                        <i class="fas fa-bullseye"></i> Rayon de recherche
+                    </h4>
+                    <label for="radius-selector" class="form-label d-flex justify-content-between">
+                        <span>Distance maximale</span>
+                        <span id="radius-value" class="badge bg-primary">{{ request.GET.radius|default:'50' }} km</span>
+                    </label>
+                    <input type="range" class="form-range" id="radius-selector" name="radius" 
+                           min="1" max="500" value="{{ request.GET.radius|default:'50' }}" 
+                           oninput="document.getElementById('radius-value').textContent = this.value + ' km'">
+                </div>
+                
+                <!-- Action Buttons -->
+                <div class="d-grid gap-2 mt-4">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-filter me-2"></i> Appliquer les filtres
+                    </button>
+                    <a href="{% url 'map_view' %}" class="btn btn-outline-primary">
+                        <i class="fas fa-undo-alt me-2"></i> Réinitialiser
+                    </a>
                 </div>
             </div>
+        </form>
+        
+        <div class="mt-3 d-flex align-items-center justify-content-between">
+            <div>
+                <span id="results-counter" class="badge bg-primary">0</span> créateurs trouvés
+            </div>
+            <div class="text-muted small">
+                <i class="fas fa-info-circle"></i> Cliquez sur la carte pour changer votre position
+            </div>
+        </div>
+    </div>
+    
+    <!-- Map Controls -->
+    <div class="map-controls">
+        <button id="locate-me-btn" title="Ma position">
+            <i class="fas fa-location-arrow"></i>
+        </button>
+        <button id="fullscreen-btn" title="Plein écran">
+            <i class="fas fa-expand"></i>
+        </button>
+    </div>
+    
+    <!-- Creators List -->
+    <div class="creators-list d-none d-md-block">
+        <h5>Créateurs à proximité</h5>
+        <div id="creators-list-container">
+            <div class="loading-indicator" id="map-loading-indicator">
+                <div class="spinner-border" role="status">
+                    <span class="visually-hidden">Chargement...</span>
+                </div>
+                <p>Recherche des créateurs...</p>
+            </div>
+            <div id="creators-list-content"></div>
         </div>
     </div>
 </div>
 {% endblock %}
 
 {% block extra_js %}
+{{ block.super }}
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://unpkg.com/leaflet.markercluster@1.4.1/dist/leaflet.markercluster.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/nouislider@14.6.3/distribute/nouislider.min.js"></script>
@@ -445,23 +689,82 @@
     document.addEventListener('DOMContentLoaded', function() {
         console.log('DOM loaded, initializing map components...');
         
-        // Initialiser la carte
-        try {
-            console.log('Initializing MapManager...');
-            MapManager.initialize('map', 'radius-selector', 'results-counter', 'map-loading-indicator');
-            console.log('MapManager initialized successfully');
-        } catch (error) {
-            console.error('Error initializing MapManager:', error);
+        // Initialiser la carte et les composants
+        let mapInitialized = false;
+        let searchInitialized = false;
+        let coordsLoaded = false;
+        
+        // Définir la fonction d'initialisation globale
+        function initializeMapSystem() {
+            try {
+                // Vérifier si des coordonnées GPS sont dans l'URL pour initialiser la carte
+                const urlParams = new URLSearchParams(window.location.search);
+                const urlLat = urlParams.get('lat');
+                const urlLng = urlParams.get('lng');
+                const urlRadius = urlParams.get('radius');
+                
+                // Initialiser la carte si ce n'est pas déjà fait
+                if (!mapInitialized) {
+                    console.log('Initializing MapManager...');
+                    MapManager.initialize('map', 'radius-selector', 'results-counter', 'map-loading-indicator');
+                    console.log('MapManager initialized successfully');
+                    mapInitialized = true;
+                }
+                
+                // Initialiser le module de recherche si ce n'est pas déjà fait
+                if (!searchInitialized) {
+                    try {
+                        console.log('Initializing SearchCreators...');
+                        SearchCreators.init();
+                        console.log('SearchCreators initialized successfully');
+                        searchInitialized = true;
+                    } catch (error) {
+                        console.error('Error initializing SearchCreators:', error);
+                    }
+                }
+                
+                // Si des coordonnées sont spécifiées dans l'URL, les utiliser
+                if (urlLat && urlLng && !coordsLoaded) {
+                    console.log('Coordinates found in URL, updating map position:', urlLat, urlLng);
+                    coordsLoaded = true;
+                    
+                    // Mettre à jour la position de l'utilisateur
+                    try {
+                        // Utiliser les coordonnées de l'URL pour centrer la carte
+                        MapManager.updateUserPosition({
+                            latitude: parseFloat(urlLat),
+                            longitude: parseFloat(urlLng)
+                        }, 12);
+                        
+                        // Si un rayon est spécifié, le définir également
+                        if (urlRadius && MapManager.setRadius) {
+                            console.log('Setting radius from URL:', urlRadius);
+                            MapManager.setRadius(parseInt(urlRadius));
+                        }
+                        
+                        // Attendre que la position soit mise à jour avant de charger les données
+                        setTimeout(() => {
+                            console.log('Loading creators with URL parameters...');
+                            SearchCreators.reload(true);
+                        }, 500);
+                    } catch (error) {
+                        console.error('Error using URL coordinates:', error);
+                    }
+                } else if (!coordsLoaded) {
+                    // Si pas de coordonnées URL, charger les créateurs avec la position par défaut
+                    console.log('No URL coordinates, loading creators with default position...');
+                    setTimeout(() => {
+                        SearchCreators.reload(true);
+                    }, 500);
+                    coordsLoaded = true;
+                }
+            } catch (error) {
+                console.error('Error in initializeMapSystem:', error);
+            }
         }
         
-        // Initialiser le module de recherche
-        try {
-            console.log('Initializing SearchCreators...');
-            SearchCreators.init();
-            console.log('SearchCreators initialized successfully');
-        } catch (error) {
-            console.error('Error initializing SearchCreators:', error);
-        }
+        // Appeler l'initialisation
+        initializeMapSystem();
         
         // Capture form submission to ensure all filter values are correctly included
         const mapSearchForm = document.getElementById('map-search-form');
@@ -473,6 +776,11 @@
                 const formData = new FormData(mapSearchForm);
                 const params = new URLSearchParams(window.location.search);
                 
+                // Préserver les coordonnées GPS et la ville si présentes
+                const existingLat = params.get('lat');
+                const existingLng = params.get('lng');
+                const existingCity = params.get('city');
+                
                 // Clear all existing filter parameters but keep any other params
                 const existingParams = Array.from(params.keys());
                 existingParams.forEach(key => {
@@ -481,6 +789,17 @@
                         params.delete(key);
                     }
                 });
+                
+                // Restaurer les coordonnées GPS et la ville
+                if (existingLat && existingLng) {
+                    params.set('lat', existingLat);
+                    params.set('lng', existingLng);
+                    console.log('Preserved coordinates in form submission:', existingLat, existingLng);
+                }
+                
+                if (existingCity) {
+                    params.set('city', existingCity);
+                }
                 
                 // Get all checked domain checkboxes
                 const domainCheckboxes = document.querySelectorAll('input[name="domains"]:checked');
@@ -502,6 +821,9 @@
                 
                 console.log('Form submitted with params:', params.toString());
                 
+                // Ajouter un timestamp pour éviter les problèmes de cache
+                params.set('_t', Date.now());
+                
                 // Update the URL with all filter parameters
                 window.location.href = `${window.location.pathname}?${params.toString()}`;
             });
@@ -522,6 +844,11 @@
                 function(coords) {
                     console.log('User location obtained:', coords);
                     MapManager.updateUserPosition(coords);
+                    
+                    // Recharger les créateurs après avoir mis à jour la position
+                    setTimeout(() => {
+                        SearchCreators.reload(true);
+                    }, 500);
                 },
                 function(error) {
                     console.error('Error getting user location:', error);
@@ -616,12 +943,152 @@
                 });
             });
         });
+
+        // Tooltip pour les boutons
+        const tooltipTriggerList = [].slice.call(document.querySelectorAll('[title]'))
+        tooltipTriggerList.forEach(function(element) {
+            // Use Bootstrap 5 tooltip if available
+            if (typeof bootstrap !== 'undefined' && bootstrap.Tooltip) {
+                new bootstrap.Tooltip(element)
+            }
+        });
+
+        // Gestion du filtre ville
+        const cityFilterInput = document.getElementById('city-filter');
+        const citySearchBtn = document.getElementById('city-search-btn');
         
-        // Charger les créateurs avec les filtres actuels
-        if (window.location.search) {
+        if (cityFilterInput && citySearchBtn) {
+            console.log('✅ Configuration du filtre ville');
+            
+            // Fonction de recherche de ville
+            const searchCity = () => {
+                const cityName = cityFilterInput.value.trim();
+                if (cityName.length < 2) return;
+                
+                // Afficher un indicateur de chargement
+                citySearchBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>';
+                citySearchBtn.disabled = true;
+                
+                // Vérifier d'abord dans les villes courantes si UserLocation est disponible
+                if (typeof UserLocation !== 'undefined' && UserLocation.COMMON_CITIES) {
+                    const normalizedQuery = cityName.trim().toLowerCase();
+                    const commonCity = Object.keys(UserLocation.COMMON_CITIES).find(city => {
+                        return normalizedQuery === city || 
+                            normalizedQuery.includes(city) || 
+                            city.includes(normalizedQuery);
+                    });
+                    
+                    if (commonCity) {
+                        console.log('✅ Ville trouvée dans le dictionnaire des villes courantes:', commonCity);
+                        const coords = UserLocation.COMMON_CITIES[commonCity];
+                        
+                        // Recharger la page avec les paramètres
+                        const currentUrl = new URL(window.location.href);
+                        const params = currentUrl.searchParams;
+                        
+                        // Ajouter les coordonnées et la ville
+                        params.set('lat', coords.latitude);
+                        params.set('lng', coords.longitude);
+                        params.set('city', cityName);
+                        params.set('_t', Date.now()); // Éviter le cache
+                        
+                        // Rediriger vers la nouvelle URL
+                        window.location.href = currentUrl.toString();
+                        return;
+                    }
+                }
+                
+                // Sinon, recherche via l'API Nominatim
+                fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(cityName)}&limit=1&accept-language=fr&featuretype=city,town,village`)
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error(`Erreur réseau: ${response.status}`);
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                        // Réactiver le bouton
+                        citySearchBtn.innerHTML = '<i class="fas fa-search"></i>';
+                        citySearchBtn.disabled = false;
+                        
+                        if (data && data.length > 0) {
+                            const cityData = data[0];
+                            console.log('✅ Ville trouvée:', cityData);
+                            
+                            // Récupérer les coordonnées
+                            const lat = parseFloat(cityData.lat);
+                            const lng = parseFloat(cityData.lon);
+                            
+                            // Générer une notification de succès
+                            showNotification(`Position mise à jour sur ${cityData.display_name}`, 'success');
+                            
+                            // Recharger la page avec les paramètres
+                            const currentUrl = new URL(window.location.href);
+                            const params = currentUrl.searchParams;
+                            
+                            // Ajouter les coordonnées et la ville
+                            params.set('lat', lat);
+                            params.set('lng', lng);
+                            params.set('city', cityName);
+                            params.set('_t', Date.now()); // Éviter le cache
+                            
+                            // Rediriger vers la nouvelle URL
+                            window.location.href = currentUrl.toString();
+                        } else {
+                            console.warn('❌ Aucune ville trouvée pour:', cityName);
+                            showNotification(`Aucune ville trouvée pour "${cityName}"`, 'warning');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('❌ Erreur lors de la recherche de ville:', error);
+                        citySearchBtn.innerHTML = '<i class="fas fa-search"></i>';
+                        citySearchBtn.disabled = false;
+                        showNotification('Erreur lors de la recherche de la ville, veuillez réessayer.', 'error');
+                    });
+            };
+            
+            // Événement de clic sur le bouton
+            citySearchBtn.addEventListener('click', searchCity);
+            
+            // Événement d'appui sur Entrée dans le champ de recherche
+            cityFilterInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    searchCity();
+                }
+            });
+        }
+        
+        // Fonction pour afficher des notifications
+        function showNotification(message, type = 'info') {
+            // Créer l'élément de notification s'il n'existe pas
+            let notifContainer = document.getElementById('notification-container');
+            if (!notifContainer) {
+                notifContainer = document.createElement('div');
+                notifContainer.id = 'notification-container';
+                notifContainer.style.position = 'fixed';
+                notifContainer.style.top = '20px';
+                notifContainer.style.right = '20px';
+                notifContainer.style.zIndex = '9999';
+                document.body.appendChild(notifContainer);
+            }
+            
+            // Créer la notification
+            const notification = document.createElement('div');
+            notification.className = `alert alert-${type === 'error' ? 'danger' : type} alert-dismissible fade show`;
+            notification.innerHTML = `
+                ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Fermer"></button>
+            `;
+            
+            // Ajouter la notification
+            notifContainer.appendChild(notification);
+            
+            // Fermer automatiquement après 5 secondes
             setTimeout(() => {
-                SearchCreators.reload(true);
-            }, 500);
+                notification.classList.remove('show');
+                setTimeout(() => notification.remove(), 500);
+            }, 5000);
         }
     });
 </script>

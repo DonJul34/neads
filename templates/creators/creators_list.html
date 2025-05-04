@@ -93,32 +93,6 @@
                                     <a href="{% url 'creator_edit' creator.id %}" class="btn btn-sm btn-outline-secondary" title="Modifier">
                                         <i class="fas fa-edit"></i>
                                     </a>
-                                    <button type="button" class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#deleteModal{{ creator.id }}" title="Supprimer">
-                                        <i class="fas fa-trash"></i>
-                                    </button>
-                                </div>
-                                
-                                <!-- Modal de suppression -->
-                                <div class="modal fade" id="deleteModal{{ creator.id }}" tabindex="-1" aria-labelledby="deleteModalLabel{{ creator.id }}" aria-hidden="true">
-                                    <div class="modal-dialog">
-                                        <div class="modal-content">
-                                            <div class="modal-header">
-                                                <h5 class="modal-title" id="deleteModalLabel{{ creator.id }}">Confirmer la suppression</h5>
-                                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
-                                            </div>
-                                            <div class="modal-body">
-                                                <p>Êtes-vous sûr de vouloir supprimer le profil de <strong>{{ creator.full_name }}</strong> ?</p>
-                                                <p class="text-danger">Cette action est irréversible et supprimera toutes les données associées à ce créateur.</p>
-                                            </div>
-                                            <div class="modal-footer">
-                                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
-                                                <form method="post" action="{% url 'delete_creator' creator.id %}">
-                                                    {% csrf_token %}
-                                                    <button type="submit" class="btn btn-danger">Supprimer définitivement</button>
-                                                </form>
-                                            </div>
-                                        </div>
-                                    </div>
                                 </div>
                             </td>
                         </tr>
