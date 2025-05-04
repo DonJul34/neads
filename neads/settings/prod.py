@@ -7,7 +7,9 @@ SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY')
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = False
 
-ALLOWED_HOSTS = ['app.neads.io', '51.44.182.180']
+# Get allowed hosts from environment variable
+allowed_hosts_str = os.environ.get('ALLOWED_HOSTS', 'app.neads.io,51.44.182.180')
+ALLOWED_HOSTS = [host.strip() for host in allowed_hosts_str.split(',')]
 
 # Database
 DATABASES = {
