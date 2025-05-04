@@ -17,8 +17,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     # Add your apps here
     'neads.creators',
-    'neads.users',
-    'neads.map'
+    'neads.map',
     # Other apps...
 ]
 
