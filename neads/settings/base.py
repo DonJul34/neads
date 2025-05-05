@@ -91,4 +91,7 @@ LOGIN_REDIRECT_URL = 'home'
 LOGOUT_REDIRECT_URL = 'home'
 
 # Custom user model
-AUTH_USER_MODEL = 'core.User' 
+AUTH_USER_MODEL = 'core.User'
+
+# Location API settings
+NOMINATIM_URL = 'https://nominatim.openstreetmap.org/search' 

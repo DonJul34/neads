@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% load static %}
 
-{% block title %}Devenir créateur de contenu UGC chez Neads{% endblock %}
+{% block title %}Devenir créateur de contenu UGC chez Neads - Étape 1{% endblock %}
 
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'css/creator_signup.css' %}">
@@ -35,10 +35,57 @@
     .suggestion-item:last-child {
         border-bottom: none;
     }
+    #loading-overlay {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.7);
+        z-index: 9999;
+        justify-content: center;
+        align-items: center;
+        flex-direction: column;
+    }
+    .spinner {
+        width: 50px;
+        height: 50px;
+        border: 5px solid #f3f3f3;
+        border-top: 5px solid #3498db;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+        margin-bottom: 20px;
+    }
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+    .loading-text {
+        color: white;
+        font-size: 18px;
+    }
+    
+    /* Radio buttons styling */
+    #div_id_can_invoice .form-check {
+        display: inline-block;
+        margin-right: 20px;
+    }
+    #div_id_can_invoice .form-check-input {
+        margin-right: 5px;
+    }
+    #div_id_can_invoice .form-check-label {
+        font-weight: normal;
+    }
 </style>
 {% endblock %}
 
 {% block content %}
+<div id="loading-overlay">
+    <div class="spinner"></div>
+    <div class="loading-text">Création de votre profil en cours...</div>
+</div>
+
 <div class="container my-5">
     <div class="row">
         <div class="col-lg-8 mx-auto">
@@ -63,6 +110,7 @@
                     
                     <form method="post" enctype="multipart/form-data" id="creator-signup-form" class="needs-validation" novalidate>
                         {% csrf_token %}
+                        <input type="hidden" name="step" value="1">
                         
                         <!-- Coordonnées -->
                         <div class="card mb-4">
@@ -175,9 +223,9 @@
                                 <div class="mb-3">
                                     <label for="{{ form.bio.id_for_label }}" class="form-label">A propos de toi *</label>
                                     {{ form.bio }}
-                                    <div class="character-counter" id="bio-counter">Vous avez utilisé 0 caractères sur les 1000 alloués. Il vous reste 1000.</div>
+                                    <div class="character-counter" id="bio-counter">Vous avez utilisé 0 caractères sur les 1000 alloués. Minimum requis: 400 caractères.</div>
                                     <div class="invalid-feedback">
-                                        {% if form.bio.errors %}{{ form.bio.errors.0 }}{% else %}Ce champ est requis.{% endif %}
+                                        {% if form.bio.errors %}{{ form.bio.errors.0 }}{% else %}Ce champ doit contenir entre 400 et 1000 caractères.{% endif %}
                                     </div>
                                 </div>
                                 
@@ -248,78 +296,14 @@
                                         {% if form.previous_clients.errors %}{{ form.previous_clients.errors.0 }}{% else %}Ce champ est requis.{% endif %}
                                     </div>
                                 </div>
-                            </div>
-                        </div>
-                        
-                        <!-- Portfolio -->
-                        <div class="card mb-4">
-                            <div class="card-header bg-light">
-                                <h3 class="h5 mb-0">Portfolio</h3>
-                            </div>
-                            <div class="card-body">
-                                <h4 class="h6 mb-3">Vidéos UGC</h4>
-                                <p class="text-muted small mb-3">Téléchargez au moins 3 vidéos UGC (format MP4, 100Mo max par vidéo)</p>
                                 
                                 <div class="mb-3">
-                                    <label for="{{ form.video_file1.id_for_label }}" class="form-label">{{ form.video_file1.label }} *</label>
-                                    {{ form.video_file1 }}
-                                    <div class="invalid-feedback">
-                                        {% if form.video_file1.errors %}{{ form.video_file1.errors.0 }}{% else %}Ce champ est requis.{% endif %}
+                                    <label class="form-label">{{ form.can_invoice.label }} *</label>
+                                    <div class="d-flex">
+                                        {{ form.can_invoice }}
                                     </div>
-                                </div>
-                                
-                                <div class="mb-3">
-                                    <label for="{{ form.video_file2.id_for_label }}" class="form-label">{{ form.video_file2.label }} *</label>
-                                    {{ form.video_file2 }}
                                     <div class="invalid-feedback">
-                                        {% if form.video_file2.errors %}{{ form.video_file2.errors.0 }}{% else %}Ce champ est requis.{% endif %}
-                                    </div>
-                                </div>
-                                
-                                <div class="mb-3">
-                                    <label for="{{ form.video_file3.id_for_label }}" class="form-label">{{ form.video_file3.label }} *</label>
-                                    {{ form.video_file3 }}
-                                    <div class="invalid-feedback">
-                                        {% if form.video_file3.errors %}{{ form.video_file3.errors.0 }}{% else %}Ce champ est requis.{% endif %}
-                                    </div>
-                                </div>
-                                
-                                <div class="mb-3">
-                                    <label for="{{ form.video_file4.id_for_label }}" class="form-label">{{ form.video_file4.label }}</label>
-                                    {{ form.video_file4 }}
-                                </div>
-                                
-                                <div class="mb-3">
-                                    <label for="{{ form.video_file5.id_for_label }}" class="form-label">{{ form.video_file5.label }}</label>
-                                    {{ form.video_file5 }}
-                                </div>
-                                
-                                <hr class="my-4">
-                                
-                                <h4 class="h6 mb-3">Photos UGC</h4>
-                                <p class="text-muted small mb-3">Téléchargez au moins 3 photos UGC (format JPG, PNG ou GIF, 5Mo max par image)</p>
-                                
-                                <div class="mb-3">
-                                    <label for="{{ form.image_file1.id_for_label }}" class="form-label">{{ form.image_file1.label }} *</label>
-                                    {{ form.image_file1 }}
-                                    <div class="invalid-feedback">
-                                        {% if form.image_file1.errors %}{{ form.image_file1.errors.0 }}{% else %}Ce champ est requis.{% endif %}
-                                    </div>
-                                </div>
-                                
-                                <div class="mb-3">
-                                    <label for="{{ form.image_file2.id_for_label }}" class="form-label">{{ form.image_file2.label }} *</label>
-                                    {{ form.image_file2 }}
-                                    <div class="invalid-feedback">
-                                        {% if form.image_file2.errors %}{{ form.image_file2.errors.0 }}{% else %}Ce champ est requis.{% endif %}
-                                    </div>
-                                </div>
-                                
-                                <div class="mb-3">
-                                    <label for="{{ form.image_file3.id_for_label }}" class="form-label">{{ form.image_file3.label }} *</label>
-                                    {{ form.image_file3 }}
-                                    <div class="invalid-feedback">
-                                        {% if form.image_file3.errors %}{{ form.image_file3.errors.0 }}{% else %}Ce champ est requis.{% endif %}
+                                        {% if form.can_invoice.errors %}{{ form.can_invoice.errors.0 }}{% else %}Veuillez indiquer si vous pouvez facturer.{% endif %}
                                     </div>
                                 </div>
                             </div>
@@ -338,20 +322,7 @@
                             </div>
                             
                             <div class="d-grid">
-                                <button type="submit" class="btn btn-primary btn-lg">Envoyer</button>
-                            </div>
-                        </div>
-                        
-                        <div class="text-center mt-4">
-                            <p class="text-muted">
-                                <a href="#" class="text-decoration-none">Mentions légales</a> – 
-                                <a href="#" class="text-decoration-none">Politique de confidentialité</a>
-                            </p>
-                            <div class="social-links mt-3">
-                                <a href="#" class="me-2"><i class="fab fa-tiktok"></i></a>
-                                <a href="#" class="me-2"><i class="fab fa-instagram"></i></a>
-                                <a href="#" class="me-2"><i class="fab fa-linkedin"></i></a>
-                                <a href="#"><i class="fab fa-youtube"></i></a>
+                                <button type="submit" id="signup-submit-btn" class="btn btn-primary btn-lg">Continuer vers l'étape 2</button>
                             </div>
                         </div>
                     </form>
@@ -379,5 +350,118 @@
         document.getElementById('map-preview').style.display = 'block';
         map.setView([parseFloat(latitudeInput.value), parseFloat(longitudeInput.value)], 13);
     }
+    
+    // Compteurs de caractères
+    document.addEventListener('DOMContentLoaded', function() {
+        // Bio counter
+        const bioTextarea = document.getElementById('id_bio');
+        const bioCounter = document.getElementById('bio-counter');
+        
+        // Baseline counter
+        const baselineInput = document.getElementById('id_baseline');
+        const baselineCounter = document.getElementById('baseline-counter');
+        
+        // Fonction pour mettre à jour les compteurs
+        function updateCharCounter(input, counter, max, min) {
+            const length = input.value.length;
+            let message;
+            
+            if (length < min) {
+                message = `Vous avez utilisé ${length} caractères sur les ${max} alloués. Minimum requis: ${min} caractères.`;
+                counter.style.color = '#dc3545'; // rouge
+            } else {
+                message = `Vous avez utilisé ${length} caractères sur les ${max} alloués. Il vous reste ${max - length}.`;
+                counter.style.color = length > (max * 0.8) ? '#ffc107' : '#212529'; // jaune si proche du max, sinon normal
+            }
+            
+            counter.textContent = message;
+        }
+        
+        // Initialiser les compteurs
+        if (bioTextarea) {
+            updateCharCounter(bioTextarea, bioCounter, 1000, 400);
+            bioTextarea.addEventListener('input', function() {
+                updateCharCounter(bioTextarea, bioCounter, 1000, 400);
+            });
+        }
+        
+        if (baselineInput) {
+            updateCharCounter(baselineInput, baselineCounter, 50, 0);
+            baselineInput.addEventListener('input', function() {
+                updateCharCounter(baselineInput, baselineCounter, 50, 0);
+            });
+        }
+    });
+    
+    // Gestionnaire de soumission du formulaire
+    document.addEventListener('DOMContentLoaded', function() {
+        const form = document.getElementById('creator-signup-form');
+        const loadingOverlay = document.getElementById('loading-overlay');
+        const submitBtn = document.getElementById('signup-submit-btn');
+        
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            // Vérification manuelle de la bio (400-1000 caractères)
+            const bioTextarea = document.getElementById('id_bio');
+            if (bioTextarea.value.length < 400) {
+                bioTextarea.classList.add('is-invalid');
+                document.querySelector('[for="id_bio"]').scrollIntoView({ behavior: 'smooth', block: 'center' });
+                return false;
+            }
+            
+            // Vérifier la validité du formulaire
+            if (!form.checkValidity()) {
+                e.stopPropagation();
+                form.classList.add('was-validated');
+                return false;
+            }
+            
+            // Afficher l'overlay de chargement
+            loadingOverlay.style.display = 'flex';
+            submitBtn.disabled = true;
+            
+            // Soumettre le formulaire via AJAX
+            const formData = new FormData(form);
+            
+            fetch(window.location.href, {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Erreur lors de la soumission du formulaire');
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.success) {
+                    console.log('Créateur créé avec succès, ID =', data.creator_id, 'Email =', data.email);
+                    
+                    // Afficher une alerte avec les détails
+                    setTimeout(() => {
+                        alert(`Créateur créé avec succès!\nID: ${data.creator_id}\nEmail: ${data.email}`);
+                        
+                        // Rediriger vers l'étape 2
+                        window.location.href = data.redirect_url;
+                    }, 1000);
+                } else {
+                    throw new Error('Erreur lors de la création du créateur');
+                }
+            })
+            .catch(error => {
+                console.error('Erreur:', error);
+                loadingOverlay.style.display = 'none';
+                submitBtn.disabled = false;
+                
+                // Soumettre le formulaire normalement en cas d'erreur AJAX
+                form.removeEventListener('submit', arguments.callee);
+                form.submit();
+            });
+        });
+    });
 </script>
 {% endblock %} 

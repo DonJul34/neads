@@ -12,6 +12,11 @@ from django.core.paginator import Paginator
 from django.db.models import Q
 import datetime
 import logging
+from django.contrib.auth.hashers import make_password
+from django.core.files.storage import FileSystemStorage
+import os
+import uuid
+from django.views.decorators.csrf import csrf_exempt
 
 from .models import User, UserProfile
 from .forms import LoginForm, TemporaryLoginForm, UserProfileForm, SetPasswordForm, ClientCreationForm
@@ -177,6 +182,11 @@ def temporary_login_request(request):
     if is_creator_signup:
         from neads.creators.forms import CreatorRegistrationForm
         from neads.creators.models import Creator, Location, Media
+        import json
+        
+        # Vérifier si c'est la première ou la deuxième étape
+        step = request.GET.get('step', '1')
+        creator_id = request.GET.get('creator_id')
         
         if request.method == 'POST':
             form = CreatorRegistrationForm(request.POST, request.FILES)
@@ -184,115 +194,158 @@ def temporary_login_request(request):
                 # Récupérer les données du formulaire
                 data = form.cleaned_data
                 
-                # 1. Créer l'utilisateur
-                from neads.core.models import User
-                user = User.objects.create(
-                    email=data['email'],
-                    first_name=data['first_name'],
-                    last_name=data['last_name'],
-                    role='creator',  # Rôle créateur
-                    is_active=True,  # Compte actif immédiatement
-                )
+                # Vérifier l'étape depuis le formulaire
+                form_step = request.POST.get('step', '1')
                 
-                # 2. Créer la localisation
-                location = Location.objects.create(
-                    full_address=data['full_address'],
-                    latitude=data.get('latitude'),
-                    longitude=data.get('longitude')
-                )
-                
-                # 3. Créer le profil créateur
-                creator = Creator.objects.create(
-                    user=user,
-                    first_name=data['first_name'],
-                    last_name=data['last_name'],
-                    age=datetime.date.today().year - data['birth_year'],
-                    gender=data['gender'],
-                    email=data['email'],
-                    phone=data['phone'],
-                    location=location,
-                    youtube_link=data.get('youtube_link', ''),
-                    tiktok_link=data.get('tiktok_link', ''),
-                    instagram_link=data.get('instagram_link', ''),
-                    bio=data['bio'],
-                    equipment=data['equipment'],
-                    can_invoice=data['can_invoice'] == 'True',
-                    previous_clients=data['previous_clients'],
-                    featured_image=data['featured_image'],
-                    verified_by_neads=False,  # Non vérifié par défaut
-                )
-                
-                # 4. Ajouter les domaines
-                creator.domains.set(data['domains'])
-                
-                # 5. Traiter les uploads du portfolio
-                # Traiter les vidéos individuelles
-                for i in range(1, 6):
-                    field_name = f'video_file{i}'
-                    if field_name in request.FILES:
-                        video_file = request.FILES[field_name]
-                        media = Media.objects.create(
-                            creator=creator,
-                            title=f"Vidéo {i}",
-                            media_type='video',
-                            video_file=video_file,
-                            is_verified=False
+                if form_step == '1':
+                    # On ignore les erreurs des champs de médias pour l'étape 1
+                    media_fields = ['video_file1', 'video_file2', 'video_file3', 'video_file4', 'video_file5', 'image_file1', 'image_file2', 'image_file3']
+                    for field in media_fields:
+                        if field in form.errors:
+                            del form.errors[field]
+                    
+                    # Si le formulaire est valide (après suppression des erreurs de médias)
+                    if not form.errors:
+                        # 1. Créer l'utilisateur
+                        from neads.core.models import User
+                        user = User.objects.create(
+                            email=data['email'],
+                            first_name=data['first_name'],
+                            last_name=data['last_name'],
+                            role='creator',  # Rôle créateur
+                            is_active=True,  # Compte actif immédiatement
+                            password=make_password(data['password'])  # Hasher le mot de passe
                         )
-                
-                # Traiter les images individuelles
-                for i in range(1, 4):
-                    field_name = f'image_file{i}'
-                    if field_name in request.FILES:
-                        image_file = request.FILES[field_name]
-                        media = Media.objects.create(
-                            creator=creator,
-                            title=f"Image {i}",
-                            media_type='image',
-                            file=image_file,
-                            is_verified=False
+                        
+                        # 2. Créer la localisation
+                        location = Location.objects.create(
+                            full_address=data['full_address'],
+                            latitude=data.get('latitude'),
+                            longitude=data.get('longitude')
                         )
-                
-                # 6. Générer un token temporaire pour la connexion
-                token = user.generate_temp_login_token()
-                
-                # 7. Envoyer un email de confirmation
-                temp_login_url = request.build_absolute_uri(
-                    reverse('temp_login', kwargs={'token': token, 'email': user.email})
-                )
-                
-                subject = 'Bienvenue sur NEADS ! Confirmez votre profil créateur'
-                message = render_to_string('core/emails/creator_confirmation_email.html', {
-                    'user': user,
-                    'creator': creator,
-                    'temp_login_url': temp_login_url,
-                    'expiry_hours': 24,
-                })
-                
-                send_mail(
-                    subject=subject,
-                    message=message,
-                    from_email=settings.DEFAULT_FROM_EMAIL,
-                    recipient_list=[user.email],
-                    html_message=message,
-                )
-                
-                # 8. Journaliser
-                logger = logging.getLogger(__name__)
-                logger.info(f"Nouveau créateur inscrit: {creator.full_name} (ID: {creator.id}, Email: {user.email})")
-                
-                # 9. Rediriger vers une page de confirmation
-                messages.success(request, "Votre profil créateur a été créé avec succès ! Un email de confirmation vous a été envoyé.")
-                return redirect('home')
+                        
+                        # 3. Créer le profil créateur
+                        # Calculer l'âge à partir de l'année de naissance
+                        current_year = datetime.date.today().year
+                        age = current_year - data['birth_year']
+                        
+                        # Créer le créateur avec les champs qui existent dans le modèle
+                        creator = Creator.objects.create(
+                            user=user,
+                            first_name=data['first_name'],
+                            last_name=data['last_name'],
+                            gender=data['gender'],
+                            age=age,  # Âge calculé à partir de birth_year
+                            email=data['email'],
+                            phone=data['phone'],
+                            location=location,
+                            bio=data['bio'],
+                            equipment=data['equipment'],
+                            previous_clients=data['previous_clients'],
+                            can_invoice=data['can_invoice'] == 'true',  # Convertir la chaîne en booléen
+                        )
+                        
+                        # 4. Ajouter les domaines d'expertise
+                        creator.domains.set(data['domains'])
+                        
+                        # 5. Traiter la photo de profil
+                        if 'featured_image' in request.FILES:
+                            creator.featured_image = request.FILES['featured_image']
+                            creator.save()
+                        
+                        # 6. Connecter l'utilisateur
+                        login(request, user)
+                        
+                        # 7. Ajouter des logs pour déboguer
+                        print(f"Créateur créé avec succès: ID={creator.id}, Email={creator.email}")
+                        
+                        # 8. Rediriger vers l'étape 2 avec l'ID du créateur
+                        redirect_url = f"{reverse('temp_login_request')}?creator=1&step=2&creator_id={creator.id}"
+                        print(f"Redirection vers: {redirect_url}")
+                        
+                        # 9. Utiliser JsonResponse pour afficher un message de succès et l'ID du créateur
+                        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                            return JsonResponse({
+                                'success': True,
+                                'creator_id': creator.id,
+                                'email': creator.email,
+                                'redirect_url': redirect_url
+                            })
+                        
+                        return redirect(redirect_url)
+                else:
+                    # Étape 2 - Traiter les médias
+                    if creator_id:
+                        creator = Creator.objects.get(id=creator_id)
+                        print(f"Traitement des médias pour le créateur ID={creator.id}")
+                        
+                        # Traiter les vidéos
+                        for i in range(1, 6):
+                            field_name = f'video_file{i}'
+                            if field_name in request.FILES:
+                                video_file = request.FILES[field_name]
+                                media = Media.objects.create(
+                                    creator=creator,
+                                    title=f"Vidéo {i}",
+                                    media_type='video',
+                                    file=video_file,
+                                    is_verified=False
+                                )
+                                print(f"Vidéo {i} ajoutée: {media.id}")
+                        
+                        # Traiter les images
+                        for i in range(1, 4):
+                            field_name = f'image_file{i}'
+                            if field_name in request.FILES:
+                                image_file = request.FILES[field_name]
+                                media = Media.objects.create(
+                                    creator=creator,
+                                    title=f"Image {i}",
+                                    media_type='image',
+                                    file=image_file,
+                                    is_verified=False
+                                )
+                                print(f"Image {i} ajoutée: {media.id}")
+                        
+                        messages.success(request, "Votre profil créateur a été créé avec succès !")
+                        return redirect('creator_detail', creator_id=creator.id)
+                    else:
+                        print("Erreur: Aucun creator_id trouvé pour l'étape 2")
+                        return redirect(f"{reverse('temp_login_request')}?creator=1")
+            else:
+                print(f"Erreurs de formulaire: {json.dumps(form.errors.as_json())}")
         else:
             form = CreatorRegistrationForm()
         
-        context = {
-            'form': form,
-            'is_creator_signup': True,
-            'google_api_key': settings.GOOGLE_PLACES_API_KEY,
-        }
+        if step == '1':
+            template = 'core/creator_signup_step1.html'
+            context = {
+                'form': form,
+                'is_creator_signup': True,
+                'nominatim_url': settings.NOMINATIM_URL,
+            }
+            print(f"Rendu du template étape 1")
+        else:
+            template = 'core/creator_signup_step2.html'
+            if creator_id:
+                try:
+                    creator = Creator.objects.get(id=creator_id)
+                    context = {
+                        'form': form,
+                        'is_creator_signup': True,
+                        'nominatim_url': settings.NOMINATIM_URL,
+                        'creator': creator,
+                    }
+                    print(f"Rendu du template étape 2 pour créateur ID={creator_id}")
+                except Creator.DoesNotExist:
+                    print(f"Créateur avec ID={creator_id} non trouvé")
+                    return redirect(f"{reverse('temp_login_request')}?creator=1")
+            else:
+                # Si pas d'ID dans l'URL, rediriger vers l'étape 1
+                print("Pas de creator_id fourni pour l'étape 2, redirection vers étape 1")
+                return redirect(f"{reverse('temp_login_request')}?creator=1")
         
-        return render(request, 'core/creator_signup.html', context)
+        return render(request, template, context)
     
     else:
         # Code existant pour le login temporaire
@@ -597,3 +650,45 @@ def contact_creator(request, creator_id):
         return redirect('creator_detail', creator_id=creator_id)
         
     return redirect('creator_detail', creator_id=creator_id)
+
+
+@csrf_exempt
+def upload_media(request):
+    """
+    Vue pour gérer l'upload asynchrone des médias (vidéos et images).
+    """
+    if request.method == 'POST' and request.FILES.get('file'):
+        file = request.FILES['file']
+        
+        # Vérification de la taille du fichier (max 100MB)
+        if file.size > 100 * 1024 * 1024:
+            return JsonResponse({'success': False, 'error': 'Le fichier est trop volumineux. Maximum 100MB autorisé.'})
+        
+        # Vérification du type de fichier
+        if file.content_type.startswith('video/'):
+            media_type = 'video'
+        elif file.content_type.startswith('image/'):
+            media_type = 'image'
+        else:
+            return JsonResponse({'success': False, 'error': 'Type de fichier non supporté.'})
+        
+        # Génération d'un nom de fichier unique
+        file_extension = os.path.splitext(file.name)[1]
+        unique_filename = f"{uuid.uuid4()}{file_extension}"
+        
+        # Sauvegarde du fichier
+        try:
+            fs = FileSystemStorage()
+            filename = fs.save(unique_filename, file)
+            file_url = fs.url(filename)
+            
+            return JsonResponse({
+                'success': True,
+                'file_url': file_url,
+                'media_type': media_type,
+                'filename': filename
+            })
+        except Exception as e:
+            return JsonResponse({'success': False, 'error': str(e)})
+    
+    return JsonResponse({'success': False, 'error': 'Aucun fichier n\'a été envoyé.'})

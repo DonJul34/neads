@@ -43,6 +43,9 @@ EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER')
 EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD')
 DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', 'noreply@app.neads.io')
 
+# Location API settings
+NOMINATIM_URL = 'https://nominatim.openstreetmap.org/search'
+
 # Logging
 LOGGING = {
     'version': 1,

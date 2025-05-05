@@ -5,63 +5,84 @@
   href="https://cdn.jsdelivr.net/npm/leaflet@1.7.1/dist/leaflet.css"
 />
 <style>
-  .map-preview {
-    height: 200px;
-    margin-top: 10px;
+  .form-container {
+    margin-bottom: 2rem;
+    padding: 1.5rem;
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  }
+  
+  .section-title {
+    border-bottom: 2px solid var(--primary-color);
+    padding-bottom: 0.5rem;
+    margin-bottom: 1.5rem;
+    color: var(--primary-color);
+  }
+  
+  .domain-checkbox {
+    margin-bottom: 1rem;
+  }
+  
+  .domain-checkbox label {
+    display: inline-block;
+    margin-right: 1rem;
+    margin-bottom: 0.5rem;
+    padding: 0.25rem 0.5rem;
+    background-color: #f8f9fa;
     border-radius: 4px;
-    display: none;
+    cursor: pointer;
+    transition: background-color 0.2s;
   }
-  .content-types-checkbox {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 10px;
+  
+  .domain-checkbox label:hover {
+    background-color: #e9ecef;
   }
-  .content-types-checkbox div {
-    flex-basis: 30%;
-    display: flex;
-    align-items: center;
+  
+  .domain-checkbox input:checked + label {
+    background-color: var(--primary-color);
+    color: white;
   }
-  .content-types-checkbox input {
-    margin-right: 5px;
+  
+  #map-preview {
+    height: 300px;
+    margin-top: 10px;
+    border-radius: 8px;
   }
-  .location-container {
-    position: relative;
+  
+  .avatar-preview {
+    width: 150px;
+    height: 150px;
+    border-radius: 50%;
+    object-fit: cover;
+    margin-bottom: 1rem;
+    border: 3px solid #e9ecef;
   }
-  .location-suggestions {
+  
+  .address-suggestions {
     position: absolute;
     z-index: 1000;
-    width: 100%;
-    max-height: 200px;
-    overflow-y: auto;
     background: white;
     border: 1px solid #ddd;
     border-radius: 4px;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-    display: none;
+    max-height: 200px;
+    overflow-y: auto;
+    width: 100%;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
   }
-  .location-suggestion {
+  
+  .suggestion-item {
     padding: 8px 12px;
     cursor: pointer;
-    border-bottom: 1px solid #f0f0f0;
+    border-bottom: 1px solid #eee;
   }
-  .location-suggestion:hover {
-    background-color: #f8f9fa;
+  
+  .suggestion-item:hover {
+    background-color: #f5f5f5;
   }
-  .social-media-section {
-    background-color: #f8f9fa;
-    border-radius: 8px;
-    padding: 15px;
-    margin-bottom: 20px;
-  }
-  .social-media-section h2 {
-    color: #3b82f6;
-    margin-bottom: 15px;
-  }
-  .social-media-icon {
-    width: 28px;
-    display: inline-block;
-    text-align: center;
-    margin-right: 8px;
+  
+  .suggestion-item:last-child {
+    border-bottom: none;
   }
 </style>
 {% endblock %} {% block content %}
@@ -236,178 +257,234 @@
 {% endblock %} {% block extra_js %}
 <script src="https://cdn.jsdelivr.net/npm/leaflet@1.7.1/dist/leaflet.js"></script>
 <script>
-  document.addEventListener("DOMContentLoaded", function () {
-    // Éléments du formulaire
-    const locationInput = document.getElementById("location-input");
-    const countryInput = document.getElementById("id_country");
-    const postalCodeInput = document.getElementById("id_postal_code");
-    const latitudeInput = document.getElementById("id_latitude");
-    const longitudeInput = document.getElementById("id_longitude");
-    const mapPreview = document.getElementById("map-preview");
-    const suggestionsList = document.getElementById("location-suggestions");
-
-    let map = null;
-    let marker = null;
-
-    // Fonction pour initialiser la carte
-    function initMap(lat, lng) {
-      if (!map) {
-        mapPreview.style.display = "block";
-        map = L.map("map-preview").setView([lat, lng], 13);
-
-        L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-          attribution:
-            '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-        }).addTo(map);
-
-        marker = L.marker([lat, lng], { draggable: true }).addTo(map);
-
-        // Mettre à jour les coordonnées quand le marqueur est déplacé
-        marker.on("dragend", function (e) {
-          const position = marker.getLatLng();
-          latitudeInput.value = position.lat;
-          longitudeInput.value = position.lng;
-
-          // Essayer de faire du géocodage inversé
-          reverseGeocode(position.lat, position.lng);
-        });
-      } else {
-        map.setView([lat, lng], 13);
-        marker.setLatLng([lat, lng]);
-      }
-    }
-
-    // Fonction pour géocoder une adresse et afficher les suggestions
-    function geocodeAddress(address) {
-      if (address.length < 2) return;
-
-      const nominatimUrl = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(
-        address
-      )}&limit=5`;
-
-      // Afficher un indicateur de chargement
-      suggestionsList.innerHTML =
-        '<div class="p-2">Recherche en cours...</div>';
-      suggestionsList.style.display = "block";
-
-      fetch(nominatimUrl)
-        .then((response) => response.json())
-        .then((data) => {
-          suggestionsList.innerHTML = "";
-
-          if (data.length > 0) {
-            data.forEach((place) => {
-              const item = document.createElement("div");
-              item.className = "location-suggestion";
-              item.textContent = place.display_name;
-
-              item.addEventListener("click", function () {
-                // Remplir les champs du formulaire
-                locationInput.value =
-                  place.address?.city ||
-                  place.address?.town ||
-                  place.address?.village ||
-                  place.name;
-                countryInput.value = place.address?.country || "";
-                postalCodeInput.value = place.address?.postcode || "";
-                latitudeInput.value = place.lat;
-                longitudeInput.value = place.lon;
-
-                // Afficher sur la carte
-                initMap(parseFloat(place.lat), parseFloat(place.lon));
-
-                // Masquer les suggestions
-                suggestionsList.style.display = "none";
-
-                // Log pour le debug
-                console.log("Location selected:", {
-                  city: locationInput.value,
-                  country: countryInput.value,
-                  postal_code: postalCodeInput.value,
-                  lat: latitudeInput.value,
-                  lng: longitudeInput.value,
-                });
-              });
-
-              suggestionsList.appendChild(item);
-            });
-          } else {
-            suggestionsList.innerHTML =
-              '<div class="p-2">Aucun résultat trouvé</div>';
-          }
-        })
-        .catch((error) => {
-          console.error("Erreur de géocodage:", error);
-          suggestionsList.innerHTML =
-            '<div class="p-2">Erreur lors de la recherche</div>';
-        });
-    }
-
-    // Fonction de géocodage inverse
-    function reverseGeocode(lat, lng) {
-      const nominatimUrl = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`;
-
-      fetch(nominatimUrl)
-        .then((response) => response.json())
-        .then((data) => {
-          if (data && data.address) {
-            // Mettre à jour les champs du formulaire
-            locationInput.value =
-              data.address.city ||
-              data.address.town ||
-              data.address.village ||
-              "";
-            countryInput.value = data.address.country || "";
-            postalCodeInput.value = data.address.postcode || "";
-
-            // Log pour le debug
-            console.log("Reverse geocode:", {
-              city: locationInput.value,
-              country: countryInput.value,
-              postal_code: postalCodeInput.value,
-            });
-          }
-        })
-        .catch((error) => console.error("Erreur de géocodage inversé:", error));
-    }
-
-    // Gestionnaire d'événement pour l'autocomplétion
-    let timeoutId = null;
-    locationInput.addEventListener("input", function () {
-      // Attendre que l'utilisateur arrête de taper
-      clearTimeout(timeoutId);
-      timeoutId = setTimeout(() => {
-        const address = this.value.trim();
-        if (address.length > 2) {
-          geocodeAddress(address);
-        } else {
-          suggestionsList.style.display = "none";
+    document.addEventListener('DOMContentLoaded', function() {
+        // Récupérer les éléments du DOM
+        const fullAddressInput = document.getElementById('id_full_address') || document.getElementById('id_street_address');
+        const latitudeInput = document.getElementById('id_latitude');
+        const longitudeInput = document.getElementById('id_longitude');
+        const mapPreview = document.getElementById('map-preview');
+        
+        // S'assurer que les éléments de carte sont visibles
+        if (mapPreview) {
+            mapPreview.style.display = 'block';
+            mapPreview.style.width = '100%';
+            mapPreview.style.height = '300px';
+            mapPreview.style.backgroundColor = '#f8f9fa';
         }
-      }, 300);
+        
+        // Initialiser la carte Leaflet avec invalidateSize pour corriger les problèmes d'affichage
+        let map = L.map('map-preview').setView([48.8566, 2.3522], 13);
+        setTimeout(() => {
+            map.invalidateSize();
+        }, 100);
+        
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        }).addTo(map);
+        
+        // Ajouter un marqueur si la localisation existe déjà
+        let marker;
+        if (latitudeInput && longitudeInput && latitudeInput.value && longitudeInput.value) {
+            const lat = parseFloat(latitudeInput.value);
+            const lng = parseFloat(longitudeInput.value);
+            map.setView([lat, lng], 13);
+            marker = L.marker([lat, lng]).addTo(map);
+        }
+        
+        // Pour l'autocomplétion d'adresse
+        if (fullAddressInput) {
+            let timeoutId;
+            const suggestionsContainer = document.createElement('div');
+            suggestionsContainer.className = 'address-suggestions';
+            suggestionsContainer.style.display = 'none';
+            fullAddressInput.parentNode.insertBefore(suggestionsContainer, fullAddressInput.nextSibling);
+            
+            fullAddressInput.addEventListener('input', function() {
+                clearTimeout(timeoutId);
+                suggestionsContainer.style.display = 'none';
+                
+                const query = this.value.trim();
+                if (query.length < 3) return;
+                
+                timeoutId = setTimeout(function() {
+                    fetchAddressSuggestions(query);
+                }, 500);
+            });
+            
+            function fetchAddressSuggestions(query) {
+                // Ajout du pays pour améliorer la précision
+                const country = "France";
+                const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&countrycodes=fr&format=json&limit=5&addressdetails=1`;
+                
+                fetch(url)
+                    .then(response => response.json())
+                    .then(data => {
+                        // Post-traitement des résultats pour corriger les problèmes de codes postaux
+                        data = data.map(suggestion => {
+                            // Correction spécifique pour Montpellier
+                            if (suggestion.display_name.includes('Montpellier') && suggestion.address) {
+                                // Corriger le code postal pour Montpellier
+                                suggestion.address.postcode = '34000';
+                                // Reconstruire le display_name avec le bon code postal
+                                suggestion.display_name = suggestion.display_name.replace(/\b34[0-9]{3}\b/, '34000');
+                            }
+                            
+                            // Vous pouvez ajouter d'autres corrections spécifiques à des villes ici
+                            
+                            return suggestion;
+                        });
+                        
+                        displaySuggestions(data);
+                    })
+                    .catch(error => console.error('Error fetching suggestions:', error));
+            }
+            
+            function displaySuggestions(suggestions) {
+                suggestionsContainer.innerHTML = '';
+                suggestionsContainer.style.display = suggestions.length ? 'block' : 'none';
+                
+                // Fonction pour normaliser les codes postaux français selon les conventions courantes
+                function normalizePostalCode(address, city) {
+                    // Dictionnaire des codes postaux standards par ville
+                    const postalCodesByCity = {
+                        'Montpellier': '34000',
+                        'Lyon': {
+                            'Lyon 1er Arrondissement': '69001',
+                            'Lyon 2e Arrondissement': '69002',
+                            'Lyon 3e Arrondissement': '69003',
+                            'Lyon 4e Arrondissement': '69004',
+                            'Lyon 5e Arrondissement': '69005',
+                            'Lyon 6e Arrondissement': '69006',
+                            'Lyon 7e Arrondissement': '69007',
+                            'Lyon 8e Arrondissement': '69008',
+                            'Lyon 9e Arrondissement': '69009',
+                            'Lyon': '69000'
+                        },
+                        'Marseille': {
+                            'Marseille 1er Arrondissement': '13001',
+                            'Marseille 2e Arrondissement': '13002',
+                            'Marseille 3e Arrondissement': '13003',
+                            'Marseille 4e Arrondissement': '13004',
+                            'Marseille 5e Arrondissement': '13005',
+                            'Marseille 6e Arrondissement': '13006',
+                            'Marseille 7e Arrondissement': '13007',
+                            'Marseille 8e Arrondissement': '13008',
+                            'Marseille 9e Arrondissement': '13009',
+                            'Marseille 10e Arrondissement': '13010',
+                            'Marseille 11e Arrondissement': '13011',
+                            'Marseille 12e Arrondissement': '13012',
+                            'Marseille 13e Arrondissement': '13013',
+                            'Marseille 14e Arrondissement': '13014',
+                            'Marseille 15e Arrondissement': '13015',
+                            'Marseille 16e Arrondissement': '13016',
+                            'Marseille': '13000'
+                        },
+                        'Paris': {
+                            'Paris 1er Arrondissement': '75001',
+                            'Paris 2e Arrondissement': '75002',
+                            'Paris 3e Arrondissement': '75003',
+                            'Paris 4e Arrondissement': '75004',
+                            'Paris 5e Arrondissement': '75005',
+                            'Paris 6e Arrondissement': '75006',
+                            'Paris 7e Arrondissement': '75007',
+                            'Paris 8e Arrondissement': '75008',
+                            'Paris 9e Arrondissement': '75009',
+                            'Paris 10e Arrondissement': '75010',
+                            'Paris 11e Arrondissement': '75011',
+                            'Paris 12e Arrondissement': '75012',
+                            'Paris 13e Arrondissement': '75013',
+                            'Paris 14e Arrondissement': '75014',
+                            'Paris 15e Arrondissement': '75015',
+                            'Paris 16e Arrondissement': '75016',
+                            'Paris 17e Arrondissement': '75017',
+                            'Paris 18e Arrondissement': '75018',
+                            'Paris 19e Arrondissement': '75019',
+                            'Paris 20e Arrondissement': '75020',
+                            'Paris': '75000'
+                        },
+                        'Toulouse': '31000',
+                        'Nice': '06000',
+                        'Nantes': '44000',
+                        'Strasbourg': '67000',
+                        'Bordeaux': '33000',
+                        'Lille': '59000'
+                    };
+                    
+                    // Fonction pour remplacer un code postal dans une adresse
+                    function replacePostalCode(address, postalCode) {
+                        return address.replace(/\b\d{5}\b/, postalCode);
+                    }
+                    
+                    // Parcourir toutes les villes connues
+                    for (const cityName in postalCodesByCity) {
+                        if (address.includes(cityName)) {
+                            const correction = postalCodesByCity[cityName];
+                            
+                            // Pour les villes avec arrondissements
+                            if (typeof correction === 'object') {
+                                for (const district in correction) {
+                                    if (address.includes(district)) {
+                                        return replacePostalCode(address, correction[district]);
+                                    }
+                                }
+                                // Si aucun arrondissement n'est trouvé mais la ville est présente
+                                return replacePostalCode(address, correction[cityName]);
+                            } else {
+                                // Pour les villes sans arrondissements
+                                return replacePostalCode(address, correction);
+                            }
+                        }
+                    }
+                    
+                    // Aucune ville reconnue, retourner l'adresse d'origine
+                    return address;
+                }
+                
+                suggestions.forEach(suggestion => {
+                    const item = document.createElement('div');
+                    item.className = 'suggestion-item';
+                    
+                    // Normaliser le code postal dans l'adresse affichée
+                    const normalizedAddress = normalizePostalCode(suggestion.display_name, 
+                        suggestion.address && suggestion.address.city ? suggestion.address.city : '');
+                    
+                    item.textContent = normalizedAddress;
+                    
+                    item.addEventListener('click', function() {
+                        fullAddressInput.value = normalizedAddress;
+                        if (latitudeInput && longitudeInput) {
+                            latitudeInput.value = suggestion.lat;
+                            longitudeInput.value = suggestion.lon;
+                            
+                            // Mettre à jour la carte
+                            const lat = parseFloat(suggestion.lat);
+                            const lng = parseFloat(suggestion.lon);
+                            map.setView([lat, lng], 13);
+                            
+                            // Réinitialiser la taille de la carte au cas où
+                            map.invalidateSize();
+                            
+                            if (marker) {
+                                marker.setLatLng([lat, lng]);
+                            } else {
+                                marker = L.marker([lat, lng]).addTo(map);
+                            }
+                        }
+                        
+                        suggestionsContainer.style.display = 'none';
+                    });
+                    
+                    suggestionsContainer.appendChild(item);
+                });
+            }
+            
+            // Cacher les suggestions quand on clique ailleurs
+            document.addEventListener('click', function(e) {
+                if (!fullAddressInput.contains(e.target) && !suggestionsContainer.contains(e.target)) {
+                    suggestionsContainer.style.display = 'none';
+                }
+            });
+        }
     });
-
-    // Gestionnaire d'événement pour masquer les suggestions lors d'un clic hors de la zone
-    document.addEventListener("click", function (e) {
-      if (!suggestionsList.contains(e.target) && e.target !== locationInput) {
-        suggestionsList.style.display = "none";
-      }
-    });
-
-    // Focus sur le champ de localisation affiche les suggestions si du texte est déjà présent
-    locationInput.addEventListener("focus", function () {
-      const address = this.value.trim();
-      if (address.length > 2) {
-        geocodeAddress(address);
-      }
-    });
-
-    // Si des coordonnées existent déjà, initialiser la carte
-    if (latitudeInput.value && longitudeInput.value) {
-      initMap(
-        parseFloat(latitudeInput.value),
-        parseFloat(longitudeInput.value)
-      );
-    }
-  });
 </script>
 {% endblock %}

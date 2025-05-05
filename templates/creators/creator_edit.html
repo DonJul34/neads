@@ -1,77 +1,339 @@
 {% extends "base.html" %}
+{% load static %}
 
-{% block title %}Modifier le profil de {{ creator.full_name }}{% endblock %}
+{% block title %}Modifier le profil créateur{% endblock %}
 
 {% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/creator_edit.css' %}">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.7.1/dist/leaflet.css" />
 <style>
-    .map-preview {
-        height: 200px;
-        margin-top: 10px;
+    .form-container {
+        margin-bottom: 2rem;
+        padding: 1.5rem;
+        background-color: white;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    
+    .section-title {
+        border-bottom: 2px solid var(--primary-color);
+        padding-bottom: 0.5rem;
+        margin-bottom: 1.5rem;
+        color: var(--primary-color);
+    }
+    
+    .domain-checkbox {
+        margin-bottom: 1rem;
+    }
+    
+    .domain-checkbox label {
+        display: inline-block;
+        margin-right: 1rem;
+        margin-bottom: 0.5rem;
+        padding: 0.25rem 0.5rem;
+        background-color: #f8f9fa;
         border-radius: 4px;
-        display: none;
+        cursor: pointer;
+        transition: background-color 0.2s;
+    }
+    
+    .domain-checkbox label:hover {
+        background-color: #e9ecef;
+    }
+    
+    .domain-checkbox input:checked + label {
+        background-color: var(--primary-color);
+        color: white;
+    }
+    
+    #map-preview {
+        height: 300px;
+        margin-top: 10px;
+        border-radius: 8px;
+    }
+    
+    .avatar-preview {
+        width: 150px;
+        height: 150px;
+        border-radius: 50%;
+        object-fit: cover;
+        margin-bottom: 1rem;
+        border: 3px solid #e9ecef;
+    }
+    
+    .address-suggestions {
+        position: absolute;
+        z-index: 1000;
+        background: white;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        max-height: 200px;
+        overflow-y: auto;
+        width: 100%;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    
+    .suggestion-item {
+        padding: 8px 12px;
+        cursor: pointer;
+        border-bottom: 1px solid #eee;
+    }
+    
+    .suggestion-item:hover {
+        background-color: #f5f5f5;
+    }
+    
+    .suggestion-item:last-child {
+        border-bottom: none;
     }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="container py-4">
+<div class="container my-5">
     <div class="row">
         <div class="col-lg-8 mx-auto">
-            <div class="card shadow-sm border-0">
+            <div class="card shadow-lg mb-4">
+                <div class="card-header bg-primary text-white py-4">
+                    <h1 class="h3 mb-0 text-center">Modifier votre profil créateur</h1>
+                </div>
                 <div class="card-body p-4">
-                    <h1 class="h3 mb-4">Modifier le profil créateur</h1>
-                    
-                    <form method="post" enctype="multipart/form-data">
+                    <form method="post" enctype="multipart/form-data" id="creator-edit-form" class="needs-validation" novalidate>
                         {% csrf_token %}
                         
-                        <div class="mb-4">
-                            <h2 class="h5 mb-3">Informations personnelles</h2>
-                            {% for field in form %}
-                                <div class="mb-3">
-                                    <label for="{{ field.id_for_label }}" class="form-label">{{ field.label }}</label>
-                                    {{ field }}
-                                    {% if field.help_text %}
-                                        <div class="form-text">{{ field.help_text }}</div>
-                                    {% endif %}
-                                    {% if field.errors %}
-                                        <div class="invalid-feedback d-block">
-                                            {% for error in field.errors %}
-                                                {{ error }}
-                                            {% endfor %}
+                        <!-- Informations personnelles -->
+                        <div class="card mb-4">
+                            <div class="card-header bg-light">
+                                <h3 class="h5 mb-0">Informations personnelles</h3>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label for="{{ form.first_name.id_for_label }}" class="form-label">Prénom *</label>
+                                        {{ form.first_name }}
+                                        <div class="invalid-feedback">
+                                            {% if form.first_name.errors %}{{ form.first_name.errors.0 }}{% else %}Ce champ est requis.{% endif %}
                                         </div>
-                                    {% endif %}
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label for="{{ form.last_name.id_for_label }}" class="form-label">Nom *</label>
+                                        {{ form.last_name }}
+                                        <div class="invalid-feedback">
+                                            {% if form.last_name.errors %}{{ form.last_name.errors.0 }}{% else %}Ce champ est requis.{% endif %}
+                                        </div>
+                                    </div>
                                 </div>
-                            {% endfor %}
+                                
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label for="{{ form.gender.id_for_label }}" class="form-label">Genre *</label>
+                                        {{ form.gender }}
+                                        <div class="invalid-feedback">
+                                            {% if form.gender.errors %}{{ form.gender.errors.0 }}{% else %}Ce champ est requis.{% endif %}
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label for="{{ form.birth_year.id_for_label }}" class="form-label">Année de naissance *</label>
+                                        {{ form.birth_year }}
+                                        <div class="invalid-feedback">
+                                            {% if form.birth_year.errors %}{{ form.birth_year.errors.0 }}{% else %}Ce champ est requis.{% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                         
-                        <div class="mb-4">
-                            <h2 class="h5 mb-3">Localisation</h2>
-                            {% for field in location_form %}
-                                <div class="mb-3">
-                                    {% if not field.is_hidden %}
-                                        <label for="{{ field.id_for_label }}" class="form-label">{{ field.label }}</label>
-                                    {% endif %}
-                                    {{ field }}
-                                    {% if field.help_text %}
-                                        <div class="form-text">{{ field.help_text }}</div>
-                                    {% endif %}
-                                    {% if field.errors %}
-                                        <div class="invalid-feedback d-block">
-                                            {% for error in field.errors %}
-                                                {{ error }}
-                                            {% endfor %}
+                        <!-- Contact -->
+                        <div class="card mb-4">
+                            <div class="card-header bg-light">
+                                <h3 class="h5 mb-0">Contact</h3>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label for="{{ form.email.id_for_label }}" class="form-label">E-mail *</label>
+                                        {{ form.email }}
+                                        <div class="invalid-feedback">
+                                            {% if form.email.errors %}{{ form.email.errors.0 }}{% else %}Ce champ est requis.{% endif %}
                                         </div>
-                                    {% endif %}
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label for="{{ form.phone.id_for_label }}" class="form-label">Téléphone *</label>
+                                        <div class="input-group">
+                                            <span class="input-group-text">France +33</span>
+                                            {{ form.phone }}
+                                        </div>
+                                        <div class="invalid-feedback">
+                                            {% if form.phone.errors %}{{ form.phone.errors.0 }}{% else %}Ce champ est requis.{% endif %}
+                                        </div>
+                                    </div>
                                 </div>
-                            {% endfor %}
-                            
-                            <div id="map-preview" class="map-preview"></div>
+                                
+                                <div class="mb-3">
+                                    <label for="{{ location_form.full_address.id_for_label }}" class="form-label">Adresse complète *</label>
+                                    {{ location_form.full_address }}
+                                    <div class="invalid-feedback">
+                                        {% if location_form.full_address.errors %}{{ location_form.full_address.errors.0 }}{% else %}Ce champ est requis.{% endif %}
+                                    </div>
+                                </div>
+                                
+                                {{ location_form.latitude }}
+                                {{ location_form.longitude }}
+                                
+                                <div id="map-preview" class="map-preview"></div>
+                            </div>
                         </div>
                         
-                        <div class="d-flex justify-content-between">
-                            <a href="{% url 'creator_detail' creator.id %}" class="btn btn-outline-secondary">Annuler</a>
-                            <button type="submit" class="btn btn-primary">Enregistrer les modifications</button>
+                        <!-- À propos de toi -->
+                        <div class="card mb-4">
+                            <div class="card-header bg-light">
+                                <h3 class="h5 mb-0">À propos de toi</h3>
+                            </div>
+                            <div class="card-body">
+                                <div class="mb-3">
+                                    <label for="{{ form.bio.id_for_label }}" class="form-label">Bio *</label>
+                                    {{ form.bio }}
+                                    <div class="invalid-feedback">
+                                        {% if form.bio.errors %}{{ form.bio.errors.0 }}{% else %}Ce champ est requis.{% endif %}
+                                    </div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="{{ form.equipment.id_for_label }}" class="form-label">Matériel utilisé *</label>
+                                    {{ form.equipment }}
+                                    <div class="invalid-feedback">
+                                        {% if form.equipment.errors %}{{ form.equipment.errors.0 }}{% else %}Ce champ est requis.{% endif %}
+                                    </div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="{{ form.previous_clients.id_for_label }}" class="form-label">Marques avec lesquelles tu as travaillé *</label>
+                                    {{ form.previous_clients }}
+                                    <div class="invalid-feedback">
+                                        {% if form.previous_clients.errors %}{{ form.previous_clients.errors.0 }}{% else %}Ce champ est requis.{% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Réseaux sociaux -->
+                        <div class="card mb-4">
+                            <div class="card-header bg-light">
+                                <h3 class="h5 mb-0">Tes réseaux sociaux</h3>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-4 mb-3">
+                                        <label for="{{ form.tiktok_link.id_for_label }}" class="form-label">{{ form.tiktok_link.label }}</label>
+                                        {{ form.tiktok_link }}
+                                        <div class="invalid-feedback">
+                                            {% if form.tiktok_link.errors %}{{ form.tiktok_link.errors.0 }}{% endif %}
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4 mb-3">
+                                        <label for="{{ form.instagram_link.id_for_label }}" class="form-label">{{ form.instagram_link.label }}</label>
+                                        {{ form.instagram_link }}
+                                        <div class="invalid-feedback">
+                                            {% if form.instagram_link.errors %}{{ form.instagram_link.errors.0 }}{% endif %}
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4 mb-3">
+                                        <label for="{{ form.youtube_link.id_for_label }}" class="form-label">{{ form.youtube_link.label }}</label>
+                                        {{ form.youtube_link }}
+                                        <div class="invalid-feedback">
+                                            {% if form.youtube_link.errors %}{{ form.youtube_link.errors.0 }}{% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Portfolio -->
+                        <div class="card mb-4">
+                            <div class="card-header bg-light">
+                                <h3 class="h5 mb-0">Ton portfolio</h3>
+                            </div>
+                            <div class="card-body">
+                                <div class="mb-3">
+                                    <label for="{{ form.featured_image.id_for_label }}" class="form-label">Photo de profil *</label>
+                                    {{ form.featured_image }}
+                                    <div class="invalid-feedback">
+                                        {% if form.featured_image.errors %}{{ form.featured_image.errors.0 }}{% else %}Ce champ est requis.{% endif %}
+                                    </div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="{{ form.video_file1.id_for_label }}" class="form-label">{{ form.video_file1.label }} *</label>
+                                    {{ form.video_file1 }}
+                                    <div class="invalid-feedback">
+                                        {% if form.video_file1.errors %}{{ form.video_file1.errors.0 }}{% else %}Ce champ est requis.{% endif %}
+                                    </div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="{{ form.video_file2.id_for_label }}" class="form-label">{{ form.video_file2.label }} *</label>
+                                    {{ form.video_file2 }}
+                                    <div class="invalid-feedback">
+                                        {% if form.video_file2.errors %}{{ form.video_file2.errors.0 }}{% else %}Ce champ est requis.{% endif %}
+                                    </div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="{{ form.video_file3.id_for_label }}" class="form-label">{{ form.video_file3.label }} *</label>
+                                    {{ form.video_file3 }}
+                                    <div class="invalid-feedback">
+                                        {% if form.video_file3.errors %}{{ form.video_file3.errors.0 }}{% else %}Ce champ est requis.{% endif %}
+                                    </div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="{{ form.image_file1.id_for_label }}" class="form-label">{{ form.image_file1.label }} *</label>
+                                    {{ form.image_file1 }}
+                                    <div class="invalid-feedback">
+                                        {% if form.image_file1.errors %}{{ form.image_file1.errors.0 }}{% else %}Ce champ est requis.{% endif %}
+                                    </div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="{{ form.image_file2.id_for_label }}" class="form-label">{{ form.image_file2.label }} *</label>
+                                    {{ form.image_file2 }}
+                                    <div class="invalid-feedback">
+                                        {% if form.image_file2.errors %}{{ form.image_file2.errors.0 }}{% else %}Ce champ est requis.{% endif %}
+                                        </div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="{{ form.image_file3.id_for_label }}" class="form-label">{{ form.image_file3.label }} *</label>
+                                    {{ form.image_file3 }}
+                                    <div class="invalid-feedback">
+                                        {% if form.image_file3.errors %}{{ form.image_file3.errors.0 }}{% else %}Ce champ est requis.{% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Conditions et envoi -->
+                        <div class="card mb-4">
+                            <div class="card-header bg-light">
+                                <h3 class="h5 mb-0">Conditions générales</h3>
+                            </div>
+                            <div class="card-body">
+                                <div class="mb-3">
+                                    <div class="form-check">
+                                        {{ form.accept_terms }}
+                                        <label class="form-check-label" for="{{ form.accept_terms.id_for_label }}">
+                                            J'accepte les conditions générales d'utilisation *
+                                        </label>
+                                    </div>
+                                    <div class="invalid-feedback">
+                                        {% if form.accept_terms.errors %}{{ form.accept_terms.errors.0 }}{% else %}Vous devez accepter les conditions générales.{% endif %}
+                                    </div>
+                                </div>
+                                
+                                <div class="d-grid">
+                                    <button type="submit" class="btn btn-primary btn-lg">Enregistrer les modifications</button>
+                                </div>
+                            </div>
                         </div>
                     </form>
                 </div>
@@ -85,104 +347,233 @@
 <script src="https://cdn.jsdelivr.net/npm/leaflet@1.7.1/dist/leaflet.js"></script>
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        // Éléments du formulaire
-        const locationInput = document.getElementById('location-input');
-        const countryInput = document.getElementById('id_country');
-        const postalCodeInput = document.getElementById('id_postal_code');
+        // Récupérer les éléments du DOM
+        const fullAddressInput = document.getElementById('id_full_address');
         const latitudeInput = document.getElementById('id_latitude');
         const longitudeInput = document.getElementById('id_longitude');
         const mapPreview = document.getElementById('map-preview');
         
-        let map = null;
-        let marker = null;
-        
-        // Fonction pour initialiser la carte
-        function initMap(lat, lng) {
-            if (!map) {
-                mapPreview.style.display = 'block';
-                map = L.map('map-preview').setView([lat, lng], 13);
-                
-                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-                }).addTo(map);
-                
-                marker = L.marker([lat, lng], {draggable: true}).addTo(map);
-                
-                // Mettre à jour les coordonnées quand le marqueur est déplacé
-                marker.on('dragend', function(e) {
-                    const position = marker.getLatLng();
-                    latitudeInput.value = position.lat;
-                    longitudeInput.value = position.lng;
-                    
-                    // Essayer de faire du géocodage inversé (optionnel)
-                    reverseGeocode(position.lat, position.lng);
-                });
-            } else {
-                map.setView([lat, lng], 13);
-                marker.setLatLng([lat, lng]);
-            }
+        // S'assurer que les éléments de carte sont visibles
+        if (mapPreview) {
+            mapPreview.style.display = 'block';
+            mapPreview.style.width = '100%';
+            mapPreview.style.height = '300px';
+            mapPreview.style.backgroundColor = '#f8f9fa';
         }
         
-        // Fonction pour géocoder une adresse
-        function geocodeAddress(address) {
-            const nominatimUrl = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}&limit=1`;
+        // Initialiser la carte Leaflet avec invalidateSize pour corriger les problèmes d'affichage
+        let map = L.map('map-preview').setView([48.8566, 2.3522], 13);
+        setTimeout(() => {
+            map.invalidateSize();
+        }, 100);
+        
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        }).addTo(map);
+        
+        // Ajouter un marqueur si la localisation existe déjà
+        let marker;
+        if (latitudeInput && longitudeInput && latitudeInput.value && longitudeInput.value) {
+            const lat = parseFloat(latitudeInput.value);
+            const lng = parseFloat(longitudeInput.value);
+            map.setView([lat, lng], 13);
+            marker = L.marker([lat, lng]).addTo(map);
+        }
+        
+        // Pour l'autocomplétion d'adresse
+        if (fullAddressInput) {
+            let timeoutId;
+            const suggestionsContainer = document.createElement('div');
+            suggestionsContainer.className = 'address-suggestions';
+            suggestionsContainer.style.display = 'none';
+            fullAddressInput.parentNode.insertBefore(suggestionsContainer, fullAddressInput.nextSibling);
             
-            fetch(nominatimUrl)
-                .then(response => response.json())
-                .then(data => {
-                    if (data.length > 0) {
-                        const result = data[0];
+            fullAddressInput.addEventListener('input', function() {
+                clearTimeout(timeoutId);
+                suggestionsContainer.style.display = 'none';
+                
+                const query = this.value.trim();
+                if (query.length < 3) return;
+                
+                timeoutId = setTimeout(function() {
+                    fetchAddressSuggestions(query);
+                }, 500);
+            });
+            
+            function fetchAddressSuggestions(query) {
+                // Ajout du pays pour améliorer la précision
+                const country = "France";
+                const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&countrycodes=fr&format=json&limit=5&addressdetails=1`;
+                
+                fetch(url)
+                    .then(response => response.json())
+                    .then(data => {
+                        // Post-traitement des résultats pour corriger les problèmes de codes postaux
+                        data = data.map(suggestion => {
+                            // Correction spécifique pour Montpellier
+                            if (suggestion.display_name.includes('Montpellier') && suggestion.address) {
+                                // Corriger le code postal pour Montpellier
+                                suggestion.address.postcode = '34000';
+                                // Reconstruire le display_name avec le bon code postal
+                                suggestion.display_name = suggestion.display_name.replace(/\b34[0-9]{3}\b/, '34000');
+                            }
+                            
+                            // Vous pouvez ajouter d'autres corrections spécifiques à des villes ici
+                            // Par exemple pour Lyon (69001-69009), Marseille (13001-13016), etc.
+                            
+                            return suggestion;
+                        });
                         
-                        // Remplir les champs cachés
-                        latitudeInput.value = result.lat;
-                        longitudeInput.value = result.lon;
-                        
-                        // Récupérer le pays et le code postal si disponible
-                        if (result.address) {
-                            countryInput.value = result.address.country || '';
-                            postalCodeInput.value = result.address.postcode || '';
+                        displaySuggestions(data);
+                    })
+                    .catch(error => console.error('Error fetching suggestions:', error));
+            }
+            
+            function displaySuggestions(suggestions) {
+                suggestionsContainer.innerHTML = '';
+                suggestionsContainer.style.display = suggestions.length ? 'block' : 'none';
+                
+                // Fonction pour normaliser les codes postaux français selon les conventions courantes
+                function normalizePostalCode(address, city) {
+                    // Dictionnaire des codes postaux standards par ville
+                    const postalCodesByCity = {
+                        'Montpellier': '34000',
+                        'Lyon': {
+                            'Lyon 1er Arrondissement': '69001',
+                            'Lyon 2e Arrondissement': '69002',
+                            'Lyon 3e Arrondissement': '69003',
+                            'Lyon 4e Arrondissement': '69004',
+                            'Lyon 5e Arrondissement': '69005',
+                            'Lyon 6e Arrondissement': '69006',
+                            'Lyon 7e Arrondissement': '69007',
+                            'Lyon 8e Arrondissement': '69008',
+                            'Lyon 9e Arrondissement': '69009',
+                            'Lyon': '69000'
+                        },
+                        'Marseille': {
+                            'Marseille 1er Arrondissement': '13001',
+                            'Marseille 2e Arrondissement': '13002',
+                            'Marseille 3e Arrondissement': '13003',
+                            'Marseille 4e Arrondissement': '13004',
+                            'Marseille 5e Arrondissement': '13005',
+                            'Marseille 6e Arrondissement': '13006',
+                            'Marseille 7e Arrondissement': '13007',
+                            'Marseille 8e Arrondissement': '13008',
+                            'Marseille 9e Arrondissement': '13009',
+                            'Marseille 10e Arrondissement': '13010',
+                            'Marseille 11e Arrondissement': '13011',
+                            'Marseille 12e Arrondissement': '13012',
+                            'Marseille 13e Arrondissement': '13013',
+                            'Marseille 14e Arrondissement': '13014',
+                            'Marseille 15e Arrondissement': '13015',
+                            'Marseille 16e Arrondissement': '13016',
+                            'Marseille': '13000'
+                        },
+                        'Paris': {
+                            'Paris 1er Arrondissement': '75001',
+                            'Paris 2e Arrondissement': '75002',
+                            'Paris 3e Arrondissement': '75003',
+                            'Paris 4e Arrondissement': '75004',
+                            'Paris 5e Arrondissement': '75005',
+                            'Paris 6e Arrondissement': '75006',
+                            'Paris 7e Arrondissement': '75007',
+                            'Paris 8e Arrondissement': '75008',
+                            'Paris 9e Arrondissement': '75009',
+                            'Paris 10e Arrondissement': '75010',
+                            'Paris 11e Arrondissement': '75011',
+                            'Paris 12e Arrondissement': '75012',
+                            'Paris 13e Arrondissement': '75013',
+                            'Paris 14e Arrondissement': '75014',
+                            'Paris 15e Arrondissement': '75015',
+                            'Paris 16e Arrondissement': '75016',
+                            'Paris 17e Arrondissement': '75017',
+                            'Paris 18e Arrondissement': '75018',
+                            'Paris 19e Arrondissement': '75019',
+                            'Paris 20e Arrondissement': '75020',
+                            'Paris': '75000'
+                        },
+                        'Toulouse': '31000',
+                        'Nice': '06000',
+                        'Nantes': '44000',
+                        'Strasbourg': '67000',
+                        'Bordeaux': '33000',
+                        'Lille': '59000'
+                    };
+                    
+                    // Fonction pour remplacer un code postal dans une adresse
+                    function replacePostalCode(address, postalCode) {
+                        return address.replace(/\b\d{5}\b/, postalCode);
+                    }
+                    
+                    // Parcourir toutes les villes connues
+                    for (const cityName in postalCodesByCity) {
+                        if (address.includes(cityName)) {
+                            const correction = postalCodesByCity[cityName];
+                            
+                            // Pour les villes avec arrondissements
+                            if (typeof correction === 'object') {
+                                for (const district in correction) {
+                                    if (address.includes(district)) {
+                                        return replacePostalCode(address, correction[district]);
+                                    }
+                                }
+                                // Si aucun arrondissement n'est trouvé mais la ville est présente
+                                return replacePostalCode(address, correction[cityName]);
+                            } else {
+                                // Pour les villes sans arrondissements
+                                return replacePostalCode(address, correction);
+                            }
+                        }
+                    }
+                    
+                    // Aucune ville reconnue, retourner l'adresse d'origine
+                    return address;
+                }
+                
+                suggestions.forEach(suggestion => {
+                    const item = document.createElement('div');
+                    item.className = 'suggestion-item';
+                    
+                    // Normaliser le code postal dans l'adresse affichée
+                    const normalizedAddress = normalizePostalCode(suggestion.display_name, 
+                        suggestion.address && suggestion.address.city ? suggestion.address.city : '');
+                    
+                    item.textContent = normalizedAddress;
+                    
+                    item.addEventListener('click', function() {
+                        fullAddressInput.value = normalizedAddress;
+                        if (latitudeInput && longitudeInput) {
+                            latitudeInput.value = suggestion.lat;
+                            longitudeInput.value = suggestion.lon;
+                            
+                            // Mettre à jour la carte
+                            const lat = parseFloat(suggestion.lat);
+                            const lng = parseFloat(suggestion.lon);
+                            map.setView([lat, lng], 13);
+                            
+                            // Réinitialiser la taille de la carte au cas où
+                            map.invalidateSize();
+                            
+                            if (marker) {
+                                marker.setLatLng([lat, lng]);
+                            } else {
+                                marker = L.marker([lat, lng]).addTo(map);
+                            }
                         }
                         
-                        // Afficher sur la carte
-                        initMap(parseFloat(result.lat), parseFloat(result.lon));
-                    }
-                })
-                .catch(error => console.error('Erreur de géocodage:', error));
-        }
-        
-        // Fonction de géocodage inverse
-        function reverseGeocode(lat, lng) {
-            const nominatimUrl = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`;
+                        suggestionsContainer.style.display = 'none';
+                    });
+                    
+                    suggestionsContainer.appendChild(item);
+                });
+            }
             
-            fetch(nominatimUrl)
-                .then(response => response.json())
-                .then(data => {
-                    if (data && data.address) {
-                        // Mettre à jour les champs du formulaire
-                        locationInput.value = [data.address.city, data.address.town, data.address.village].filter(Boolean)[0] || '';
-                        countryInput.value = data.address.country || '';
-                        postalCodeInput.value = data.address.postcode || '';
-                    }
-                })
-                .catch(error => console.error('Erreur de géocodage inversé:', error));
-        }
-        
-        // Gestionnaire d'événement pour l'autocomplétion
-        let timeoutId = null;
-        locationInput.addEventListener('input', function() {
-            // Attendre que l'utilisateur arrête de taper
-            clearTimeout(timeoutId);
-            timeoutId = setTimeout(() => {
-                const address = this.value.trim();
-                if (address.length > 2) {
-                    geocodeAddress(address);
+            // Cacher les suggestions quand on clique ailleurs
+            document.addEventListener('click', function(e) {
+                if (!fullAddressInput.contains(e.target) && !suggestionsContainer.contains(e.target)) {
+                    suggestionsContainer.style.display = 'none';
                 }
-            }, 500);
-        });
-        
-        // Si des coordonnées existent déjà, initialiser la carte
-        if (latitudeInput.value && longitudeInput.value) {
-            initMap(parseFloat(latitudeInput.value), parseFloat(longitudeInput.value));
+            });
         }
     });
 </script>

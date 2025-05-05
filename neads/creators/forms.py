@@ -3,11 +3,13 @@ from django.core.exceptions import ValidationError
 from django.core.validators import MinValueValidator
 from .models import Creator, Media, Rating, Domain, Location, Favorite, ContentType
 import datetime
+import requests
+from django.conf import settings
 
 
 class LocationForm(forms.ModelForm):
     """
-    Formulaire pour la localisation avec autocomplétion d'adresse via l'API Google Places.
+    Formulaire pour la localisation avec autocomplétion d'adresse via l'API Nominatim (OpenStreetMap).
     Le JavaScript côté client extrait automatiquement latitude et longitude
     à partir de l'adresse complète sélectionnée.
     """
@@ -37,10 +39,28 @@ class LocationForm(forms.ModelForm):
         longitude = cleaned_data.get('longitude')
         
         # Si l'adresse est fournie mais pas les coordonnées
-        if full_address and (latitude is None or longitude is None):
-            # Nous sommes plus souples ici pour permettre les tests
-            # mais en production, on pourrait bloquer la soumission
-            self.add_warning('full_address', "L'adresse n'a pas pu être géolocalisée. Veuillez sélectionner une adresse dans les suggestions.")
+        if full_address and (not latitude or not longitude):
+            try:
+                # Construire l'URL de l'API Nominatim
+                params = {
+                    'q': full_address,
+                    'format': 'json',
+                    'limit': 1,
+                    'countrycodes': 'fr'  # Limiter aux résultats en France
+                }
+                
+                response = requests.get(settings.NOMINATIM_URL, params=params)
+                response.raise_for_status()
+                
+                results = response.json()
+                if results:
+                    # Mettre à jour les coordonnées avec le premier résultat
+                    cleaned_data['latitude'] = float(results[0]['lat'])
+                    cleaned_data['longitude'] = float(results[0]['lon'])
+                else:
+                    self.add_error('full_address', "Impossible de géolocaliser cette adresse. Veuillez vérifier l'adresse ou sélectionner une suggestion.")
+            except requests.RequestException as e:
+                self.add_error('full_address', f"Erreur lors de la géolocalisation: {str(e)}")
         
         return cleaned_data
     
@@ -382,6 +402,27 @@ class CreatorRegistrationForm(forms.Form):
         required=True
     )
     
+    # Mot de passe
+    password = forms.CharField(
+        label="Mot de passe",
+        widget=forms.PasswordInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'Choisissez un mot de passe sécurisé'
+        }),
+        required=True,
+        min_length=8,
+        help_text="Minimum 8 caractères, incluant des lettres et des chiffres"
+    )
+    
+    password_confirm = forms.CharField(
+        label="Confirmer le mot de passe",
+        widget=forms.PasswordInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'Confirmez votre mot de passe'
+        }),
+        required=True
+    )
+    
     gender = forms.ChoiceField(
         choices=Creator.GENDER_CHOICES,
         label="Genre",
@@ -487,6 +528,14 @@ class CreatorRegistrationForm(forms.Form):
         help_text="min. 400 caractères, max. 1000"
     )
     
+    def clean_bio(self):
+        bio = self.cleaned_data.get('bio')
+        if bio and len(bio) < 400:
+            raise ValidationError("Votre biographie doit contenir au moins 400 caractères.")
+        if bio and len(bio) > 1000:
+            raise ValidationError("Votre biographie ne peut pas dépasser 1000 caractères.")
+        return bio
+    
     equipment = forms.CharField(
         label="Matériel utilisé",
         widget=forms.Textarea(attrs={
@@ -510,12 +559,13 @@ class CreatorRegistrationForm(forms.Form):
     # Options
     can_invoice = forms.ChoiceField(
         choices=[
-            (True, "Oui"),
-            (False, "Non")
+            ('true', "Oui"),
+            ('false', "Non")
         ],
         label="Statut pour facturer",
-        widget=forms.RadioSelect(),
-        required=True
+        widget=forms.RadioSelect(attrs={'class': 'form-check-input'}),
+        required=True,
+        initial='false'  # Valeur par défaut
     )
     
     # Domaines d'expertise
@@ -537,7 +587,7 @@ class CreatorRegistrationForm(forms.Form):
     # Portfolio - Vidéos individuelles
     video_file1 = forms.FileField(
         label="Vidéo UGC 1",
-        required=True,
+        required=False,  # Sera requis uniquement à l'étape 2
         widget=forms.FileInput(attrs={
             'class': 'form-control',
             'accept': 'video/mp4,video/quicktime'
@@ -547,7 +597,7 @@ class CreatorRegistrationForm(forms.Form):
     
     video_file2 = forms.FileField(
         label="Vidéo UGC 2",
-        required=True,
+        required=False,  # Sera requis uniquement à l'étape 2
         widget=forms.FileInput(attrs={
             'class': 'form-control',
             'accept': 'video/mp4,video/quicktime'
@@ -556,7 +606,7 @@ class CreatorRegistrationForm(forms.Form):
     
     video_file3 = forms.FileField(
         label="Vidéo UGC 3",
-        required=True,
+        required=False,  # Sera requis uniquement à l'étape 2
         widget=forms.FileInput(attrs={
             'class': 'form-control',
             'accept': 'video/mp4,video/quicktime'
@@ -585,7 +635,7 @@ class CreatorRegistrationForm(forms.Form):
     # Images individuelles
     image_file1 = forms.ImageField(
         label="Photo UGC 1",
-        required=True,
+        required=False,  # Sera requis uniquement à l'étape 2
         widget=forms.FileInput(attrs={
             'class': 'form-control',
             'accept': 'image/jpeg,image/png,image/gif'
@@ -595,7 +645,7 @@ class CreatorRegistrationForm(forms.Form):
     
     image_file2 = forms.ImageField(
         label="Photo UGC 2",
-        required=True,
+        required=False,  # Sera requis uniquement à l'étape 2
         widget=forms.FileInput(attrs={
             'class': 'form-control',
             'accept': 'image/jpeg,image/png,image/gif'
@@ -604,7 +654,7 @@ class CreatorRegistrationForm(forms.Form):
     
     image_file3 = forms.ImageField(
         label="Photo UGC 3",
-        required=True,
+        required=False,  # Sera requis uniquement à l'étape 2
         widget=forms.FileInput(attrs={
             'class': 'form-control',
             'accept': 'image/jpeg,image/png,image/gif'
@@ -647,6 +697,27 @@ class CreatorRegistrationForm(forms.Form):
         if User.objects.filter(email=email).exists():
             raise ValidationError("Un compte avec cet email existe déjà. Veuillez vous connecter.")
         return email
+        
+    def clean_password_confirm(self):
+        password = self.cleaned_data.get('password')
+        password_confirm = self.cleaned_data.get('password_confirm')
+        
+        if password and password_confirm and password != password_confirm:
+            raise ValidationError("Les mots de passe ne correspondent pas.")
+        
+        return password_confirm
+    
+    def clean_password(self):
+        password = self.cleaned_data.get('password')
+        if password:
+            # Vérifier la complexité du mot de passe
+            if len(password) < 8:
+                raise ValidationError("Le mot de passe doit contenir au moins 8 caractères.")
+            if not any(c.isdigit() for c in password):
+                raise ValidationError("Le mot de passe doit contenir au moins un chiffre.")
+            if not any(c.isalpha() for c in password):
+                raise ValidationError("Le mot de passe doit contenir au moins une lettre.")
+        return password
         
     def clean(self):
         cleaned_data = super().clean()

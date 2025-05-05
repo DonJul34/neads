@@ -9,6 +9,7 @@
 {% endblock %}
 
 {% block extra_css %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.7.1/dist/leaflet.css" />
 <style>
   .creator-header {
     background-color: var(--light-bg);
@@ -400,25 +401,42 @@
       </div>
 
       <!-- Section Portfolio Combiné - Images & Vidéos -->
-      {% if images or videos %}
+      {% if photos or videos %}
       <div class="card border-0 shadow-sm mb-4">
         <div class="card-body p-4">
           <h2 class="h4 mb-3">
-            Portfolio ({{ images|length|add:videos|length }}/20)
+            Portfolio ({{ photos|length|add:videos|length }}/20)
           </h2>
 
           <div class="media-gallery">
-            {% for image in images %}
+            {% for image in photos %}
             <div class="media-item phone-format" data-bs-toggle="modal" data-bs-target="#mediaModal"
-              data-media-type="image" data-media-src="{{ image.file.url }}"
+              data-media-type="image" data-media-src="{% if image.file %}{{ image.file.url }}{% endif %}"
               data-media-title="{{ image.title|default:'Image' }}">
-              <img src="{{ image.file.url }}" alt="{{ image.title|default:'Image' }}" loading="lazy" />
+              {% if image.file and image.file.url %}
+                <img src="{{ image.file.url }}" alt="{{ image.title|default:'Image' }}" loading="lazy" 
+                  onerror="this.onerror=null;this.src='data:image/svg+xml;charset=UTF-8,%3Csvg%20width%3D%22180%22%20height%3D%22320%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20180%20320%22%20preserveAspectRatio%3D%22none%22%3E%3Cdefs%3E%3Cstyle%20type%3D%22text%2Fcss%22%3E%23holder_16a0ba36f21%20text%20%7B%20fill%3A%23999%3Bfont-weight%3Anormal%3Bfont-family%3AArial%2C%20Helvetica%2C%20sans-serif%3Bfont-size%3A16pt%20%7D%20%3C%2Fstyle%3E%3C%2Fdefs%3E%3Cg%20id%3D%22holder_16a0ba36f21%22%3E%3Crect%20width%3D%22180%22%20height%3D%22320%22%20fill%3D%22%23E2E3E5%22%3E%3C%2Frect%3E%3Cg%3E%3Ctext%20x%3D%2260.734375%22%20y%3D%22167.1%22%3EImage%3C%2Ftext%3E%3C%2Fg%3E%3C%2Fg%3E%3C%2Fsvg%3E';this.classList.add('broken-image');" />
+              {% else %}
+                <div class="broken-image d-flex align-items-center justify-content-center h-100 bg-light">
+                  <i class="fas fa-image fa-2x text-muted"></i>
+                </div>
+              {% endif %}
             </div>
-            {% endfor %} {% for video in videos %}
+            {% endfor %} 
+            {% for video in videos %}
             <div class="media-item phone-format video" data-bs-toggle="modal" data-bs-target="#mediaModal"
-              data-media-type="video" data-media-src="{{ video.video_file.url }}"
-              data-media-title="{{ video.title|default:'Vidéo' }}" data-media-poster="{{ video.thumbnail.url }}">
-              <img src="{{ video.thumbnail.url }}" alt="{{ video.title|default:'Vidéo' }}" loading="lazy" />
+              data-media-type="video" 
+              data-media-src="{% if video.video_file %}{{ video.video_file.url }}{% endif %}"
+              data-media-title="{{ video.title|default:'Vidéo' }}" 
+              data-media-poster="{% if video.thumbnail %}{{ video.thumbnail.url }}{% endif %}">
+              {% if video.thumbnail and video.thumbnail.url %}
+                <img src="{{ video.thumbnail.url }}" alt="{{ video.title|default:'Vidéo' }}" loading="lazy"
+                  onerror="this.onerror=null;this.src='data:image/svg+xml;charset=UTF-8,%3Csvg%20width%3D%22180%22%20height%3D%22320%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20180%20320%22%20preserveAspectRatio%3D%22none%22%3E%3Cdefs%3E%3Cstyle%20type%3D%22text%2Fcss%22%3E%23holder_16a0ba36f21%20text%20%7B%20fill%3A%23999%3Bfont-weight%3Anormal%3Bfont-family%3AArial%2C%20Helvetica%2C%20sans-serif%3Bfont-size%3A16pt%20%7D%20%3C%2Fstyle%3E%3C%2Fdefs%3E%3Cg%20id%3D%22holder_16a0ba36f21%22%3E%3Crect%20width%3D%22180%22%20height%3D%22320%22%20fill%3D%22%23E2E3E5%22%3E%3C%2Frect%3E%3Cg%3E%3Ctext%20x%3D%2260.734375%22%20y%3D%22167.1%22%3EVidéo%3C%2Ftext%3E%3C%2Fg%3E%3C%2Fg%3E%3C%2Fsvg%3E';this.classList.add('broken-image');" />
+              {% else %}
+                <div class="broken-image d-flex align-items-center justify-content-center h-100 bg-light">
+                  <i class="fas fa-video fa-2x text-muted"></i>
+                </div>
+              {% endif %}
               <div class="play-icon"><i class="fas fa-play-circle"></i></div>
             </div>
             {% endfor %}
@@ -838,25 +856,56 @@
 {% endblock %}
 
 {% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/leaflet@1.7.1/dist/leaflet.js"></script>
 {% if creator.location and creator.location.latitude and creator.location.longitude %}
 <script>
   document.addEventListener('DOMContentLoaded', function () {
-    // Initialisation de la carte Leaflet
-    var map = L.map('creator-map').setView(
-      [{{ creator.location.latitude }}, {{ creator.location.longitude }}],
-    13
-  );
-
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-  }).addTo(map);
-
-  // Marqueur pour le créateur
-  L.marker(
-    [{{ creator.location.latitude }}, {{ creator.location.longitude }}]
-  )
-    .addTo(map)
-    .bindPopup({% if user.role == 'client' %}'{{ creator.first_name }} {{ creator.last_name|first }}.'{% else %}'{{ creator.full_name }}'{% endif %});
+    // Attendre que le DOM soit complètement chargé
+    setTimeout(function() {
+      try {
+        // Vérifier si l'élément de carte existe
+        const mapElement = document.getElementById('creator-map');
+        if (!mapElement) {
+          console.error("L'élément #creator-map est introuvable");
+          return;
+        }
+        
+        // S'assurer que le conteneur est visible et dimensionné correctement
+        mapElement.style.display = 'block';
+        mapElement.style.height = '300px';
+        mapElement.style.width = '100%';
+        mapElement.style.backgroundColor = '#f8f9fa';
+        
+        // Vérifier que les coordonnées sont valides
+        const lat = parseFloat("{{ creator.location.latitude }}");
+        const lng = parseFloat("{{ creator.location.longitude }}");
+        
+        if (isNaN(lat) || isNaN(lng)) {
+          console.error("Coordonnées invalides:", lat, lng);
+          mapElement.innerHTML = "<div class='alert alert-warning'>Localisation invalide</div>";
+          return;
+        }
+        
+        // Initialisation de la carte Leaflet
+        var map = L.map('creator-map').setView([lat, lng], 13);
+        
+        // Utiliser setTimeout pour résoudre les problèmes de rendu
+        setTimeout(() => {
+          map.invalidateSize();
+          
+          L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+          }).addTo(map);
+      
+          // Marqueur pour le créateur
+          L.marker([lat, lng])
+            .addTo(map)
+            .bindPopup({% if user.role == 'client' %}'{{ creator.first_name }} {{ creator.last_name|first }}.'{% else %}'{{ creator.full_name }}'{% endif %});
+        }, 100);
+      } catch (e) {
+        console.error("Erreur lors de l'initialisation de la carte:", e);
+      }
+    }, 500); // Attendre 500ms pour s'assurer que le DOM est prêt
   });
 
   // Fonction pour télécharger la VCard
@@ -969,32 +1018,60 @@
     const mediaModal = document.getElementById("mediaModal");
     if (mediaModal) {
       mediaModal.addEventListener("show.bs.modal", function (event) {
-        const button = event.relatedTarget;
-        const mediaType = button.getAttribute("data-media-type");
-        const mediaSrc = button.getAttribute("data-media-src");
-        const mediaTitle = button.getAttribute("data-media-title");
-        const mediaPoster = button.getAttribute("data-media-poster");
+        try {
+          const button = event.relatedTarget;
+          const mediaType = button.getAttribute("data-media-type");
+          const mediaSrc = button.getAttribute("data-media-src");
+          const mediaTitle = button.getAttribute("data-media-title");
+          const mediaPoster = button.getAttribute("data-media-poster");
 
-        const modalTitle = document.getElementById("mediaModalTitle");
-        const modalContent = document.getElementById("mediaModalContent");
+          const modalTitle = document.getElementById("mediaModalTitle");
+          const modalContent = document.getElementById("mediaModalContent");
 
-        modalTitle.textContent = mediaTitle;
-
-        if (mediaType === "image") {
-          modalContent.innerHTML = `<img src="${mediaSrc}" class="img-fluid" alt="${mediaTitle}">`;
-        } else if (mediaType === "video") {
-          modalContent.innerHTML = `
-            <video controls class="img-fluid" poster="${mediaPoster}">
-              <source src="${mediaSrc}" type="video/mp4">
-              Votre navigateur ne supporte pas la lecture vidéo.
-            </video>
-          `;
-
-          // Auto-play video when modal opens
-          const video = modalContent.querySelector("video");
-          if (video) {
-            video.play();
+          // Vérifier si les sources sont valides
+          if (!mediaSrc) {
+            console.error("Source média manquante pour:", mediaTitle);
+            modalTitle.textContent = "Erreur de chargement";
+            modalContent.innerHTML = `
+              <div class="alert alert-warning">
+                <i class="fas fa-exclamation-triangle me-2"></i>
+                Le fichier média n'a pas pu être chargé.
+              </div>
+            `;
+            return;
           }
+
+          modalTitle.textContent = mediaTitle;
+
+          if (mediaType === "image") {
+            modalContent.innerHTML = `<img src="${mediaSrc}" class="img-fluid" alt="${mediaTitle}" onerror="this.onerror=null;this.src='data:image/svg+xml;charset=UTF-8,%3Csvg%20width%3D%22800%22%20height%3D%22400%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20800%20400%22%20preserveAspectRatio%3D%22none%22%3E%3Cdefs%3E%3Cstyle%20type%3D%22text%2Fcss%22%3E%23holder_16a0ba36f21%20text%20%7B%20fill%3A%23999%3Bfont-weight%3Anormal%3Bfont-family%3AArial%2C%20Helvetica%2C%20sans-serif%3Bfont-size%3A40pt%20%7D%20%3C%2Fstyle%3E%3C%2Fdefs%3E%3Cg%20id%3D%22holder_16a0ba36f21%22%3E%3Crect%20width%3D%22800%22%20height%3D%22400%22%20fill%3D%22%23E2E3E5%22%3E%3C%2Frect%3E%3Cg%3E%3Ctext%20x%3D%22247.3125%22%20y%3D%22217.7%22%3EImage%20non%20disponible%3C%2Ftext%3E%3C%2Fg%3E%3C%2Fg%3E%3C%2Fsvg%3E';">`;
+          } else if (mediaType === "video") {
+            // Vérifier si la miniature existe
+            const posterAttr = mediaPoster ? `poster="${mediaPoster}"` : '';
+            
+            modalContent.innerHTML = `
+              <video controls class="img-fluid" ${posterAttr}>
+                <source src="${mediaSrc}" type="video/mp4">
+                Votre navigateur ne supporte pas la lecture vidéo.
+              </video>
+            `;
+
+            // Auto-play video when modal opens
+            const video = modalContent.querySelector("video");
+            if (video) {
+              video.play().catch(e => {
+                console.warn("Impossible de lire automatiquement la vidéo:", e);
+              });
+            }
+          }
+        } catch (e) {
+          console.error("Erreur lors de l'affichage du modal:", e);
+          modalContent.innerHTML = `
+            <div class="alert alert-danger">
+              <i class="fas fa-exclamation-circle me-2"></i>
+              Une erreur est survenue lors du chargement du média.
+            </div>
+          `;
         }
       });
 
@@ -1003,6 +1080,9 @@
         const video = document.querySelector("#mediaModalContent video");
         if (video) {
           video.pause();
+          // Réinitialiser la source pour libérer les ressources
+          video.src = "";
+          video.load();
         }
       });
     }

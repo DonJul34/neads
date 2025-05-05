@@ -82,6 +82,16 @@ class Location(models.Model):
             return f"Coordonnées ({self.latitude}, {self.longitude})"
         else:
             return "Localisation inconnue"
+    
+    def save(self, *args, **kwargs):
+        # Importer la fonction de normalisation ici pour éviter l'import circulaire
+        from .views import normalize_address
+        
+        # Normaliser l'adresse avant sauvegarde si elle existe
+        if self.full_address:
+            self.full_address = normalize_address(self.full_address)
+            
+        super().save(*args, **kwargs)
 
 
 class LocationNew(models.Model):
@@ -100,6 +110,16 @@ class LocationNew(models.Model):
             return f"Coordonnées ({self.latitude}, {self.longitude})"
         else:
             return "Localisation inconnue"
+            
+    def save(self, *args, **kwargs):
+        # Importer la fonction de normalisation ici pour éviter l'import circulaire
+        from .views import normalize_address
+        
+        # Normaliser l'adresse avant sauvegarde si elle existe
+        if self.full_address:
+            self.full_address = normalize_address(self.full_address)
+            
+        super().save(*args, **kwargs)
 
 
 class Creator(models.Model):

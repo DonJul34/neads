@@ -36,4 +36,5 @@ urlpatterns = [
     # Nouveaux formulaires frontend pour la création d'utilisateurs
     path('admin/clients/create/', admin_views.client_create, name='client_create'),
     path('admin/consultants/create/', admin_views.consultant_create, name='consultant_create'),
+    path('upload-media/', views.upload_media, name='upload_media'),
 ] 

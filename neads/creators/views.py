@@ -22,6 +22,7 @@ import requests
 from typing import Dict, List, Any
 from math import radians, cos, sin, asin, sqrt
 import logging
+import re
 
 logger = logging.getLogger(__name__)
 
@@ -54,24 +55,69 @@ def has_valid_file(media_obj):
     """
     try:
         if media_obj is None:
+            logger.debug("has_valid_file: media_obj is None")
             return False
-            
+        
+        logger.debug(f"has_valid_file: Vérification du media {media_obj.id}, type: {media_obj.media_type}")
+        
         if media_obj.media_type == 'image':
-            return (hasattr(media_obj, 'file') and 
-                    media_obj.file and 
-                    media_obj.file.name and 
-                    hasattr(media_obj.file, 'url'))
+            # Validation d'image
+            if not hasattr(media_obj, 'file'):
+                logger.debug(f"has_valid_file: media_obj n'a pas d'attribut 'file'")
+                return False
+            
+            if not media_obj.file:
+                logger.debug(f"has_valid_file: media_obj.file est vide")
+                return False
+            
+            # Vérifier si le fichier existe physiquement
+            try:
+                if not media_obj.file.storage.exists(media_obj.file.name):
+                    logger.warning(f"has_valid_file: Le fichier {media_obj.file.name} n'existe pas physiquement")
+                    return False
+            except Exception as e:
+                logger.error(f"has_valid_file: Erreur lors de la vérification du fichier physique: {str(e)}")
+                
+            # Vérifier l'attribut name et url
+            if not media_obj.file.name:
+                logger.debug(f"has_valid_file: media_obj.file.name est vide")
+                return False
+                
+            if not hasattr(media_obj.file, 'url'):
+                logger.debug(f"has_valid_file: media_obj.file n'a pas d'attribut 'url'")
+                return False
+                
+            logger.debug(f"has_valid_file: Image valide trouvée: {media_obj.file.url}")
+            return True
+        
         elif media_obj.media_type == 'video':
-            return (hasattr(media_obj, 'video_file') and 
-                    media_obj.video_file and 
-                    media_obj.video_file.name and 
-                    hasattr(media_obj.video_file, 'url') and
-                    hasattr(media_obj, 'thumbnail') and
-                    media_obj.thumbnail and
-                    media_obj.thumbnail.name and
-                    hasattr(media_obj.thumbnail, 'url'))
+            # Validation de vidéo
+            valid_video = (hasattr(media_obj, 'video_file') and 
+                         media_obj.video_file and 
+                         media_obj.video_file.name and 
+                         hasattr(media_obj.video_file, 'url'))
+                         
+            valid_thumbnail = (hasattr(media_obj, 'thumbnail') and 
+                              media_obj.thumbnail and 
+                              media_obj.thumbnail.name and 
+                              hasattr(media_obj.thumbnail, 'url'))
+            
+            if not valid_video:
+                logger.debug(f"has_valid_file: Vidéo invalide: {media_obj.id}")
+                
+            if not valid_thumbnail:
+                logger.debug(f"has_valid_file: Miniature invalide pour la vidéo: {media_obj.id}")
+            
+            if valid_video and valid_thumbnail:
+                logger.debug(f"has_valid_file: Vidéo et miniature valides pour: {media_obj.id}")
+                
+            return valid_video and valid_thumbnail
+        
+        logger.warning(f"has_valid_file: Type de média non reconnu: {media_obj.media_type}")
         return False
-    except (ValueError, AttributeError):
+        
+    except Exception as e:
+        logger.error(f"has_valid_file: Exception non gérée: {str(e)}")
         return False
 
 
@@ -291,6 +337,16 @@ def creator_detail(request, creator_id):
     videos = creator.media.filter(media_type='video').order_by('-upload_date')
     photos = creator.media.filter(media_type='image').order_by('-upload_date')
     
+    # Debug des médias pour identifier les problèmes
+    logger.debug(f"creator_detail: Nombre de vidéos: {videos.count()}")
+    logger.debug(f"creator_detail: Nombre de photos: {photos.count()}")
+    
+    for photo in photos:
+        logger.debug(f"Photo ID: {photo.id}, Valide: {has_valid_file(photo)}")
+    
+    for video in videos:
+        logger.debug(f"Vidéo ID: {video.id}, Valide: {has_valid_file(video)}")
+    
     # Récupérer les avis sur le créateur
     ratings = Rating.objects.filter(creator=creator).order_by('-created_at')
     rating_form = None
@@ -325,7 +381,7 @@ def creator_detail(request, creator_id):
         'favorite_form': favorite_form,
         'is_favorite': is_favorite,
         'favorite': favorite,
-        'google_api_key': settings.GOOGLE_PLACES_API_KEY,
+        'nominatim_url': settings.NOMINATIM_URL,
     }
     
     return render(request, 'creators/creator_detail.html', context)
@@ -359,7 +415,7 @@ def creator_edit(request, creator_id):
         'creator': creator,
         'form': creator_form,
         'location_form': location_form,
-        'google_api_key': settings.GOOGLE_PLACES_API_KEY,
+        'nominatim_url': settings.NOMINATIM_URL,
     })
 
 
@@ -549,13 +605,38 @@ def media_upload(request, creator_id):
                 media = form.save(commit=False)
                 media.creator = creator
                 
+                # Vérifier les fichiers avant la sauvegarde
+                if media.media_type == 'image':
+                    if not media.file:
+                        raise ValueError("Le fichier image est manquant")
+                    
+                    logger.info(f"Fichier image: {media.file.name}, taille: {media.file.size} octets")
+                    
+                elif media.media_type == 'video':
+                    if not media.video_file:
+                        raise ValueError("Le fichier vidéo est manquant")
+                    if not media.thumbnail:
+                        raise ValueError("La miniature de la vidéo est manquante")
+                        
+                    logger.info(f"Fichier vidéo: {media.video_file.name}, taille: {media.video_file.size} octets")
+                    logger.info(f"Miniature: {media.thumbnail.name}, taille: {media.thumbnail.size} octets")
+                
                 # Auto-valider les uploads des consultants/admins
                 if request.user.has_role('admin') or request.user.has_role('consultant'):
                     media.is_verified = True
                     logger.info(f"Media auto-validé par {request.user} (admin/consultant)")
                 
+                # Sauvegarde du média
                 media.save()
                 logger.info(f"Media {media.id} sauvegardé avec succès pour le créateur {creator}")
+                
+                # Vérifier après la sauvegarde si le média est bien accessible
+                is_valid = has_valid_file(media)
+                logger.info(f"Vérification post-sauvegarde du média {media.id}: {'Valide' if is_valid else 'INVALIDE'}")
+                
+                if not is_valid:
+                    logger.warning(f"Le média {media.id} a été sauvegardé mais n'est pas valide selon has_valid_file")
+                    # On continue quand même car le problème peut être temporaire
                 
                 if request.headers.get('x-requested-with') == 'XMLHttpRequest':
                     return JsonResponse({'success': True, 'media_id': media.id})
@@ -565,11 +646,16 @@ def media_upload(request, creator_id):
             except Exception as e:
                 logger.error(f"Erreur lors de la sauvegarde du média pour {creator}: {str(e)}")
                 if request.headers.get('x-requested-with') == 'XMLHttpRequest':
-                    return JsonResponse({'success': False, 'errors': {'general': 'Une erreur est survenue lors de la sauvegarde.'}}, status=500)
-                messages.error(request, "Une erreur est survenue lors de la sauvegarde du média.")
+                    return JsonResponse({'success': False, 'errors': {'general': f'Une erreur est survenue lors de la sauvegarde: {str(e)}'}}, status=500)
+                messages.error(request, f"Une erreur est survenue lors de la sauvegarde du média: {str(e)}")
                 
         else:
             logger.warning(f"Formulaire invalide pour l'upload de média par {request.user}: {form.errors}")
+            # Log détaillé des erreurs de formulaire
+            for field, errors in form.errors.items():
+                for error in errors:
+                    logger.warning(f"Erreur de formulaire - {field}: {error}")
+                    
             if request.headers.get('x-requested-with') == 'XMLHttpRequest':
                 return JsonResponse({'success': False, 'errors': form.errors}, status=400)
             messages.error(request, "Veuillez corriger les erreurs dans le formulaire.")
@@ -1220,7 +1306,7 @@ def creator_add(request):
     return render(request, 'creators/create_creator.html', {
         'form': creator_form,
         'location_form': location_form,
-        'google_api_key': settings.GOOGLE_PLACES_API_KEY,
+        'nominatim_url': settings.NOMINATIM_URL,
     })
 
 @login_required
@@ -1318,3 +1404,82 @@ def api_domains(request):
     domains_data.sort(key=lambda x: x['name'])
     
     return JsonResponse(domains_data, safe=False)
+
+# Fonction utilitaire pour normaliser les adresses et codes postaux
+def normalize_address(address_data):
+    """
+    Normalise les adresses et codes postaux pour être cohérent avec les pratiques françaises.
+    Corrige notamment les codes postaux administratifs vs couramment utilisés.
+    """
+    if not address_data:
+        return address_data
+    
+    # Dictionnaire des corrections spécifiques de codes postaux
+    postal_corrections = {
+        'Montpellier': '34000',  # Au lieu de 34062 (administratif)
+        'Marseille': {
+            # Arrondissements de Marseille
+            'Marseille 1er Arrondissement': '13001',
+            'Marseille 2e Arrondissement': '13002',
+            'Marseille 3e Arrondissement': '13003',
+            'Marseille 4e Arrondissement': '13004',
+            'Marseille 5e Arrondissement': '13005',
+            'Marseille 6e Arrondissement': '13006',
+            'Marseille 7e Arrondissement': '13007',
+            'Marseille 8e Arrondissement': '13008',
+            'Marseille 9e Arrondissement': '13009',
+            'Marseille 10e Arrondissement': '13010',
+            'Marseille 11e Arrondissement': '13011',
+            'Marseille 12e Arrondissement': '13012',
+            'Marseille 13e Arrondissement': '13013',
+            'Marseille 14e Arrondissement': '13014',
+            'Marseille 15e Arrondissement': '13015',
+            'Marseille 16e Arrondissement': '13016',
+            # Fallback général pour Marseille
+            'Marseille': '13000',
+        },
+        'Lyon': {
+            # Arrondissements de Lyon
+            'Lyon 1er Arrondissement': '69001',
+            'Lyon 2e Arrondissement': '69002',
+            'Lyon 3e Arrondissement': '69003',
+            'Lyon 4e Arrondissement': '69004',
+            'Lyon 5e Arrondissement': '69005',
+            'Lyon 6e Arrondissement': '69006',
+            'Lyon 7e Arrondissement': '69007',
+            'Lyon 8e Arrondissement': '69008',
+            'Lyon 9e Arrondissement': '69009',
+            # Fallback général pour Lyon
+            'Lyon': '69000',
+        },
+        'Toulouse': '31000',  # Au lieu de 31500 (administratif)
+        'Bordeaux': '33000',  # Au lieu de 33063 (administratif)
+        'Nantes': '44000',    # Au lieu de 44109 (administratif)
+        'Strasbourg': '67000', # Au lieu de 67482 (administratif)
+        'Lille': '59000',     # Au lieu de 59350 (administratif)
+    }
+    
+    try:
+        # Vérifier si l'adresse contient une ville connue pour avoir des problèmes de code postal
+        for city, correction in postal_corrections.items():
+            if isinstance(correction, dict):
+                # Pour les villes avec des arrondissements
+                for district, code in correction.items():
+                    if district in address_data and re.search(r'\b\d{5}\b', address_data):
+                        # Remplacer le code postal existant par celui corrigé
+                        address_data = re.sub(r'\b\d{5}\b', code, address_data)
+                        logger.debug(f"Code postal corrigé pour {district}: {code}")
+                        break
+                if city in address_data and re.search(r'\b\d{5}\b', address_data) and not any(district in address_data for district in correction.keys()):
+                    # Utiliser le code par défaut si aucun arrondissement n'est trouvé
+                    address_data = re.sub(r'\b\d{5}\b', correction['Lyon' if city == 'Lyon' else 'Marseille'], address_data)
+                    logger.debug(f"Code postal général corrigé pour {city}")
+            else:
+                # Pour les villes sans arrondissements
+                if city in address_data and re.search(r'\b\d{5}\b', address_data):
+                    address_data = re.sub(r'\b\d{5}\b', correction, address_data)
+                    logger.debug(f"Code postal corrigé pour {city}: {correction}")
+    except Exception as e:
+        logger.error(f"Erreur lors de la normalisation de l'adresse: {str(e)}")
+    
+    return address_data

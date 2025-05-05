@@ -1,0 +1,346 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Devenir créateur de contenu UGC chez Neads - Étape 2{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/creator_signup.css' %}">
+<style>
+    .upload-zone {
+        border: 2px dashed #ddd;
+        border-radius: 4px;
+        padding: 20px;
+        text-align: center;
+        cursor: pointer;
+        transition: border-color 0.3s;
+    }
+    .upload-zone:hover {
+        border-color: #0d6efd;
+    }
+    .upload-prompt {
+        margin-bottom: 10px;
+    }
+    .upload-prompt i {
+        font-size: 2rem;
+        color: #0d6efd;
+    }
+    .preview-container {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-top: 10px;
+    }
+    .preview-item {
+        position: relative;
+        width: 150px;
+        height: 150px;
+        border-radius: 4px;
+        overflow: hidden;
+    }
+    .preview-item img, .preview-item video {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+    .preview-item .remove-btn {
+        position: absolute;
+        top: 5px;
+        right: 5px;
+        background: rgba(255, 255, 255, 0.8);
+        border: none;
+        border-radius: 50%;
+        width: 24px;
+        height: 24px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+    }
+    .progress-bar {
+        height: 4px;
+        background-color: #e9ecef;
+        border-radius: 2px;
+        margin-top: 5px;
+        overflow: hidden;
+    }
+    .progress-bar .progress {
+        height: 100%;
+        background-color: #0d6efd;
+        width: 0%;
+        transition: width 0.3s;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container my-5">
+    <div class="row">
+        <div class="col-lg-8 mx-auto">
+            <div class="card shadow-lg mb-4">
+                <div class="card-header bg-primary text-white py-4">
+                    <h1 class="h3 mb-0 text-center">Étape 2 : Ajoute tes meilleures créations</h1>
+                </div>
+                <div class="card-body p-4">
+                    <div class="mb-4 text-center">
+                        <p class="lead">Pour finaliser ton inscription, ajoute tes meilleures créations UGC.<br>
+                        Cela nous permettra de mieux évaluer ton style et ta créativité.</p>
+                    </div>
+                    
+                    <form method="post" enctype="multipart/form-data" id="media-upload-form" class="needs-validation" novalidate action="{% url 'creator_detail' creator_id=creator.id %}">
+                        {% csrf_token %}
+                        <input type="hidden" name="creator_id" value="{{ creator.id }}">
+                        
+                        <!-- Vidéos -->
+                        <div class="card mb-4">
+                            <div class="card-header bg-light">
+                                <h3 class="h5 mb-0">Vidéos UGC (3 maximum)</h3>
+                            </div>
+                            <div class="card-body">
+                                <div class="mb-3">
+                                    <label class="form-label">Vidéo 1 *</label>
+                                    <div class="upload-zone" id="video-upload-zone-1">
+                                        <div class="upload-prompt">
+                                            <i class="fas fa-video"></i>
+                                            <p>Cliquez ou déplacez un fichier vidéo dans cette zone</p>
+                                        </div>
+                                        <input type="file" name="video_file1" id="video_file1" accept="video/*" class="d-none">
+                                    </div>
+                                    <div class="progress-bar d-none" id="video-progress-1">
+                                        <div class="progress"></div>
+                                    </div>
+                                    <div class="preview-container" id="video-preview-1"></div>
+                                    <div class="invalid-feedback">Veuillez ajouter au moins une vidéo.</div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label class="form-label">Vidéo 2</label>
+                                    <div class="upload-zone" id="video-upload-zone-2">
+                                        <div class="upload-prompt">
+                                            <i class="fas fa-video"></i>
+                                            <p>Cliquez ou déplacez un fichier vidéo dans cette zone</p>
+                                        </div>
+                                        <input type="file" name="video_file2" id="video_file2" accept="video/*" class="d-none">
+                                    </div>
+                                    <div class="progress-bar d-none" id="video-progress-2">
+                                        <div class="progress"></div>
+                                    </div>
+                                    <div class="preview-container" id="video-preview-2"></div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label class="form-label">Vidéo 3</label>
+                                    <div class="upload-zone" id="video-upload-zone-3">
+                                        <div class="upload-prompt">
+                                            <i class="fas fa-video"></i>
+                                            <p>Cliquez ou déplacez un fichier vidéo dans cette zone</p>
+                                        </div>
+                                        <input type="file" name="video_file3" id="video_file3" accept="video/*" class="d-none">
+                                    </div>
+                                    <div class="progress-bar d-none" id="video-progress-3">
+                                        <div class="progress"></div>
+                                    </div>
+                                    <div class="preview-container" id="video-preview-3"></div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Images -->
+                        <div class="card mb-4">
+                            <div class="card-header bg-light">
+                                <h3 class="h5 mb-0">Images UGC (3 maximum)</h3>
+                            </div>
+                            <div class="card-body">
+                                <div class="mb-3">
+                                    <label class="form-label">Image 1 *</label>
+                                    <div class="upload-zone" id="image-upload-zone-1">
+                                        <div class="upload-prompt">
+                                            <i class="fas fa-image"></i>
+                                            <p>Cliquez ou déplacez un fichier image dans cette zone</p>
+                                        </div>
+                                        <input type="file" name="image_file1" id="image_file1" accept="image/*" class="d-none">
+                                    </div>
+                                    <div class="progress-bar d-none" id="image-progress-1">
+                                        <div class="progress"></div>
+                                    </div>
+                                    <div class="preview-container" id="image-preview-1"></div>
+                                    <div class="invalid-feedback">Veuillez ajouter au moins une image.</div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label class="form-label">Image 2</label>
+                                    <div class="upload-zone" id="image-upload-zone-2">
+                                        <div class="upload-prompt">
+                                            <i class="fas fa-image"></i>
+                                            <p>Cliquez ou déplacez un fichier image dans cette zone</p>
+                                        </div>
+                                        <input type="file" name="image_file2" id="image_file2" accept="image/*" class="d-none">
+                                    </div>
+                                    <div class="progress-bar d-none" id="image-progress-2">
+                                        <div class="progress"></div>
+                                    </div>
+                                    <div class="preview-container" id="image-preview-2"></div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label class="form-label">Image 3</label>
+                                    <div class="upload-zone" id="image-upload-zone-3">
+                                        <div class="upload-prompt">
+                                            <i class="fas fa-image"></i>
+                                            <p>Cliquez ou déplacez un fichier image dans cette zone</p>
+                                        </div>
+                                        <input type="file" name="image_file3" id="image_file3" accept="image/*" class="d-none">
+                                    </div>
+                                    <div class="progress-bar d-none" id="image-progress-3">
+                                        <div class="progress"></div>
+                                    </div>
+                                    <div class="preview-container" id="image-preview-3"></div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary btn-lg">Finaliser mon inscription</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Gestion des zones de dépôt pour les vidéos
+    for (let i = 1; i <= 3; i++) {
+        const uploadZone = document.getElementById(`video-upload-zone-${i}`);
+        const fileInput = document.getElementById(`video_file${i}`);
+        const previewContainer = document.getElementById(`video-preview-${i}`);
+        const progressBar = document.getElementById(`video-progress-${i}`);
+        
+        setupUploadZone(uploadZone, fileInput, previewContainer, progressBar, 'video');
+    }
+    
+    // Gestion des zones de dépôt pour les images
+    for (let i = 1; i <= 3; i++) {
+        const uploadZone = document.getElementById(`image-upload-zone-${i}`);
+        const fileInput = document.getElementById(`image_file${i}`);
+        const previewContainer = document.getElementById(`image-preview-${i}`);
+        const progressBar = document.getElementById(`image-progress-${i}`);
+        
+        setupUploadZone(uploadZone, fileInput, previewContainer, progressBar, 'image');
+    }
+    
+    function setupUploadZone(uploadZone, fileInput, previewContainer, progressBar, type) {
+        // Gestion du clic sur la zone
+        uploadZone.addEventListener('click', () => fileInput.click());
+        
+        // Gestion du drag & drop
+        uploadZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadZone.style.borderColor = '#0d6efd';
+        });
+        
+        uploadZone.addEventListener('dragleave', () => {
+            uploadZone.style.borderColor = '#ddd';
+        });
+        
+        uploadZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadZone.style.borderColor = '#ddd';
+            if (e.dataTransfer.files.length) {
+                fileInput.files = e.dataTransfer.files;
+                handleFileSelect(fileInput, previewContainer, progressBar, type);
+            }
+        });
+        
+        // Gestion de la sélection de fichier
+        fileInput.addEventListener('change', () => {
+            handleFileSelect(fileInput, previewContainer, progressBar, type);
+        });
+    }
+    
+    function handleFileSelect(fileInput, previewContainer, progressBar, type) {
+        const file = fileInput.files[0];
+        if (!file) return;
+        
+        // Vérification de la taille du fichier (max 100MB)
+        if (file.size > 100 * 1024 * 1024) {
+            alert('Le fichier est trop volumineux. Maximum 100MB autorisé.');
+            return;
+        }
+        
+        // Vérification du type de fichier
+        if (type === 'video' && !file.type.startsWith('video/')) {
+            alert('Veuillez sélectionner un fichier vidéo.');
+            return;
+        }
+        if (type === 'image' && !file.type.startsWith('image/')) {
+            alert('Veuillez sélectionner un fichier image.');
+            return;
+        }
+        
+        // Création de la prévisualisation
+        const previewItem = document.createElement('div');
+        previewItem.className = 'preview-item';
+        
+        const mediaElement = type === 'video' ? document.createElement('video') : document.createElement('img');
+        mediaElement.controls = type === 'video';
+        mediaElement.src = URL.createObjectURL(file);
+        
+        const removeBtn = document.createElement('button');
+        removeBtn.className = 'remove-btn';
+        removeBtn.innerHTML = '×';
+        removeBtn.onclick = () => {
+            previewContainer.removeChild(previewItem);
+            fileInput.value = '';
+        };
+        
+        previewItem.appendChild(mediaElement);
+        previewItem.appendChild(removeBtn);
+        
+        // Nettoyage de la prévisualisation précédente
+        previewContainer.innerHTML = '';
+        previewContainer.appendChild(previewItem);
+        
+        // Upload du fichier
+        uploadFile(file, progressBar);
+    }
+    
+    function uploadFile(file, progressBar) {
+        const formData = new FormData();
+        formData.append('file', file);
+        
+        progressBar.classList.remove('d-none');
+        const progress = progressBar.querySelector('.progress');
+        
+        fetch('/upload-media/', {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                progress.style.width = '100%';
+                setTimeout(() => {
+                    progressBar.classList.add('d-none');
+                    progress.style.width = '0%';
+                }, 1000);
+            } else {
+                throw new Error(data.error || 'Erreur lors de l\'upload');
+            }
+        })
+        .catch(error => {
+            console.error('Erreur:', error);
+            alert('Erreur lors de l\'upload du fichier. Veuillez réessayer.');
+            progressBar.classList.add('d-none');
+            progress.style.width = '0%';
+        });
+    }
+});
+</script>
+{% endblock %} 
