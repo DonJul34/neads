@@ -45,11 +45,6 @@
                                         <a href="{% url 'creator_detail' creator.id %}" class="text-decoration-none">
                                             {{ creator.full_name }}
                                         </a>
-                                        {% if creator.verified_by_neads %}
-                                        <span class="ms-1 text-primary" title="Vérifié par NEADS">
-                                            <i class="fas fa-check-circle"></i>
-                                        </span>
-                                        {% endif %}
                                     </div>
                                 </div>
                             </td>

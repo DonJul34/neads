@@ -178,7 +178,17 @@ const SearchCreators = (function () {
             })
             .then(data => {
                 console.log('✅ Données reçues:', data);
-                creators = data.creators || [];
+
+                // Vérifier si la structure de données est correcte
+                if (data.creators) {
+                    creators = data.creators;
+                } else if (data.points) {
+                    // Format alternatif possible de l'API
+                    creators = data.points;
+                } else {
+                    // Si on a reçu un tableau directement
+                    creators = Array.isArray(data) ? data : [];
+                }
 
                 if (creators.length === 0) {
                     console.log('⚠️ Aucun créateur trouvé avec ces filtres');
@@ -186,7 +196,7 @@ const SearchCreators = (function () {
                     console.log(`✅ ${creators.length} créateurs trouvés`);
                 }
 
-                // Mettre à jour la carte
+                // Mettre à jour la carte avec les créateurs
                 mapManager.renderCreators(creators);
 
                 // Mettre à jour le compteur de résultats
@@ -200,6 +210,9 @@ const SearchCreators = (function () {
                 if (loadingIndicator) {
                     loadingIndicator.style.display = 'none';
                 }
+
+                // Actualiser le contenu de la liste des créateurs
+                updateCreatorsList(creators);
             })
             .catch(error => {
                 console.error('❌ Erreur:', error);
@@ -224,6 +237,84 @@ const SearchCreators = (function () {
                     loadingIndicator.style.display = 'none';
                 }
             });
+    }
+
+    /**
+     * Met à jour la liste des créateurs dans le panneau latéral
+     * @param {Array} creatorsList - Liste des créateurs à afficher
+     */
+    function updateCreatorsList(creatorsList) {
+        const creatorsListContent = document.getElementById('creators-list-content');
+        if (!creatorsListContent) return;
+
+        creatorsListContent.innerHTML = '';
+
+        if (creatorsList.length === 0) {
+            creatorsListContent.innerHTML = `
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle me-2"></i> Aucun créateur trouvé avec ces critères.
+                </div>
+            `;
+            return;
+        }
+
+        // Trier les créateurs par distance
+        const sortedCreators = [...creatorsList].sort((a, b) => a.distance - b.distance);
+
+        // Ajouter chaque créateur à la liste
+        sortedCreators.forEach(creator => {
+            const creatorItem = document.createElement('div');
+            creatorItem.className = 'creator-item';
+            creatorItem.innerHTML = `
+                <div class="d-flex align-items-center">
+                    ${creator.thumbnail ?
+                    `<img src="${creator.thumbnail}" alt="${creator.name}" class="rounded-circle me-2" style="width: 40px; height: 40px; object-fit: cover;">` :
+                    `<div class="rounded-circle me-2 bg-secondary d-flex align-items-center justify-content-center" style="width: 40px; height: 40px; color: white;">
+                            <i class="fas fa-user"></i>
+                        </div>`
+                }
+                    <div>
+                        <h6 class="mb-0">${creator.name}</h6>
+                        <div class="small text-muted">
+                            ${creator.distance.toFixed(1)}km
+                            ${creator.rating ? `<span class="ms-2">⭐ ${creator.rating.toFixed(1)}</span>` : ''}
+                        </div>
+                    </div>
+                </div>
+                <div class="mt-1 small">
+                    ${creator.domains && creator.domains.length > 0 ?
+                    creator.domains.slice(0, 2).map(d =>
+                        `<span class="badge bg-secondary me-1">${typeof d === 'object' ? d.name : d}</span>`
+                    ).join('') : ''
+                }
+                </div>
+                <a href="${creator.url}" class="stretched-link"></a>
+            `;
+
+            // Ajouter un événement de clic pour centrer la carte sur ce créateur
+            creatorItem.addEventListener('click', () => {
+                // Coordonnées du créateur
+                const lat = creator.latitude || creator.lat;
+                const lng = creator.longitude || creator.lng;
+
+                if (lat && lng) {
+                    // Centrer la carte sur ce créateur
+                    if (mapManager && mapManager.map) {
+                        mapManager.map.setView([lat, lng], 14);
+                    }
+
+                    // Ouvrir la popup si possible
+                    if (mapManager && mapManager.findCreatorMarker) {
+                        const marker = mapManager.findCreatorMarker(creator.id);
+                        if (marker) {
+                            marker.openPopup();
+                        }
+                    }
+                }
+            });
+
+            creatorsListContent.appendChild(creatorItem);
+        });
     }
 
     /**
@@ -277,6 +368,11 @@ const SearchCreators = (function () {
         const verifiedOnlyFilter = document.getElementById('map-verified-only');
         if (verifiedOnlyFilter && verifiedOnlyFilter.checked) {
             filters.verified_only = 'on';
+        }
+
+        const favoritesOnlyFilter = document.getElementById('map-favorites-only');
+        if (favoritesOnlyFilter && favoritesOnlyFilter.checked) {
+            filters.favorites_only = 'on';
         }
 
         // Récupérer la note minimale
@@ -368,6 +464,11 @@ const SearchCreators = (function () {
         const verifiedOnlyFilter = document.getElementById('map-verified-only');
         if (verifiedOnlyFilter) {
             verifiedOnlyFilter.checked = false;
+        }
+
+        const favoritesOnlyFilter = document.getElementById('map-favorites-only');
+        if (favoritesOnlyFilter) {
+            favoritesOnlyFilter.checked = false;
         }
 
         // Réinitialiser la note minimale

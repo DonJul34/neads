@@ -63,13 +63,6 @@ class Domain(models.Model):
         return self.name
 
 
-class ContentType(models.Model):
-    name = models.CharField(max_length=50)
-    
-    def __str__(self):
-        return self.name
-
-
 class Location(models.Model):
     full_address = models.CharField(max_length=255, verbose_name="Adresse complète", blank=True, null=True)
     latitude = models.FloatField(blank=True, null=True)
@@ -129,14 +122,6 @@ class Creator(models.Model):
         ('O', 'Autre'),
     )
     
-    CONTENT_TYPE_CHOICES = (
-        ('video', 'Vidéo'),
-        ('image', 'Image'),
-        ('audio', 'Audio'),
-        ('ugc_duo', 'UGC Duo'),
-        ('animal', 'Animal'),
-    )
-    
     # Liens avec User (1-1 facultatif car peut exister sans compte)
     user = models.OneToOneField(User, on_delete=models.SET_NULL, blank=True, null=True, related_name='creator_profile')
     
@@ -169,7 +154,6 @@ class Creator(models.Model):
     bio = models.TextField(blank=True, null=True)
     equipment = models.CharField(max_length=255, blank=True, null=True)
     delivery_time = models.CharField(max_length=50, blank=True, null=True)
-    content_types = models.ManyToManyField(ContentType, related_name='creators', blank=True)
     mobility = models.BooleanField(default=False)
     can_invoice = models.BooleanField(default=False)
     previous_clients = models.TextField(blank=True, null=True)
@@ -177,7 +161,6 @@ class Creator(models.Model):
     # Métriques et notation
     average_rating = models.DecimalField(max_digits=3, decimal_places=2, default=0.0)
     total_ratings = models.PositiveIntegerField(default=0)
-    verified_by_neads = models.BooleanField(default=False)
     
     # Timestamps et métadonnées
     created_at = models.DateTimeField(auto_now_add=True)

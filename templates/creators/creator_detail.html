@@ -205,12 +205,6 @@
 <div class="container">
   <!-- Creator header section -->
   <div class="creator-header position-relative mb-4">
-    {% if creator.verified_by_neads %}
-    <div class="verified-badge">
-      <i class="fas fa-check-circle me-1"></i> Vérifié par NEADS
-    </div>
-    {% endif %}
-
     <!-- Panneau d'administration pour les admins et créateurs -->
     {% if user.is_authenticated %}
     {% if user.role == 'admin' %}
@@ -224,14 +218,6 @@
         <a href="{% url 'upload_media' creator.id %}" class="btn btn-sm btn-outline-primary mb-1">
           <i class="fas fa-photo-video me-1"></i> Gérer les médias
         </a>
-        <button type="button" class="btn btn-sm btn-outline-warning mb-1" data-bs-toggle="modal"
-          data-bs-target="#toggleVerificationModal">
-          {% if creator.verified_by_neads %}
-          <i class="fas fa-times-circle me-1"></i> Retirer vérification
-          {% else %}
-          <i class="fas fa-check-circle me-1"></i> Vérifier le profil
-          {% endif %}
-        </button>
         <button type="button" class="btn btn-sm btn-outline-danger" data-bs-toggle="modal"
           data-bs-target="#deleteCreatorModal">
           <i class="fas fa-trash-alt me-1"></i> Supprimer le profil
@@ -364,13 +350,7 @@
                   <i class="fas fa-clock me-2 text-primary"></i>
                   Délai de livraison : {{ creator.delivery_time }}
                 </li>
-                {% endif %} {% if creator.content_types %}
-                <li class="mb-2">
-                  <i class="fas fa-film me-2 text-primary"></i>
-                  Type de contenu : {{ creator.get_content_types_display }}
-                </li>
                 {% endif %}
-
                 <li class="mb-2">
                   <i class="fas fa-car me-2 text-primary"></i>
                   Mobilité : {% if creator.mobility %}Oui (déplacements pris en
@@ -732,41 +712,6 @@
   </div>
 
   <!-- Modals section -->
-  <!-- Verification modal -->
-  {% if user.is_authenticated and user.role == 'admin' %}
-  <div class="modal fade" id="toggleVerificationModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title">
-            {% if creator.verified_by_neads %}Retirer la vérification{% else %}Vérifier le profil{% endif %}
-          </h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-        </div>
-        <div class="modal-body">
-          <p>
-            {% if creator.verified_by_neads %}
-            Êtes-vous sûr de vouloir retirer la vérification de ce profil ?
-            {% else %}
-            Êtes-vous sûr de vouloir vérifier ce profil ?
-            {% endif %}
-          </p>
-        </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
-          <form method="post" action="{% url 'toggle_verification' creator.id %}">
-            {% csrf_token %}
-            <button type="submit"
-              class="btn {% if creator.verified_by_neads %}btn-warning{% else %}btn-success{% endif %}">
-              {% if creator.verified_by_neads %}Retirer la vérification{% else %}Vérifier le profil{% endif %}
-            </button>
-          </form>
-        </div>
-      </div>
-    </div>
-  </div>
-  {% endif %}
-
   <!-- Delete modal -->
   {% if user.is_authenticated %}
   {% if user.role == 'admin' or user.role == 'creator' and user.creator_profile and user.creator_profile.id ==
@@ -792,7 +737,7 @@
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
-          <form method="post" action="{% url 'delete_creator' creator.id %}">
+          <form method="post" action="{% url 'creator_delete' creator.id %}">
             {% csrf_token %}
             <button type="submit" class="btn btn-danger">Supprimer définitivement</button>
           </form>

@@ -1,7 +1,8 @@
 from django import forms
 from django.core.exceptions import ValidationError
 from django.core.validators import MinValueValidator
-from .models import Creator, Media, Rating, Domain, Location, Favorite, ContentType
+from .models import Creator, Media, Rating, Domain, Location, Favorite
+from neads.core.models import User
 import datetime
 import requests
 from django.conf import settings
@@ -202,9 +203,8 @@ class CreatorForm(forms.ModelForm):
     
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        from .models import Domain, ContentType
+        from .models import Domain
         self.fields['domains'].queryset = Domain.objects.all().order_by('name')
-        self.fields['content_types'].queryset = ContentType.objects.all().order_by('name')
         
         # Ajouter des classes Bootstrap à tous les champs
         for field_name, field in self.fields.items():
@@ -234,18 +234,6 @@ class CreatorSearchForm(forms.Form):
         choices=[('', 'Tous')] + list(Creator.GENDER_CHOICES), 
         required=False, 
         label="Genre"
-    )
-    content_type = forms.ChoiceField(
-        choices=[
-            ('', 'Tous'),
-            ('photo', 'Photo'),
-            ('video', 'Vidéo'),
-            ('audio', 'Audio'),
-            ('text', 'Texte'),
-            ('mixed', 'Mixte')
-        ],
-        required=False,
-        label="Type de contenu"
     )
     min_rating = forms.IntegerField(required=False, min_value=1, max_value=5, label="Note minimum")
     can_invoice = forms.BooleanField(required=False, label="Peut facturer")
@@ -693,7 +681,6 @@ class CreatorRegistrationForm(forms.Form):
     def clean_email(self):
         email = self.cleaned_data.get('email')
         # Vérifier si l'email existe déjà
-        from neads.core.models import User
         if User.objects.filter(email=email).exists():
             raise ValidationError("Un compte avec cet email existe déjà. Veuillez vous connecter.")
         return email

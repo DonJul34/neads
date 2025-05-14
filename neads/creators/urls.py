@@ -20,8 +20,7 @@ urlpatterns = [
     path('remove-favorite/<int:creator_id>/', views.toggle_favorite, name='remove_favorite'),
     path('rate/<int:creator_id>/', views.rate_creator, name='rate_creator'),
     path('discover/', views.discover_view, name='discover'),
-    path('toggle-verification/<int:creator_id>/', views.toggle_verification, name='toggle_verification'),
-    path('delete-creator/<int:creator_id>/', views.delete_creator, name='delete_creator'),
+    path('delete-creator/<int:creator_id>/', views.creator_delete, name='creator_delete'),
     path('delete-rating/<int:rating_id>/', views.delete_rating, name='delete_rating'),
     path('list/', views.creators_list, name='creator_list'),
 ] 

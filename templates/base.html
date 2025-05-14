@@ -9,6 +9,9 @@
     {% block title %}NEADS - Plateforme de Créateurs{% endblock %}
   </title>
 
+  <!-- Favicon -->
+  <link rel="icon" type="image/png" href="{% static 'img/favicon.png' %}">
+
   <!-- Google Fonts - Poppins for all typography -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -38,8 +41,8 @@
       --tertiary-color: #2C215F;
       --accent-color: #4C35A8;
       --accent-color-light: #f0edff;
-      --primary-gradient: linear-gradient(135deg, #17142F 0%, #4C35A8 100%);
-      --secondary-gradient: linear-gradient(135deg, #2C215F 0%, #4C35A8 100%);
+      --primary-gradient: #17142F;
+      --secondary-gradient: #17142F;
       
       /* Text colors */
       --text-primary: #17142F;
@@ -67,7 +70,7 @@
       --transition-slow: all 0.5s ease;
       
       /* Footer gradient - blues */
-      --footer-gradient: linear-gradient(135deg, #17142F 0%, #2C215F 50%, #4C35A8 100%);
+      --footer-gradient: #17142F;
     }
 
     /* Global styles */
@@ -162,7 +165,7 @@
       right: -350px;
       width: 350px;
       height: 100vh;
-      background-color: var(--bg-secondary);
+      background-color: #17142F;
       z-index: 10000;
       transition: var(--transition-slow);
       box-shadow: var(--shadow-lg);
@@ -205,10 +208,11 @@
       font-family: 'Poppins', sans-serif;
       font-size: 1.8rem;
       font-weight: 700;
-      background: var(--primary-gradient);
-      -webkit-background-clip: text;
-      background-clip: text;
-      color: transparent;
+      color: white;
+    }
+    
+    .menu-title img {
+      height: 40px;
     }
     
     .menu-close {
@@ -312,7 +316,7 @@
       font-size: 0.75rem;
       font-weight: 600;
       text-transform: uppercase;
-      color: var(--text-light);
+      color: white;
       margin: 1.5rem 0 0.75rem 0.5rem;
       letter-spacing: 0.05em;
     }
@@ -332,7 +336,7 @@
       align-items: center;
       padding: 0.75rem 1rem;
       border-radius: var(--border-radius-sm);
-      color: var(--text-secondary);
+      color: white;
       text-decoration: none;
       transition: var(--transition-normal);
       font-weight: 500;
@@ -348,7 +352,7 @@
       width: 24px;
       text-align: center;
       margin-right: 0.75rem;
-      color: var(--text-light);
+      color: white;
       transition: var(--transition-normal);
     }
     
@@ -805,7 +809,9 @@
   <!-- Side menu panel -->
   <div id="menu-panel">
     <div class="menu-header">
-      <div class="menu-title">NEADS</div>
+      <div class="menu-title">
+        <img src="{% static 'img/logo-removebg-preview.png' %}" alt="NEADS Logo">
+      </div>
       <div class="menu-close">
         <i class="fas fa-times"></i>
       </div>
@@ -1092,5 +1098,4 @@
   {% block extra_js %}{% endblock %}
 </body>
 
-</html>
 </html>

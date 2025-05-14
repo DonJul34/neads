@@ -201,10 +201,6 @@ def gallery_view(request):
         if data.get('gender'):
             creators = creators.filter(gender=data['gender'])
             
-        # Filtre par type de contenu
-        if data.get('content_type'):
-            creators = creators.filter(content_types=data['content_type'])
-            
         # Filtres géographiques
         if data.get('country'):
             creators = creators.filter(location__full_address__icontains=data['country'])
@@ -717,10 +713,6 @@ def search_view(request):
         if data.get('gender'):
             creators = creators.filter(gender=data['gender'])
             
-        # Filtre par type de contenu
-        if data.get('content_type'):
-            creators = creators.filter(content_types=data['content_type'])
-            
         # Filtres géographiques
         if data.get('country'):
             creators = creators.filter(location__full_address__icontains=data['country'])
@@ -969,11 +961,6 @@ def api_map_search(request):
     if gender:
         creators = creators.filter(gender=gender)
     
-    # Filtre par type de contenu
-    content_type = request.GET.get('content_type')
-    if content_type:
-        creators = creators.filter(content_types__contains=[content_type])
-    
     # Filtres d'âge
     min_age = request.GET.get('min_age')
     max_age = request.GET.get('max_age')
@@ -1081,52 +1068,35 @@ def api_map_search(request):
 
 @login_required
 @role_required(['admin'])
-def toggle_verification(request, creator_id):
+def delete_rating(request, rating_id):
     """
-    Vue permettant aux administrateurs de vérifier ou dé-vérifier un profil créateur.
+    Vue permettant aux administrateurs de supprimer un avis sur un créateur.
     Seuls les administrateurs peuvent utiliser cette fonctionnalité.
     """
     try:
-        creator = get_object_or_404(Creator, id=creator_id)
+        rating = get_object_or_404(Rating, id=rating_id)
+        creator_id = rating.creator.id
         
-        # Inverser l'état de vérification
-        creator.verified_by_neads = not creator.verified_by_neads
+        # Journaliser la suppression
+        logger.info(f"Admin {request.user.email} a supprimé l'avis #{rating_id} sur le créateur #{creator_id}")
         
-        # Si le profil est vérifié, enregistrer l'admin qui a fait la vérification
-        if creator.verified_by_neads:
-            creator.verified_by = request.user
-            creator.verified_at = timezone.now()
-            
-            # Envoyer une notification au créateur (optionnel)
-            try:
-                # Envoyer un email de notification
-                subject = "Votre profil NEADS est maintenant vérifié"
-                message = f"Félicitations ! Votre profil sur NEADS a été vérifié par notre équipe. Cela augmentera votre visibilité sur la plateforme."
-                send_mail(subject, message, settings.DEFAULT_FROM_EMAIL, [creator.user.email])
-                
-                messages.success(request, f"Le profil de {creator.full_name} a été vérifié et une notification a été envoyée.")
-            except Exception as e:
-                logger.error(f"Erreur lors de l'envoi de l'email de vérification: {str(e)}")
-                messages.success(request, f"Le profil de {creator.full_name} a été vérifié, mais l'email de notification n'a pas pu être envoyé.")
-        else:
-            creator.verified_by = None
-            creator.verified_at = None
-            messages.success(request, f"La vérification du profil de {creator.full_name} a été retirée.")
+        # Supprimer l'avis
+        rating.delete()
         
-        creator.save()
+        # Mettre à jour les moyennes
+        rating.creator.update_ratings()
         
-        # Journaliser l'action
-        logger.info(f"Admin {request.user.email} a {'vérifié' if creator.verified_by_neads else 'retiré la vérification de'} le profil du créateur {creator.full_name} (ID: {creator.id})")
-        
-        return redirect('creator_detail', creator_id=creator.id)
+        messages.success(request, "L'avis a été supprimé avec succès.")
+        return redirect('creator_detail', creator_id=creator_id)
     except Exception as e:
-        logger.error(f"Erreur lors de la modification de l'état de vérification: {str(e)}")
-        messages.error(request, "Une erreur est survenue. Veuillez réessayer.")
+        logger.error(f"Erreur lors de la suppression de l'avis: {str(e)}")
+        messages.error(request, "Une erreur est survenue lors de la suppression de l'avis.")
         return redirect('creator_detail', creator_id=creator_id)
 
+
 @login_required
-@role_required(['admin', 'consultant'])
-def delete_creator(request, creator_id):
+@role_required(['admin'])
+def creator_delete(request, creator_id):
     """
     Vue permettant aux administrateurs de supprimer un profil créateur complet.
     Cette action est irréversible et supprime toutes les données associées.
@@ -1134,7 +1104,6 @@ def delete_creator(request, creator_id):
     try:
         creator = get_object_or_404(Creator, id=creator_id)
         creator_name = creator.full_name
-        user = creator.user
         
         if request.method == 'POST':
             # Journaliser la suppression
@@ -1176,58 +1145,6 @@ def delete_creator(request, creator_id):
         messages.error(request, "Une erreur est survenue lors de la suppression du créateur.")
         return redirect('creator_detail', creator_id=creator_id)
 
-@login_required
-@role_required(['admin'])
-def delete_rating(request, rating_id):
-    """
-    Vue pour supprimer une notation d'un créateur
-    """
-    rating = get_object_or_404(Rating, id=rating_id)
-    creator = rating.creator
-    user = rating.user
-    
-    # Enregistrer la raison de suppression si fournie
-    reason = request.POST.get('reason', 'Non précisée')
-    has_experience = rating.has_experience
-    
-    # Journaliser la suppression
-    logger.warning(
-        f"Suppression d'un avis par {request.user.email} :\n"
-        f"- Créateur : {creator.full_name} (ID: {creator.id})\n"
-        f"- Auteur de l'avis : {user.email} (ID: {user.id})\n"
-        f"- Note : {rating.rating}/5\n"
-        f"- A déclaré avoir eu une expérience : {'Oui' if has_experience else 'Non'}\n"
-        f"- Raison de la suppression : {reason}"
-    )
-    
-    # Supprimer la notation
-    rating.delete()
-    
-    # Mettre à jour la note moyenne du créateur
-    creator.update_ratings()
-    
-    # Envoyer un message à l'utilisateur dont l'avis a été supprimé
-    if not has_experience:
-        message = (
-            f"Votre avis sur le créateur {creator.full_name} a été supprimé car vous n'avez pas "
-            f"déclaré avoir eu une expérience réelle avec ce créateur. Les avis doivent être basés "
-            f"sur une expérience vérifiable pour garantir la qualité de notre plateforme."
-        )
-    else:
-        message = (
-            f"Votre avis sur le créateur {creator.full_name} a été supprimé par un administrateur. "
-            f"Raison: {reason}"
-        )
-    
-    # Ajouter la notification à l'utilisateur concerné
-    # (Cette partie dépend de votre système de notification)
-    
-    messages.success(request, f"L'avis a été supprimé et l'utilisateur {user.email} a été informé.")
-    
-    if request.headers.get('x-requested-with') == 'XMLHttpRequest':
-        return JsonResponse({'success': True})
-        
-    return redirect('creator_detail', creator_id=creator.id)
 
 @login_required
 @role_required(['admin', 'consultant'])
@@ -1247,12 +1164,6 @@ def creators_list(request):
             Q(email__icontains=query)
         )
     
-    verification = request.GET.get('verified')
-    if verification == 'yes':
-        creators = creators.filter(verified_by_neads=True)
-    elif verification == 'no':
-        creators = creators.filter(verified_by_neads=False)
-    
     # Pagination
     paginator = Paginator(creators, 20)  # 20 créateurs par page
     page_number = request.GET.get('page', 1)
@@ -1262,13 +1173,13 @@ def creators_list(request):
         'creators': page_obj,
         'total_creators': paginator.count,
         'q': query,
-        'verification': verification,
         'is_paginated': paginator.num_pages > 1,
         'page_obj': page_obj,
         'paginator': paginator,
     }
     
     return render(request, 'creators/creators_list.html', context)
+
 
 @login_required
 def creator_add(request):
@@ -1309,6 +1220,7 @@ def creator_add(request):
         'nominatim_url': settings.NOMINATIM_URL,
     })
 
+
 @login_required
 def favorites_view(request):
     """
@@ -1333,6 +1245,7 @@ def favorites_view(request):
     }
     
     return render(request, 'creators/favorites.html', context)
+
 
 @login_required
 def contact_creator(request, creator_id):
@@ -1383,6 +1296,7 @@ def contact_creator(request, creator_id):
         messages.success(request, f"Votre message a été envoyé à {creator.full_name}")
         return redirect('creator_detail', creator_id=creator_id)
 
+
 @login_required
 def api_domains(request):
     """
@@ -1404,6 +1318,7 @@ def api_domains(request):
     domains_data.sort(key=lambda x: x['name'])
     
     return JsonResponse(domains_data, safe=False)
+
 
 # Fonction utilitaire pour normaliser les adresses et codes postaux
 def normalize_address(address_data):

@@ -1,15 +1,42 @@
 from django.urls import path
 from . import views
 from . import admin_views
+from django.contrib.auth import views as auth_views
 
 urlpatterns = [
     path('', views.home, name='home'),
     path('login/', views.login_view, name='login'),
     path('logout/', views.logout_view, name='logout'),
     path('profile/', views.profile_view, name='profile'),
+    path('creators/register/', views.creator_registration_view, name='creator_register'),
     path('login/request/', views.temporary_login_request, name='temp_login_request'),
     path('login/temp/<str:token>/<str:email>/', views.temporary_login, name='temp_login'),
-    path('reset-password/<str:token>/', views.reset_password, name='reset_password'),
+
+    # URLs pour la réinitialisation du mot de passe
+    path('password-reset/', 
+         auth_views.PasswordResetView.as_view(
+            template_name='core/password_reset_form.html',
+            email_template_name='core/emails/password_reset_email.html',
+            subject_template_name='core/emails/password_reset_subject.txt',
+            success_url='/password-reset/done/' # ou reverse_lazy('password_reset_done')
+         ), 
+         name='password_reset'),
+    path('password-reset/done/', 
+         auth_views.PasswordResetDoneView.as_view(
+            template_name='core/password_reset_done.html'
+         ), 
+         name='password_reset_done'),
+    path('reset-password/<uidb64>/<token>/',  # Django s'attend à uidb64 et token pour cette vue
+         auth_views.PasswordResetConfirmView.as_view(
+            template_name='core/reset_password.html', # Votre template existant, à vérifier
+            success_url='/reset-password/complete/' # ou reverse_lazy('password_reset_complete')
+         ), 
+         name='password_reset_confirm'), # Nom standard utilisé par Django
+    path('reset-password/complete/', 
+         auth_views.PasswordResetCompleteView.as_view(
+            template_name='core/password_reset_complete.html'
+         ), 
+         name='password_reset_complete'),
     
     # Gestion pour admins et consultants
     path('gestion/', views.management_dashboard, name='management_dashboard'),

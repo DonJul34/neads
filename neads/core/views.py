@@ -28,6 +28,8 @@ def home(request):
     """
     Page d'accueil du site.
     """
+    if not request.user.is_authenticated:
+        return redirect('login')
     return render(request, 'core/home.html')
 
 
@@ -93,13 +95,6 @@ def creator_list(request):
     # Récupérer tous les créateurs
     creators = Creator.objects.all().order_by('-created_at')
     
-    # Filtres
-    verified_filter = request.GET.get('verified')
-    if verified_filter == 'true':
-        creators = creators.filter(verified_by_neads=True)
-    elif verified_filter == 'false':
-        creators = creators.filter(verified_by_neads=False)
-    
     # Recherche par nom/email
     search_query = request.GET.get('query')
     if search_query:
@@ -118,7 +113,6 @@ def creator_list(request):
     context = {
         'creators': page_obj,
         'search_query': search_query,
-        'verified_filter': verified_filter,
         'total_creators': paginator.count,
     }
     
@@ -169,228 +163,210 @@ def login_view(request):
     return render(request, 'core/login.html', {'form': form})
 
 
+def creator_registration_view(request):
+    """
+    Vue pour l'inscription des nouveaux créateurs en plusieurs étapes.
+    """
+    from neads.creators.forms import CreatorRegistrationForm
+    from neads.creators.models import Creator, Location, Media # Assurez-vous que Media est bien utilisé ici ou dans le form
+    import json # Si vous utilisez json.dumps pour les erreurs
+
+    step = request.GET.get('step', '1')
+    creator_id = request.GET.get('creator_id')
+
+    if request.method == 'POST':
+        form = CreatorRegistrationForm(request.POST, request.FILES)
+        # Récupérer l'étape du formulaire soumis pour s'assurer qu'on traite la bonne logique
+        form_step = request.POST.get('step', '1') 
+
+        if form_step == '1':
+            # Logique de l'étape 1 de CreatorRegistrationForm
+            # On ignore les erreurs des champs de médias pour l'étape 1
+            media_fields = [
+                'video_file1', 'video_file2', 'video_file3', 'video_file4', 'video_file5',
+                'image_file1', 'image_file2', 'image_file3'
+            ]
+            # On ne supprime les erreurs que si le formulaire est invalide à cause de ces champs
+            # et qu'on est bien en train de traiter une soumission de l'étape 1.
+            if not form.is_valid():
+                current_errors = form.errors.copy()
+                for field in media_fields:
+                    if field in current_errors:
+                        del current_errors[field]
+                # Si après suppression des erreurs médias, il n'y a plus d'erreurs, c'est une validation partielle pour l'étape 1
+                if not current_errors and form.is_valid(skip_media_fields=True): # Vous devrez ajouter un argument à is_valid dans le form
+                    pass # On continue le traitement de l'étape 1
+                elif not current_errors:
+                     # Si le form n'est toujours pas valide même en ignorant les champs media, 
+                     # ou si form.is_valid() est appelé sans skip_media_fields, on rend le form avec erreurs
+                    pass # Laisser le form.is_valid() plus bas gérer les erreurs
+
+            if form.is_valid(): # Ce is_valid doit gérer la logique de skip_media_fields ou être appelé conditionnellement
+                data = form.cleaned_data
+                user = User.objects.create(
+                    email=data['email'],
+                    first_name=data['first_name'],
+                    last_name=data['last_name'],
+                    role='creator',
+                    is_active=True,
+                    password=make_password(data['password'])
+                )
+                location = Location.objects.create(
+                    full_address=data['full_address'],
+                    latitude=data.get('latitude'),
+                    longitude=data.get('longitude')
+                )
+                current_year = datetime.date.today().year
+                age = current_year - data['birth_year']
+                creator = Creator.objects.create(
+                    user=user,
+                    first_name=data['first_name'],
+                    last_name=data['last_name'],
+                    gender=data['gender'],
+                    age=age,
+                    email=data['email'],
+                    phone=data['phone'],
+                    location=location,
+                    bio=data['bio'],
+                    equipment=data['equipment'],
+                    previous_clients=data['previous_clients'],
+                    can_invoice=data['can_invoice'] == 'true'
+                )
+                creator.domains.set(data['domains'])
+                if 'featured_image' in request.FILES:
+                    creator.featured_image = request.FILES['featured_image']
+                    creator.save()
+                login(request, user)
+                
+                # Redirection vers l'étape 2
+                # Il faut s'assurer que creator.id est disponible ici
+                redirect_url = reverse('creator_register') + f'?step=2&creator_id={creator.id}'
+                if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                    return JsonResponse({
+                        'success': True,
+                        'creator_id': creator.id,
+                        'redirect_url': redirect_url
+                    })
+                return redirect(redirect_url)
+            else:
+                # Si le formulaire de l'étape 1 n'est pas valide (même après avoir potentiellement ignoré les champs médias)
+                step = '1' # S'assurer qu'on retourne au template de l'étape 1
+        
+        elif form_step == '2':
+            # Logique de l'étape 2 : traitement des médias
+            # Il faut récupérer creator_id du POST ou de la session/GET
+            creator_id_from_post = request.POST.get('creator_id') 
+            if creator_id_from_post:
+                try:
+                    creator = Creator.objects.get(id=creator_id_from_post)
+                    # Assurez-vous que l'utilisateur connecté est bien celui qui a créé ce profil
+                    if request.user.is_authenticated and request.user == creator.user:
+                        # Le form.is_valid() ici devrait se concentrer sur les champs médias
+                        # Il faudrait peut-être un form distinct ou une logique de validation adaptée pour l'étape 2.
+                        # Pour l'instant, on suppose que CreatorRegistrationForm peut gérer cela.
+                        if form.is_valid(): # Ce is_valid devrait vérifier les champs médias
+                            # Traiter les vidéos
+                            for i in range(1, 6):
+                                field_name = f'video_file{i}'
+                                if field_name in request.FILES:
+                                    Media.objects.create(
+                                        creator=creator, title=f"Vidéo {i}", media_type='video',
+                                        file=request.FILES[field_name], is_verified=False
+                                    )
+                            # Traiter les images
+                            for i in range(1, 4):
+                                field_name = f'image_file{i}'
+                                if field_name in request.FILES:
+                                    Media.objects.create(
+                                        creator=creator, title=f"Image {i}", media_type='image',
+                                        file=request.FILES[field_name], is_verified=False
+                                    )
+                            messages.success(request, "Votre profil créateur a été créé avec succès !")
+                            return redirect('creator_detail', creator_id=creator.id)
+                        else:
+                            step = '2' # Rester sur l'étape 2 si le formulaire média n'est pas valide
+                    else:
+                        messages.error(request, "Action non autorisée.")
+                        return redirect(reverse('creator_register') + '?step=1')
+                except Creator.DoesNotExist:
+                    messages.error(request, "Profil créateur non trouvé.")
+                    return redirect(reverse('creator_register') + '?step=1')
+            else:
+                messages.error(request, "ID Créateur manquant pour l'étape 2.")
+                step = '1' # Rediriger vers l'étape 1 si pas d'ID
+    else:
+        # Logique GET pour afficher le formulaire vide de l'étape appropriée
+        initial_data = {}
+        if step == '2' and creator_id:
+            try:
+                creator = Creator.objects.get(id=creator_id)
+                # S'assurer que l'utilisateur est autorisé à voir cette étape
+                if not (request.user.is_authenticated and request.user == creator.user):
+                    messages.error(request, "Vous devez être connecté avec le bon compte pour accéder à cette étape.")
+                    return redirect(reverse('creator_register') + '?step=1')
+                initial_data['creator_id'] = creator.id # Passer l'ID au template si besoin
+            except Creator.DoesNotExist:
+                messages.error(request, "Profil créateur non trouvé pour l'étape 2.")
+                return redirect(reverse('creator_register') + '?step=1')
+        
+        form = CreatorRegistrationForm(initial=initial_data)
+
+    # Déterminer le template à rendre en fonction de l'étape
+    if step == '1':
+        template_name = 'core/creator_signup_step1.html'
+    elif step == '2' and creator_id: # S'assurer que creator_id existe pour l'étape 2
+        template_name = 'core/creator_signup_step2.html'
+    else: # Cas par défaut ou erreur, rediriger vers l'étape 1
+        messages.error(request, "Étape d'inscription invalide.")
+        return redirect(reverse('creator_register') + '?step=1')
+
+    context = {
+        'form': form,
+        'step': step,
+        'creator_id': creator_id, # Passer creator_id au contexte pour l'étape 2
+        'nominatim_url': settings.NOMINATIM_URL,
+    }
+    # Pour l'étape 2, on pourrait vouloir passer l'objet creator au template
+    if step == '2' and 'creator' not in context and creator_id:
+        try: context['creator'] = Creator.objects.get(id=creator_id)
+        except Creator.DoesNotExist: pass
+
+    return render(request, template_name, context)
+
+
 def temporary_login_request(request):
     """
-    Vue pour demander un lien de connexion temporaire ou s'inscrire en tant que créateur.
-    Cette vue gère deux cas d'usage:
-    1. Demande de lien de connexion temporaire pour les clients existants (par défaut)
-    2. Inscription des nouveaux créateurs (avec le paramètre ?creator=1)
+    Vue pour demander un lien de connexion temporaire pour les clients existants.
+    L'inscription créateur est maintenant gérée par creator_registration_view.
     """
-    # Vérifier si nous sommes dans le contexte d'inscription créateur
-    is_creator_signup = request.GET.get('creator', '0') == '1'
-    
-    if is_creator_signup:
-        from neads.creators.forms import CreatorRegistrationForm
-        from neads.creators.models import Creator, Location, Media
-        import json
-        
-        # Vérifier si c'est la première ou la deuxième étape
-        step = request.GET.get('step', '1')
-        creator_id = request.GET.get('creator_id')
-        
-        if request.method == 'POST':
-            form = CreatorRegistrationForm(request.POST, request.FILES)
-            if form.is_valid():
-                # Récupérer les données du formulaire
-                data = form.cleaned_data
-                
-                # Vérifier l'étape depuis le formulaire
-                form_step = request.POST.get('step', '1')
-                
-                if form_step == '1':
-                    # On ignore les erreurs des champs de médias pour l'étape 1
-                    media_fields = ['video_file1', 'video_file2', 'video_file3', 'video_file4', 'video_file5', 'image_file1', 'image_file2', 'image_file3']
-                    for field in media_fields:
-                        if field in form.errors:
-                            del form.errors[field]
-                    
-                    # Si le formulaire est valide (après suppression des erreurs de médias)
-                    if not form.errors:
-                        # 1. Créer l'utilisateur
-                        from neads.core.models import User
-                        user = User.objects.create(
-                            email=data['email'],
-                            first_name=data['first_name'],
-                            last_name=data['last_name'],
-                            role='creator',  # Rôle créateur
-                            is_active=True,  # Compte actif immédiatement
-                            password=make_password(data['password'])  # Hasher le mot de passe
-                        )
-                        
-                        # 2. Créer la localisation
-                        location = Location.objects.create(
-                            full_address=data['full_address'],
-                            latitude=data.get('latitude'),
-                            longitude=data.get('longitude')
-                        )
-                        
-                        # 3. Créer le profil créateur
-                        # Calculer l'âge à partir de l'année de naissance
-                        current_year = datetime.date.today().year
-                        age = current_year - data['birth_year']
-                        
-                        # Créer le créateur avec les champs qui existent dans le modèle
-                        creator = Creator.objects.create(
-                            user=user,
-                            first_name=data['first_name'],
-                            last_name=data['last_name'],
-                            gender=data['gender'],
-                            age=age,  # Âge calculé à partir de birth_year
-                            email=data['email'],
-                            phone=data['phone'],
-                            location=location,
-                            bio=data['bio'],
-                            equipment=data['equipment'],
-                            previous_clients=data['previous_clients'],
-                            can_invoice=data['can_invoice'] == 'true',  # Convertir la chaîne en booléen
-                        )
-                        
-                        # 4. Ajouter les domaines d'expertise
-                        creator.domains.set(data['domains'])
-                        
-                        # 5. Traiter la photo de profil
-                        if 'featured_image' in request.FILES:
-                            creator.featured_image = request.FILES['featured_image']
-                            creator.save()
-                        
-                        # 6. Connecter l'utilisateur
-                        login(request, user)
-                        
-                        # 7. Ajouter des logs pour déboguer
-                        print(f"Créateur créé avec succès: ID={creator.id}, Email={creator.email}")
-                        
-                        # 8. Rediriger vers l'étape 2 avec l'ID du créateur
-                        redirect_url = f"{reverse('temp_login_request')}?creator=1&step=2&creator_id={creator.id}"
-                        print(f"Redirection vers: {redirect_url}")
-                        
-                        # 9. Utiliser JsonResponse pour afficher un message de succès et l'ID du créateur
-                        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-                            return JsonResponse({
-                                'success': True,
-                                'creator_id': creator.id,
-                                'email': creator.email,
-                                'redirect_url': redirect_url
-                            })
-                        
-                        return redirect(redirect_url)
-                else:
-                    # Étape 2 - Traiter les médias
-                    if creator_id:
-                        creator = Creator.objects.get(id=creator_id)
-                        print(f"Traitement des médias pour le créateur ID={creator.id}")
-                        
-                        # Traiter les vidéos
-                        for i in range(1, 6):
-                            field_name = f'video_file{i}'
-                            if field_name in request.FILES:
-                                video_file = request.FILES[field_name]
-                                media = Media.objects.create(
-                                    creator=creator,
-                                    title=f"Vidéo {i}",
-                                    media_type='video',
-                                    file=video_file,
-                                    is_verified=False
-                                )
-                                print(f"Vidéo {i} ajoutée: {media.id}")
-                        
-                        # Traiter les images
-                        for i in range(1, 4):
-                            field_name = f'image_file{i}'
-                            if field_name in request.FILES:
-                                image_file = request.FILES[field_name]
-                                media = Media.objects.create(
-                                    creator=creator,
-                                    title=f"Image {i}",
-                                    media_type='image',
-                                    file=image_file,
-                                    is_verified=False
-                                )
-                                print(f"Image {i} ajoutée: {media.id}")
-                        
-                        messages.success(request, "Votre profil créateur a été créé avec succès !")
-                        return redirect('creator_detail', creator_id=creator.id)
-                    else:
-                        print("Erreur: Aucun creator_id trouvé pour l'étape 2")
-                        return redirect(f"{reverse('temp_login_request')}?creator=1")
-            else:
-                print(f"Erreurs de formulaire: {json.dumps(form.errors.as_json())}")
-        else:
-            form = CreatorRegistrationForm()
-        
-        if step == '1':
-            template = 'core/creator_signup_step1.html'
-            context = {
-                'form': form,
-                'is_creator_signup': True,
-                'nominatim_url': settings.NOMINATIM_URL,
-            }
-            print(f"Rendu du template étape 1")
-        else:
-            template = 'core/creator_signup_step2.html'
-            if creator_id:
-                try:
-                    creator = Creator.objects.get(id=creator_id)
-                    context = {
-                        'form': form,
-                        'is_creator_signup': True,
-                        'nominatim_url': settings.NOMINATIM_URL,
-                        'creator': creator,
-                    }
-                    print(f"Rendu du template étape 2 pour créateur ID={creator_id}")
-                except Creator.DoesNotExist:
-                    print(f"Créateur avec ID={creator_id} non trouvé")
-                    return redirect(f"{reverse('temp_login_request')}?creator=1")
-            else:
-                # Si pas d'ID dans l'URL, rediriger vers l'étape 1
-                print("Pas de creator_id fourni pour l'étape 2, redirection vers étape 1")
-                return redirect(f"{reverse('temp_login_request')}?creator=1")
-        
-        return render(request, template, context)
-    
+    if request.method == 'POST':
+        form = TemporaryLoginForm(request.POST)
+        if form.is_valid():
+            email = form.cleaned_data['email']
+            user, created = User.objects.get_or_create(
+                email=email,
+                defaults={'role': 'client'}
+            )
+            token = user.generate_temp_login_token()
+            temp_login_url = request.build_absolute_uri(
+                reverse('temp_login', kwargs={'token': token, 'email': email})
+            )
+            subject = 'Votre lien de connexion NEADS'
+            message = render_to_string('core/emails/temp_login_email.html', {
+                'user': user,
+                'temp_login_url': temp_login_url,
+                'expiry_hours': 24,
+            })
+            send_mail(
+                subject=subject, message=message, from_email=settings.DEFAULT_FROM_EMAIL,
+                recipient_list=[email], html_message=message,
+            )
+            return render(request, 'core/temp_login_sent.html', {'email': email})
     else:
-        # Code existant pour le login temporaire
-        if request.method == 'POST':
-            form = TemporaryLoginForm(request.POST)
-            if form.is_valid():
-                email = form.cleaned_data['email']
-                
-                # Récupérer ou créer l'utilisateur
-                user, created = User.objects.get_or_create(
-                    email=email,
-                    defaults={
-                        'role': 'client',  # Défaut pour les nouveaux utilisateurs
-                    }
-                )
-                
-                # Générer un token temporaire
-                token = user.generate_temp_login_token()
-                
-                # Construire le lien de connexion
-                temp_login_url = request.build_absolute_uri(
-                    reverse('temp_login', kwargs={'token': token, 'email': email})
-                )
-                
-                # Envoyer l'email
-                subject = 'Votre lien de connexion NEADS'
-                message = render_to_string('core/emails/temp_login_email.html', {
-                    'user': user,
-                    'temp_login_url': temp_login_url,
-                    'expiry_hours': 24,
-                })
-                
-                send_mail(
-                    subject=subject,
-                    message=message,
-                    from_email=settings.DEFAULT_FROM_EMAIL,
-                    recipient_list=[email],
-                    html_message=message,
-                )
-                
-                return render(request, 'core/temp_login_sent.html', {'email': email})
-        else:
-            form = TemporaryLoginForm()
-        
-        return render(request, 'core/temp_login_request.html', {'form': form, 'is_creator_signup': False})
+        form = TemporaryLoginForm()
+    
+    # is_creator_signup n'est plus nécessaire ici
+    return render(request, 'core/temp_login_request.html', {'form': form})
 
 
 def temporary_login(request, token, email):
