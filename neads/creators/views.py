@@ -24,6 +24,8 @@ from math import radians, cos, sin, asin, sqrt
 import logging
 import re
 
+from py_countries_states_cities_database import get_all_countries_and_cities_nested
+
 logger = logging.getLogger(__name__)
 
 
@@ -252,6 +254,7 @@ def gallery_view(request):
             'name': domain.name,
             'count': creator_count
         })
+    all_countries = get_all_countries_and_cities_nested()
     
     context = {
         'creators': page_obj,
@@ -263,7 +266,12 @@ def gallery_view(request):
         'clean_params': clean_params,
         'min_creator_age': min_creator_age,
         'max_creator_age': max_creator_age,
-        'domains_json': json.dumps(domains_json)
+        'domains_json': json.dumps(domains_json),
+        'countries':all_countries,
+        'country_city_map': json.dumps({
+            entry["iso2"]: entry["cities"]
+            for entry in all_countries
+        })
     }
     
     # Retourner JSON pour les requêtes AJAX
