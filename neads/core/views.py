@@ -174,6 +174,8 @@ def creator_registration_view(request):
     creator_id = request.GET.get('creator_id')
 
     if request.method == 'POST':
+
+        from pdb import set_trace; set_trace()
         form = CreatorRegistrationForm(request.POST, request.FILES)
         # Récupérer l'étape du formulaire soumis pour s'assurer qu'on traite la bonne logique
         form_step = request.POST.get('step', '1') 
@@ -208,8 +210,8 @@ def creator_registration_view(request):
                     last_name=data['last_name'],
                     role='creator',
                     is_active=True,
-                    password=make_password(data['password'])
                 )
+                token = user.generate_temp_login_token()
                 location = Location.objects.create(
                     full_address=data['full_address'],
                     latitude=data.get('latitude'),

@@ -383,27 +383,6 @@ class CreatorRegistrationForm(forms.Form):
         required=True
     )
     
-    # Mot de passe
-    password = forms.CharField(
-        label="Mot de passe",
-        widget=forms.PasswordInput(attrs={
-            'class': 'form-control',
-            'placeholder': 'Choisissez un mot de passe sécurisé'
-        }),
-        required=True,
-        min_length=8,
-        help_text="Minimum 8 caractères, incluant des lettres et des chiffres"
-    )
-    
-    password_confirm = forms.CharField(
-        label="Confirmer le mot de passe",
-        widget=forms.PasswordInput(attrs={
-            'class': 'form-control',
-            'placeholder': 'Confirmez votre mot de passe'
-        }),
-        required=True
-    )
-    
     gender = forms.ChoiceField(
         choices=Creator.GENDER_CHOICES,
         label="Genre",

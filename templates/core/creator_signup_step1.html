@@ -460,6 +460,30 @@
         .form-row.no-margin-bottom {
             margin-bottom: 0 !important;
         }
+        
+        /* Style for brand tags */
+        .brand-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        
+        .brand-tag {
+            display: inline-flex;
+            align-items: center;
+            background-color: #f0f2ff;
+            border: 1px solid #e0e3ff;
+            padding: 6px 12px;
+            border-radius: 4px;
+            font-size: 14px;
+            color: #4f46e5;
+        }
+        
+        .brand-tag span {
+            margin-left: 8px;
+            cursor: pointer;
+            font-weight: bold;
+        }
     </style>
 </head>
 <body>
@@ -480,7 +504,8 @@
     <div class="container py-5">
         <div class="row justify-content-center" style="width:100%;margin:0;">
             <div class="form-main-width" style="width:100%;">
-                <form id="creator-signup-form" class="needs-validation" novalidate>
+                <form id="creator-signup-form" class="needs-validation" method="post" enctype="multipart/form-data" novalidate>
+                    {% csrf_token %}
                     <!-- Contact Details Section -->
                     <div class="form-section">
                         <div class="form-header">
@@ -489,18 +514,18 @@
                         
                         <div class="row">
                             <div class="col-md-6 mb-3">
-                                <input type="text" class="form-control" placeholder="Prénom*" required>
+                                <input type="text" name="first_name" class="form-control" placeholder="Prénom*" required>
                                 <div class="invalid-feedback">Ce champ est requis.</div>
                             </div>
                             <div class="col-md-6 mb-3">
-                                <input type="text" class="form-control" placeholder="Nom*" required>
+                                <input type="text" name="last_name" class="form-control" placeholder="Nom*" required>
                                 <div class="invalid-feedback">Ce champ est requis.</div>
                             </div>
                         </div>
                         
                         <div class="row">
                             <div class="col-md-6 mb-3">
-                                <select class="form-select" required>
+                                <select class="form-select" name="gender" required>
                                     <option value="" disabled selected>Genre*</option>
                                     <option value="M">Homme</option>
                                     <option value="F">Femme</option>
@@ -509,7 +534,7 @@
                                 <div class="invalid-feedback">Ce champ est requis.</div>
                             </div>
                             <div class="col-md-6 mb-3">
-                                <select class="form-select" required id="birthYear">
+                                <select class="form-select" name="birth_year" required id="birthYear">
                                     <option value="" disabled selected>Année de naissance*</option>
                                 </select>
                                 <div class="invalid-feedback">Ce champ est requis.</div>
@@ -518,22 +543,12 @@
                         
                         <div class="row">
                             <div class="col-md-6 mb-3">
-                                <input type="email" class="form-control" placeholder="E-mail*" required>
+                                <input type="email" name="email" class="form-control" placeholder="E-mail*" required>
                                 <div class="invalid-feedback">Veuillez entrer une adresse email valide.</div>
                             </div>
                             <div class="col-md-6 mb-3">
-                                <input type="tel" id="phone" class="form-control" placeholder="Téléphone*" required autocomplete="off" data-intl-tel-input-id="0">
+                                <input type="tel" id="phone" name="phone" class="form-control" placeholder="Téléphone*" required autocomplete="off" data-intl-tel-input-id="0">
                                 <div class="invalid-feedback">Ce champ est requis.</div>
-                            </div>
-                        </div>
-                        
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <input type="password" class="form-control" placeholder="Mot de passe*" required>
-                                <div class="form-text">8 caractères minimum, incluant majuscules, minuscules et chiffres.</div>
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <input type="password" class="form-control" placeholder="Confirmer le mot de passe*" required>
                             </div>
                         </div>
                     </div>
@@ -563,19 +578,19 @@
                         </div>
                         
                         <div class="mb-3">
-                            <input type="text" class="form-control" id="baseline" placeholder="Baseline* (ex : créateur de contenu UGC)" required>
+                            <input type="text" name="baseline" class="form-control" id="baseline" placeholder="Baseline* (ex : créateur de contenu UGC)" required>
                             <div class="character-counter" id="baseline-counter">Vous avez utilisé 0 caractères sur les 90 alloués.</div>
                         </div>
                         
                         <div class="mb-3">
-                            <textarea class="form-control" id="bio" rows="4" placeholder="À propos de toi* (min. 400 caractères, max. 1000)" required></textarea>
+                            <textarea class="form-control" name="bio" id="bio" rows="4" placeholder="À propos de toi* (min. 400 caractères, max. 1000)" required></textarea>
                             <div class="character-counter" id="bio-counter">Vous avez utilisé 0 caractères sur les 1000 alloués. Minimum requis: 400 caractères.</div>
                         </div>
                         
                         <div class="form-section">
                             <h2>Photo de profil *</h2>
                             <div class="upload-area">
-                                <input type="file" accept="image/*" id="profile-image" style="display:none;">
+                                <input type="file" name="profile_image" accept="image/*" id="profile-image" style="display:none;" required>
                                 <label for="profile-image" style="display:block;cursor:pointer;">
                                     <svg viewBox="0 0 1024 1024" focusable="false" data-icon="inbox" width="50px" height="50px" fill="currentColor" aria-hidden="true">
                                         <path d="M885.2 446.3l-.2-.8-112.2-285.1c-5-16.1-19.9-27.2-36.8-27.2H281.2c-17 0-32.1 11.3-36.9 27.6L139.4 443l-.3.7-.2.8c-1.3 4.9-1.7 9.9-1 14.8-.1 1.6-.2 3.2-.2 4.8V830a60.9 60.9 0 0 0 60.8 60.8h627.2c33.5 0 60.8-27.3 60.9-60.8V464.1c0-1.3 0-2.6-.1-3.7.4-4.9 0-9.6-1.3-14.1zm-295.8-43l-.3 15.7c-.8 44.9-31.8 75.1-77.1 75.1-22.1 0-41.1-7.1-54.8-20.6S436 441.2 435.6 419l-.3-15.7H229.5L309 210h399.2l81.7 193.3H589.4zm-375 76.8h157.3c24.3 57.1 76 90.8 140.4 90.8 33.7 0 65-9.4 90.3-27.2 22.2-15.6 39.5-37.4 50.7-63.6h156.5V814H214.4V480.1z"></path>
@@ -594,12 +609,12 @@
                         
                         <div class="form-row">
                             <div class="form-group">
-                                <input type="text" class="form-control" placeholder="TikTok (ex : https://www.tiktok.com/@neadsagency)">
+                                <input type="text" name="tiktok" class="form-control" placeholder="TikTok (ex : https://www.tiktok.com/@neadsagency)">
                             </div>
                         </div>
                         <div class="form-row">
                             <div class="form-group">
-                                <input type="text" class="form-control" placeholder="Instagram (ex : https://www.instagram.com/neadsagency)">
+                                <input type="text" name="instagram" class="form-control" placeholder="Instagram (ex : https://www.instagram.com/neadsagency)">
                             </div>
                         </div>
                     </div>
@@ -609,9 +624,37 @@
                         <div class="form-header">
                             <h2 class="h4 mb-0">Ton matériel</h2>
                         </div>
-                        
+
                         <div class="mb-3">
-                            <textarea class="form-control" id="equipment" rows="3" placeholder="Matériel utilisé*"></textarea>
+                            <label class="form-label d-block">Sélectionne le matériel utilisé*</label>
+
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="smartphone" name="equipment" value="Smartphone">
+                                <label class="form-check-label" for="smartphone">
+                                    Smartphone
+                                </label>
+                            </div>
+
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="cameraPro" name="equipment" value="Caméra Pro">
+                                <label class="form-check-label" for="cameraPro">
+                                    Caméra Pro
+                                </label>
+                            </div>
+
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="tripod" name="equipment" value="Trépied">
+                                <label class="form-check-label" for="tripod">
+                                    Trépied
+                                </label>
+                            </div>
+
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="gopro" name="equipment" value="GoPro">
+                                <label class="form-check-label" for="gopro">
+                                    GoPro
+                                </label>
+                            </div>
                         </div>
                     </div>
                     
@@ -624,17 +667,17 @@
                         <div class="mb-3">
                             <input type="text" class="form-control" id="brand-input" placeholder="Marques avec lesquelles tu as travaillé*">
                             <div id="brand-tags-display" class="brand-tags mt-2"></div>
+                            <!-- Hidden input to store the brands data -->
+                            <input type="hidden" name="brands" id="brands-data">
                         </div>
                     </div>
 
                     <!-- Terms and Submit -->
                     <div class="form-section">
                         <div class="form-check">
-                            <input class="form-check-input" type="checkbox" required>
+                            <input class="form-check-input" type="checkbox" name="terms_accepted" id="terms" required>
                             <span class="form-check-label">J'accepte les conditions d'utilisation et la politique de confidentialité</span>
                         </div>
-                        
-                        
                         
                         <button type="submit" class="submit-btn">Postuler maintenant</button>
                     </div>
@@ -737,17 +780,25 @@
             // Brand tags
             const brandInput = document.getElementById('brand-input');
             const brandTagsDisplay = document.getElementById('brand-tags-display');
+            const brandsDataInput = document.getElementById('brands-data');
             let brands = new Set();
+
+            function updateBrandsData() {
+                brandsDataInput.value = JSON.stringify(Array.from(brands));
+            }
 
             function addBrandTag(brand) {
                 if (!brands.has(brand)) {
                     brands.add(brand);
+                    updateBrandsData();
+                    
                     const tag = document.createElement('span');
                     tag.className = 'brand-tag';
                     tag.innerHTML = `${brand} <span>&times;</span>`;
                     
                     tag.querySelector('span').addEventListener('click', () => {
                         brands.delete(brand);
+                        updateBrandsData();
                         tag.remove();
                     });
                     
@@ -767,18 +818,30 @@
             });
 
             // Image upload preview
-            const uploadZone = document.querySelector('.upload-zone');
-            const imagePreview = document.getElementById('image-preview');
-            const uploadPrompt = document.querySelector('.upload-prompt');
             const fileInput = document.getElementById('profile-image');
+            const uploadArea = document.querySelector('.upload-area');
 
             fileInput.addEventListener('change', function(e) {
                 if (this.files && this.files[0]) {
                     const reader = new FileReader();
                     reader.onload = function(e) {
-                        imagePreview.style.display = 'block';
+                        // Create an image preview if it doesn't exist
+                        let imagePreview = uploadArea.querySelector('img');
+                        if (!imagePreview) {
+                            imagePreview = document.createElement('img');
+                            imagePreview.style.maxWidth = '100%';
+                            imagePreview.style.maxHeight = '200px';
+                            imagePreview.style.marginTop = '10px';
+                        }
+                        
                         imagePreview.src = e.target.result;
+                        
+                        // Hide the upload icon and text
+                        const uploadPrompt = uploadArea.querySelector('label');
                         uploadPrompt.style.display = 'none';
+                        
+                        // Add the image to the upload area
+                        uploadArea.appendChild(imagePreview);
                     }
                     reader.readAsDataURL(this.files[0]);
                 }
@@ -797,11 +860,17 @@
             // Initialize intl-tel-input for phone field
             const phoneInput = document.querySelector("#phone");
             if (phoneInput) {
-                window.intlTelInput(phoneInput, {
+                const iti = window.intlTelInput(phoneInput, {
                     preferredCountries: ['fr', 'be', 'ch'],
                     separateDialCode: true,
                     utilsScript: "https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/17.0.13/js/utils.js",
                 });
+                
+                // Update the phone input value with the full international number before submission
+                form.addEventListener('submit', function() {
+                    phoneInput.value = iti.getNumber();
+                });
+                
                 // Add custom CSS to ensure the phone input takes full width
                 const style = document.createElement('style');
                 style.textContent = `
@@ -817,4 +886,4 @@
         });
     </script>
 </body>
-</html> 
+</html>
