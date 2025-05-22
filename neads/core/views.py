@@ -65,7 +65,6 @@ def management_dashboard(request):
     # Statistiques spécifiques aux créateurs
     creator_stats = {
         'total': Creator.objects.count(),
-        'verified': Creator.objects.filter(verified_by_neads=True).count(),
         'with_media': Creator.objects.filter(media__isnull=False).distinct().count(),
     }
     
