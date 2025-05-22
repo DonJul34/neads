@@ -457,12 +457,15 @@
 
 <!-- Page Header -->
 <div class="page-header" data-aos="fade-up">
-    <h1 class="page-title">Recherche par carte</h1>
     <p class="page-description">Trouvez des créateurs autour de vous ou dans une zone spécifique pour vos projets.</p>
     <!-- Bouton d'accès à la carte -->
     <a href="{% url 'gallery_view' %}" class="btn btn-primary mt-3">
         <i class="fas fa-map-marked-alt me-2"></i> Accéder à la gallerie de créateurs
     </a>
+</div>
+
+<div class="page-header flex justify-end" data-aos="fade-up">
+    <p class="page-description">{{ total_creators }} créateurs disponibles pour vos projets de contenu</p>
 </div>
 
 <!-- Map Container with Components -->
@@ -504,52 +507,31 @@
                     </div>
                 </div>
                 
-                <!-- Filtre par ville -->
-                <div class="filter-section city-filter">
-                    <h4 class="filter-header">
-                        <i class="fas fa-map-marker-alt"></i> Recherche par ville
-                    </h4>
-                    <div class="mb-3">
-                        <div class="input-group">
-                            <input type="text" class="form-control" id="city-filter" name="city" 
-                                placeholder="Nom de la ville" value="{{ request.GET.city|default:'' }}">
-                            <button class="btn btn-primary" type="button" id="city-search-btn">
-                                <i class="fas fa-search"></i>
-                            </button>
-                        </div>
-                        <div class="form-text">
-                            Recherchez les créateurs dans une ville spécifique
-                        </div>
-                    </div>
-                </div>
-                
                 <!-- Creator Characteristics Filter -->
                 <div class="filter-section">
                     <h4 class="filter-header">
                         <i class="fas fa-user-tag"></i> Caractéristiques
                     </h4>
                     
-                    <div class="row mb-3">
+                    <div class="row mb-2">
                         <div class="col-md-6">
-                            <label for="map-gender-filter" class="form-label">Genre</label>
-                            <select id="map-gender-filter" name="gender" class="form-select">
-                                <option value="">Tous</option>
-                                <option value="M" {% if request.GET.gender == 'M' %}selected{% endif %}>Homme</option>
-                                <option value="F" {% if request.GET.gender == 'F' %}selected{% endif %}>Femme</option>
-                                <option value="O" {% if request.GET.gender == 'O' %}selected{% endif %}>Autre</option>
-                            </select>
-                        </div>
-                        
-                        <div class="col-md-6">
-                            <label for="map-content-type-filter" class="form-label">Type de contenu</label>
-                            <select id="map-content-type-filter" name="content_type" class="form-select">
-                                <option value="">Tous</option>
-                                <option value="photo" {% if request.GET.content_type == 'photo' %}selected{% endif %}>Photo</option>
-                                <option value="video" {% if request.GET.content_type == 'video' %}selected{% endif %}>Vidéo</option>
-                                <option value="audio" {% if request.GET.content_type == 'audio' %}selected{% endif %}>Audio</option>
-                                <option value="text" {% if request.GET.content_type == 'text' %}selected{% endif %}>Texte</option>
-                                <option value="mixed" {% if request.GET.content_type == 'mixed' %}selected{% endif %}>Mixte</option>
-                            </select>
+                            <label class="form-label small">Genre</label>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="gender" id="gender_a" value="">
+                                <label class="form-check-label" for="gender_a">Tous</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="gender" id="gender_m" value="M">
+                                <label class="form-check-label" for="gender_m">Homme</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="gender" id="gender_f" value="F">
+                                <label class="form-check-label" for="gender_f">Femme</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="gender" id="gender_o" value="O">
+                                <label class="form-check-label" for="gender_o">Autre</label>
+                            </div>
                         </div>
                     </div>
                     
@@ -567,6 +549,26 @@
                     </div>
                 </div>
                 
+                <p class="filter-header">
+                    <i class="fas fa-map-marker-alt"></i> Localisation
+                  </p>
+
+                <div class="mb-3">
+                    <label class="form-label small">Pays</label>
+                    <select class="form-select" id="country" name="country" onchange="updateCities()">
+                      <option value="">Tous les pays</option>
+                      {% for country in countries %}
+                        <option value="{{ country.iso2 }}">{{ country.name }}</option>
+                      {% endfor %}
+                    </select>
+                  </div>
+
+                  <div class="mb-3">
+                    <label class="form-label small">Ville</label>
+                    <select class="form-select" id="city" name="city">
+                      <option value="">Sélectionnez une ville</option>
+                    </select>
+                  </div>
                 <!-- Additional Options -->
                 <div class="filter-section">
                     <h4 class="filter-header">
@@ -584,13 +586,6 @@
                         <input type="checkbox" class="form-check-input" id="map-can-invoice" name="can_invoice" {% if request.GET.can_invoice %}checked{% endif %}>
                         <label class="form-check-label" for="map-can-invoice">
                             Peut facturer
-                        </label>
-                    </div>
-                    
-                    <div class="form-check mb-3">
-                        <input type="checkbox" class="form-check-input" id="map-verified-only" name="verified_only" {% if request.GET.verified_only %}checked{% endif %}>
-                        <label class="form-check-label" for="map-verified-only">
-                            Vérifiés uniquement
                         </label>
                     </div>
                     

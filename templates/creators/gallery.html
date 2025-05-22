@@ -105,6 +105,7 @@
     .creator-img-container {
         height: 200px;
         overflow: hidden;
+        cursor: pointer;
     }
     
     .creator-img-container img {
@@ -125,7 +126,16 @@
     .creator-card .card-title {
         font-weight: 600;
         font-size: 1.1rem;
+        margin-bottom: 0.25rem;
+    }
+
+    .creator-tagline {
+        color: var(--secondary-color);
+        font-size: 0.75rem;
+        font-weight: 500;
         margin-bottom: 0.5rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
     }
     
     .domain-badge {
@@ -150,28 +160,6 @@
     .domain-container {
         display: flex;
         flex-wrap: wrap;
-    }
-    
-    .creators-grid.list-view .domain-container {
-        display: inline-flex;
-        align-items: center;
-        flex-wrap: wrap;
-    }
-    
-    .creators-grid {
-        transition: all 0.3s ease-out;
-    }
-    
-    .creator-card {
-        transition: all 0.3s ease-in-out;
-    }
-    
-    /* List view specific domain badges */
-    .creators-grid.list-view .domain-badge {
-        margin-right: 0.3rem;
-        margin-bottom: 0.3rem;
-        font-size: 0.68rem;
-        padding: 0.2rem 0.5rem;
     }
     
     .star-rating {
@@ -326,112 +314,6 @@
         transform: scale(1.2);
     }
     
-    /* View toggle buttons */
-    .view-toggle-buttons {
-        display: flex;
-        gap: 10px;
-    }
-    
-    .view-toggle-btn {
-        width: 40px;
-        height: 40px;
-        border-radius: var(--border-radius-sm);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        color: var(--text-secondary);
-        border: 1px solid rgba(106, 73, 220, 0.2);
-        background-color: var(--bg-secondary);
-        transition: var(--transition-normal);
-    }
-    
-    .view-toggle-btn:hover {
-        background-color: var(--accent-color-light);
-        color: var(--secondary-color);
-        border-color: var(--accent-color);
-    }
-    
-    .view-toggle-btn.active {
-        background: var(--accent-gradient);
-        color: white;
-        border-color: transparent;
-        box-shadow: var(--shadow-sm);
-    }
-    
-    /* List view styling */
-    .creators-grid.list-view {
-        display: block !important;
-    }
-    
-    .creators-grid.list-view > .col-md-6,
-    .creators-grid.list-view > .col-lg-4 {
-        width: 100% !important;
-        max-width: 100% !important;
-        flex: 0 0 100% !important;
-    }
-    
-    .creators-grid.list-view .creator-card {
-        display: flex !important;
-        flex-direction: row !important;
-        height: auto !important;
-        margin-bottom: 1rem !important;
-        overflow: hidden !important;
-    }
-    
-    .creators-grid.list-view .creator-img-container {
-        width: 180px !important;
-        min-height: 180px !important;
-        max-height: 180px !important;
-        flex-shrink: 0 !important;
-        border-top-right-radius: 0 !important;
-        border-bottom-left-radius: var(--border-radius-md) !important;
-    }
-    
-    .creators-grid.list-view .card-body {
-        flex: 1 !important;
-        display: flex !important;
-        flex-direction: column !important;
-        padding: 1.5rem !important;
-        position: relative !important;
-    }
-    
-    .creators-grid.list-view .card-title {
-        font-size: 1.25rem !important;
-        display: flex !important;
-        align-items: center !important;
-        margin-bottom: 0.5rem !important;
-    }
-    
-    .creators-grid.list-view .verified-icon {
-        margin-left: 0.5rem !important;
-    }
-    
-    .creators-grid.list-view .creator-info {
-        display: flex !important;
-        flex-wrap: wrap !important;
-        gap: 1.5rem !important;
-        margin-bottom: 0.75rem !important;
-    }
-    
-    .creators-grid.list-view .creator-details {
-        display: flex !important;
-        flex-direction: column !important;
-        gap: 0.25rem !important;
-    }
-    
-    .creators-grid.list-view .creator-details p {
-        margin-bottom: 0 !important;
-    }
-    
-    .creators-grid.list-view .card-meta {
-        display: flex !important;
-        justify-content: space-between !important;
-        align-items: center !important;
-        margin-top: auto !important;
-        padding-top: 0.75rem !important;
-        border-top: 1px solid rgba(106, 73, 220, 0.1) !important;
-    }
-    
     /* Pagination styling */
     .pagination {
         margin-top: 2rem;
@@ -509,39 +391,6 @@
         max-width: 400px;
         margin: 0 auto;
     }
-    
-    /* Mobile List View */
-    @media (max-width: 992px) {
-        .creators-grid.list-view .creator-card {
-            flex-direction: row !important;
-        }
-        
-        .creators-grid.list-view .creator-img-container {
-            width: 160px !important;
-            min-height: 160px !important;
-            max-height: 160px !important;
-        }
-        
-        .creators-grid.list-view .card-body {
-            padding: 1rem !important;
-        }
-        
-        .creators-grid.list-view .creator-info {
-            flex-direction: column !important;
-            gap: 0.5rem !important;
-        }
-    }
-    
-    @media (max-width: 576px) {
-        .creators-grid.list-view .creator-card {
-            flex-direction: column !important;
-        }
-        
-        .creators-grid.list-view .creator-img-container {
-            width: 100% !important;
-            height: 180px !important;
-        }
-    }
 </style>
 {% endblock %}
 
@@ -608,7 +457,7 @@
                                     <label class="form-check-label" for="gender_o">Autre</label>
                                 </div>
                             </div>
-                            </div>
+                        </div>
 
                         <div class="mb-2">
                             <label class="form-label small">Âge</label>
@@ -656,11 +505,10 @@
                                 Peut facturer
                             </label>
                         </div>
-
                         
                         <div class="form-check mb-1">
-                            <input type="checkbox" class="form-check-input" id="favorites-only" name="favorites_only" {% if request.GET.favorites_only %}checked{% endif %}>
-                            <label class="form-check-label small" for="favorites-only">
+                            {{ form.favorites_only }}
+                            <label class="form-check-label small" for="{{ form.favorites_only.id_for_label }}">
                                 <i class="fas fa-heart text-danger me-1"></i> Favoris uniquement
                             </label>
                         </div>
@@ -701,16 +549,7 @@
 
     <!-- Grille de créateurs -->
     <div class="col-lg-9" data-aos="fade-up" data-aos-delay="200">
-        <div class="d-flex justify-content-between align-items-center mb-4">
-            <div class="view-toggle-buttons">
-                <button type="button" class="view-toggle-btn active" id="grid-view" title="Vue grille">
-                    <i class="fas fa-th-large"></i>
-                </button>
-                <button type="button" class="view-toggle-btn" id="list-view" title="Vue liste">
-                    <i class="fas fa-list"></i>
-                </button>
-            </div>
-
+        <div class="d-flex justify-content-end align-items-center mb-4">
             <a href="{% url 'map_view' %}?{{ request.GET.urlencode }}" class="btn btn-outline-primary">
                 <i class="fas fa-map-marker-alt me-2"></i> Voir sur la carte
             </a>
@@ -721,7 +560,7 @@
             {% for creator in creators %}
             <div class="col-md-6 col-lg-4 mb-4">
                 <div class="card creator-card">
-                    <div class="creator-img-container">
+                    <a href="{% url 'creator_detail' creator.id %}" class="creator-img-container">
                         {% if creator.featured_image %}
                         <img src="{{ creator.featured_image.url }}" alt="{{ creator.full_name }}" loading="lazy">
                         {% elif creator.media.filter.first %}
@@ -739,7 +578,7 @@
                             <i class="fas fa-user fa-3x text-muted"></i>
                         </div>
                         {% endif %}
-                    </div>
+                    </a>
 
                     <div class="card-body">
                         <div class="d-flex justify-content-between align-items-center mb-2">
@@ -751,17 +590,17 @@
                                 {% endif %}
                             </h3>
                         </div>
+                        
+
+                        {% if creator.baseline %}
+                        <div class="creator-tagline">{{ creator.baseline }}</div>
+                        {% endif %}
 
                         <div class="creator-info">
                             <div class="creator-details">
                                 <p class="text-muted small mb-1">
                                     <i class="fas fa-user-circle me-1"></i> {{ creator.age }} ans, {{ creator.get_gender_display }}
                                 </p>
-                                {% if creator.location %}
-                                <p class="text-muted small mb-1">
-                                    <i class="fas fa-map-marker-alt me-1"></i> {{ creator.location }}
-                                </p>
-                                {% endif %}
                             </div>
                             
                             <div class="domain-container">
@@ -908,364 +747,185 @@
             });
         });
 
-        // Bascule entre vue grille et liste avec animation
-        const gridView = document.getElementById('grid-view');
-        const listView = document.getElementById('list-view');
-        const creatorsGrid = document.getElementById('creators-grid');
-
-        if (gridView && listView && creatorsGrid) {
-            // Fonction pour ajouter un effet de transition lors du changement de vue
-            function animateViewChange(toListView) {
-                // Sauvegarder la position de défilement actuelle
-                const scrollPosition = window.scrollY;
+        // Charger et afficher les domaines triés par nombre d'utilisations
+        const domainCheckboxesContainer = document.getElementById('domain-checkboxes');
+        const selectedDomains = "{{ request.GET.domains|default:'' }}".split(',');
+        
+        if (domainCheckboxesContainer) {
+            try {
+                // Récupérer les données des domaines depuis la variable JS
+                const domainsData = JSON.parse('{{ domains_json|safe }}');
                 
-                // Ajouter une classe pour l'animation "fade out"
-                creatorsGrid.style.opacity = '0.5';
-                creatorsGrid.style.transform = 'scale(0.98)';
+                // Trier les domaines par nombre d'utilisations (ordre décroissant)
+                domainsData.sort((a, b) => b.count - a.count);
                 
-                setTimeout(() => {
-                    // Changer la vue
-                    if (toListView) {
-                        listView.classList.add('active');
-                        gridView.classList.remove('active');
-                        creatorsGrid.classList.add('list-view');
-                        console.log('Vue liste activée, classes appliquées:', creatorsGrid.className);
-                    } else {
-                        gridView.classList.add('active');
-                        listView.classList.remove('active');
-                        creatorsGrid.classList.remove('list-view');
-                        console.log('Vue grille activée, classes appliquées:', creatorsGrid.className);
-                    }
+                // Générer le HTML pour chaque domaine
+                domainsData.forEach(domain => {
+                    const isChecked = selectedDomains.includes(domain.id.toString());
                     
-                    // Forcer le recalcul du style
-                    void creatorsGrid.offsetWidth;
-                    
-                    // Appliquer manuellement la disposition sur les éléments internes
-                    const creatorCards = creatorsGrid.querySelectorAll('.col-md-6, .col-lg-4');
-                    creatorCards.forEach(card => {
-                        if (toListView) {
-                            card.style.width = '100%';
-                            card.style.maxWidth = '100%';
-                            card.style.flex = '0 0 100%';
-                            
-                            // Appliquer les styles directement aux cards
-                            const creatorCard = card.querySelector('.creator-card');
-                            const imgContainer = card.querySelector('.creator-img-container');
-                            const cardBody = card.querySelector('.card-body');
-                            
-                            if (creatorCard) {
-                                creatorCard.style.display = 'flex';
-                                creatorCard.style.flexDirection = 'row';
-                                creatorCard.style.height = 'auto';
-                            }
-                            
-                            if (imgContainer) {
-                                imgContainer.style.width = '180px';
-                                imgContainer.style.minHeight = '180px';
-                                imgContainer.style.maxHeight = '180px';
-                                imgContainer.style.flexShrink = '0';
-                            }
-                            
-                            if (cardBody) {
-                                cardBody.style.flex = '1';
-                                cardBody.style.display = 'flex';
-                                cardBody.style.flexDirection = 'column';
-                                cardBody.style.padding = '1.5rem';
-                            }
-                        } else {
-                            card.style.width = '';
-                            card.style.maxWidth = '';
-                            card.style.flex = '';
-                            
-                            // Réinitialiser les styles des cards
-                            const creatorCard = card.querySelector('.creator-card');
-                            const imgContainer = card.querySelector('.creator-img-container');
-                            const cardBody = card.querySelector('.card-body');
-                            
-                            if (creatorCard) {
-                                creatorCard.style.display = '';
-                                creatorCard.style.flexDirection = '';
-                                creatorCard.style.height = '';
-                            }
-                            
-                            if (imgContainer) {
-                                imgContainer.style.width = '';
-                                imgContainer.style.minHeight = '';
-                                imgContainer.style.maxHeight = '';
-                                imgContainer.style.flexShrink = '';
-                            }
-                            
-                            if (cardBody) {
-                                cardBody.style.flex = '';
-                                cardBody.style.display = '';
-                                cardBody.style.flexDirection = '';
-                                cardBody.style.padding = '';
-                            }
-                        }
-                    });
-                    
-                    // "Fade in" après le changement
-                    setTimeout(() => {
-                        creatorsGrid.style.opacity = '1';
-                        creatorsGrid.style.transform = 'scale(1)';
-                        // Restaurer la position de défilement
-                        window.scrollTo(0, scrollPosition);
-                    }, 50);
-                }, 200);
-            }
-
-            gridView.addEventListener('click', function () {
-                if (!this.classList.contains('active')) {
-                    document.body.style.cursor = 'wait';
-                    animateViewChange(false);
-                    localStorage.setItem('creatorView', 'grid');
-                    setTimeout(() => {
-                        document.body.style.cursor = 'default';
-                    }, 300);
-                }
-            });
-
-            listView.addEventListener('click', function () {
-                if (!this.classList.contains('active')) {
-                    document.body.style.cursor = 'wait';
-                    animateViewChange(true);
-                    localStorage.setItem('creatorView', 'list');
-                    setTimeout(() => {
-                        document.body.style.cursor = 'default';
-                    }, 300);
-                }
-            });
-
-            // Restaurer la vue préférée
-            const savedView = localStorage.getItem('creatorView');
-            if (savedView === 'list') {
-                // Plutôt que simplement cliquer sur le bouton, appliquons directement les styles
-                listView.classList.add('active');
-                gridView.classList.remove('active');
-                creatorsGrid.classList.add('list-view');
-                
-                // Appliquer les styles directement aux éléments
-                const creatorCards = creatorsGrid.querySelectorAll('.col-md-6, .col-lg-4');
-                creatorCards.forEach(card => {
-                    card.style.width = '100%';
-                    card.style.maxWidth = '100%';
-                    card.style.flex = '0 0 100%';
-                    
-                    const creatorCard = card.querySelector('.creator-card');
-                    const imgContainer = card.querySelector('.creator-img-container');
-                    const cardBody = card.querySelector('.card-body');
-                    
-                    if (creatorCard) {
-                        creatorCard.style.display = 'flex';
-                        creatorCard.style.flexDirection = 'row';
-                        creatorCard.style.height = 'auto';
-                    }
-                    
-                    if (imgContainer) {
-                        imgContainer.style.width = '180px';
-                        imgContainer.style.minHeight = '180px';
-                        imgContainer.style.maxHeight = '180px';
-                        imgContainer.style.flexShrink = '0';
-                    }
-                    
-                    if (cardBody) {
-                        cardBody.style.flex = '1';
-                        cardBody.style.display = 'flex';
-                        cardBody.style.flexDirection = 'column';
-                        cardBody.style.padding = '1.5rem';
-                    }
-                });
-                
-                console.log('Vue liste chargée depuis localStorage');
-            } else {
-                // Par défaut, s'assurer que la vue grille est active 
-                // (en cas de premier chargement)
-                gridView.classList.add('active');
-                listView.classList.remove('active');
-                creatorsGrid.classList.remove('list-view');
-                console.log('Vue grille chargée par défaut');
-            }
-            
-            // Charger et afficher les domaines triés par nombre d'utilisations
-            const domainCheckboxesContainer = document.getElementById('domain-checkboxes');
-            const selectedDomains = "{{ request.GET.domains|default:'' }}".split(',');
-            
-            if (domainCheckboxesContainer) {
-                try {
-                    // Récupérer les données des domaines depuis la variable JS
-                    const domainsData = JSON.parse('{{ domains_json|safe }}');
-                    
-                    // Trier les domaines par nombre d'utilisations (ordre décroissant)
-                    domainsData.sort((a, b) => b.count - a.count);
-                    
-                    // Générer le HTML pour chaque domaine
-                    domainsData.forEach(domain => {
-                        const isChecked = selectedDomains.includes(domain.id.toString());
-                        
-                        const domainHTML = `
-                            <div class="form-check domain-checkbox-container">
-                                <div class="d-flex align-items-center">
-                                    <input class="form-check-input domain-checkbox" type="checkbox" name="domains"
-                                        value="${domain.id}" id="domain_${domain.id}" ${isChecked ? 'checked' : ''}>
-                                    <label class="form-check-label" for="domain_${domain.id}">
-                                        ${domain.name}
-                                    </label>
-                                </div>
-                                <span class="domain-count ms-1">${domain.count}</span>
+                    const domainHTML = `
+                        <div class="form-check domain-checkbox-container">
+                            <div class="d-flex align-items-center">
+                                <input class="form-check-input domain-checkbox" type="checkbox" name="domains"
+                                    value="${domain.id}" id="domain_${domain.id}" ${isChecked ? 'checked' : ''}>
+                                <label class="form-check-label" for="domain_${domain.id}">
+                                    ${domain.name}
+                                </label>
                             </div>
-                        `;
-                        
-                        domainCheckboxesContainer.insertAdjacentHTML('beforeend', domainHTML);
-                    });
-                } catch (error) {
-                    console.error("Erreur lors du chargement des domaines:", error);
-                    // Afficher un message d'erreur
-                    domainCheckboxesContainer.innerHTML = '<div class="alert alert-warning small">Impossible de charger les domaines</div>';
-                }
+                            <span class="domain-count ms-1">${domain.count}</span>
+                        </div>
+                    `;
+                    
+                    domainCheckboxesContainer.insertAdjacentHTML('beforeend', domainHTML);
+                });
+            } catch (error) {
+                console.error("Erreur lors du chargement des domaines:", error);
+                // Afficher un message d'erreur
+                domainCheckboxesContainer.innerHTML = '<div class="alert alert-warning small">Impossible de charger les domaines</div>';
             }
+        }
 
-            // Initialisation du slider d'âge
-            const ageMin = parseInt("{{ min_creator_age }}") || 18;
-            const ageMax = parseInt("{{ max_creator_age }}") || 80;
-            const currentMinAge = parseInt("{{ request.GET.min_age }}") || ageMin;
-            const currentMaxAge = parseInt("{{ request.GET.max_age }}") || ageMax;
+        // Initialisation du slider d'âge
+        const ageMin = parseInt("{{ min_creator_age }}") || 18;
+        const ageMax = parseInt("{{ max_creator_age }}") || 80;
+        const currentMinAge = parseInt("{{ request.GET.min_age }}") || ageMin;
+        const currentMaxAge = parseInt("{{ request.GET.max_age }}") || ageMax;
 
-            // Configuration et initialisation du slider d'âge avec noUiSlider
-            const ageSlider = document.getElementById('age-slider');
-            if (ageSlider) {
-                // Vérifier si noUiSlider est disponible
-                if (typeof noUiSlider !== 'undefined') {
-                    noUiSlider.create(ageSlider, {
-                        start: [currentMinAge, currentMaxAge],
-                        connect: true,
-                        step: 1,
-                        range: {
-                            'min': ageMin,
-                            'max': ageMax
+        // Configuration et initialisation du slider d'âge avec noUiSlider
+        const ageSlider = document.getElementById('age-slider');
+        if (ageSlider) {
+            // Vérifier si noUiSlider est disponible
+            if (typeof noUiSlider !== 'undefined') {
+                noUiSlider.create(ageSlider, {
+                    start: [currentMinAge, currentMaxAge],
+                    connect: true,
+                    step: 1,
+                    range: {
+                        'min': ageMin,
+                        'max': ageMax
+                    },
+                    format: {
+                        to: function (value) {
+                            return Math.round(value);
                         },
-                        format: {
-                            to: function (value) {
-                                return Math.round(value);
-                            },
-                            from: function (value) {
-                                return Math.round(value);
-                            }
+                        from: function (value) {
+                            return Math.round(value);
                         }
-                    });
+                    }
+                });
 
-                    const ageMinValue = document.getElementById('age-min-value');
-                    const ageMaxValue = document.getElementById('age-max-value');
-                    const minAgeInput = document.getElementById('min-age-input');
-                    const maxAgeInput = document.getElementById('max-age-input');
+                const ageMinValue = document.getElementById('age-min-value');
+                const ageMaxValue = document.getElementById('age-max-value');
+                const minAgeInput = document.getElementById('min-age-input');
+                const maxAgeInput = document.getElementById('max-age-input');
 
-                    ageSlider.noUiSlider.on('update', function (values, handle) {
-                        const minVal = values[0];
-                        const maxVal = values[1];
-                        
-                        ageMinValue.textContent = minVal;
-                        ageMaxValue.textContent = maxVal;
-                        
-                        minAgeInput.value = minVal;
-                        maxAgeInput.value = maxVal;
-                    });
-                } else {
-                    // Fallback si noUiSlider n'est pas disponible
-                    console.warn("noUiSlider n'est pas disponible. Un fallback a été activé.");
+                ageSlider.noUiSlider.on('update', function (values, handle) {
+                    const minVal = values[0];
+                    const maxVal = values[1];
                     
-                    // Créer une solution de rechange simple avec deux inputs number
-                    ageSlider.innerHTML = '';
-                    const container = document.createElement('div');
-                    container.className = 'row';
+                    ageMinValue.textContent = minVal;
+                    ageMaxValue.textContent = maxVal;
                     
-                    const minCol = document.createElement('div');
-                    minCol.className = 'col-6';
-                    const minInput = document.createElement('input');
-                    minInput.type = 'number';
-                    minInput.className = 'form-control';
-                    minInput.name = 'min_age';
-                    minInput.value = currentMinAge;
-                    minInput.min = ageMin;
-                    minInput.max = ageMax;
-                    minCol.appendChild(minInput);
-                    
-                    const maxCol = document.createElement('div');
-                    maxCol.className = 'col-6';
-                    const maxInput = document.createElement('input');
-                    maxInput.type = 'number';
-                    maxInput.className = 'form-control';
-                    maxInput.name = 'max_age';
-                    maxInput.value = currentMaxAge;
-                    maxInput.min = ageMin;
-                    maxInput.max = ageMax;
-                    maxCol.appendChild(maxInput);
-                    
-                    container.appendChild(minCol);
-                    container.appendChild(maxCol);
-                    ageSlider.parentNode.appendChild(container);
-                    
-                    // Masquer les éléments inutiles
-                    document.getElementById('age-min-value').style.display = 'none';
-                    document.getElementById('age-max-value').style.display = 'none';
-                    
-                    // Supprimer les inputs cachés
-                    document.getElementById('min-age-input').remove();
-                    document.getElementById('max-age-input').remove();
-                }
+                    minAgeInput.value = minVal;
+                    maxAgeInput.value = maxVal;
+                });
+            } else {
+                // Fallback si noUiSlider n'est pas disponible
+                console.warn("noUiSlider n'est pas disponible. Un fallback a été activé.");
+                
+                // Créer une solution de rechange simple avec deux inputs number
+                ageSlider.innerHTML = '';
+                const container = document.createElement('div');
+                container.className = 'row';
+                
+                const minCol = document.createElement('div');
+                minCol.className = 'col-6';
+                const minInput = document.createElement('input');
+                minInput.type = 'number';
+                minInput.className = 'form-control';
+                minInput.name = 'min_age';
+                minInput.value = currentMinAge;
+                minInput.min = ageMin;
+                minInput.max = ageMax;
+                minCol.appendChild(minInput);
+                
+                const maxCol = document.createElement('div');
+                maxCol.className = 'col-6';
+                const maxInput = document.createElement('input');
+                maxInput.type = 'number';
+                maxInput.className = 'form-control';
+                maxInput.name = 'max_age';
+                maxInput.value = currentMaxAge;
+                maxInput.min = ageMin;
+                maxInput.max = ageMax;
+                maxCol.appendChild(maxInput);
+                
+                container.appendChild(minCol);
+                container.appendChild(maxCol);
+                ageSlider.parentNode.appendChild(container);
+                
+                // Masquer les éléments inutiles
+                document.getElementById('age-min-value').style.display = 'none';
+                document.getElementById('age-max-value').style.display = 'none';
+                
+                // Supprimer les inputs cachés
+                document.getElementById('min-age-input').remove();
+                document.getElementById('max-age-input').remove();
             }
+        }
 
-            // Initialisation des étoiles de notation
-            const ratingStars = document.querySelectorAll('.rating-stars input');
-            ratingStars.forEach(star => {
-                star.addEventListener('change', function() {
-                    // Visuel pour montrer quelle note est sélectionnée
-                    ratingStars.forEach(s => {
-                        const label = document.querySelector(`label[for="${s.id}"]`);
-                        if (parseInt(s.value) <= parseInt(this.value)) {
-                            label.querySelector('i').className = 'fas fa-star';
-                        } else {
-                            label.querySelector('i').className = 'far fa-star';
-                        }
-                    });
+        // Initialisation des étoiles de notation
+        const ratingStars = document.querySelectorAll('.rating-stars input');
+        ratingStars.forEach(star => {
+            star.addEventListener('change', function() {
+                // Visuel pour montrer quelle note est sélectionnée
+                ratingStars.forEach(s => {
+                    const label = document.querySelector(`label[for="${s.id}"]`);
+                    if (parseInt(s.value) <= parseInt(this.value)) {
+                        label.querySelector('i').className = 'fas fa-star';
+                    } else {
+                        label.querySelector('i').className = 'far fa-star';
+                    }
                 });
             });
-            
-            // Initialiser les tooltips de Bootstrap
-            if (typeof bootstrap !== 'undefined' && bootstrap.Tooltip) {
-                const tooltipTriggerList = [].slice.call(document.querySelectorAll('[title]'));
-                tooltipTriggerList.forEach(function(tooltipTriggerEl) {
-                    new bootstrap.Tooltip(tooltipTriggerEl);
-                });
-            }
-            
-            // Effet de transition AOS pour le chargement initial
-            if (typeof AOS !== 'undefined') {
-                AOS.refresh();
-            }
+        });
+        
+        // Initialiser les tooltips de Bootstrap
+        if (typeof bootstrap !== 'undefined' && bootstrap.Tooltip) {
+            const tooltipTriggerList = [].slice.call(document.querySelectorAll('[title]'));
+            tooltipTriggerList.forEach(function(tooltipTriggerEl) {
+                new bootstrap.Tooltip(tooltipTriggerEl);
+            });
+        }
+        
+        // Effet de transition AOS pour le chargement initial
+        if (typeof AOS !== 'undefined') {
+            AOS.refresh();
         }
     });
-        function updateCities() {
-            const countries = JSON.parse('{{ country_city_map|escapejs }}');
+    function updateCities() {
+        const countries = JSON.parse('{{ country_city_map|escapejs }}');
 
-            const countrySelect = document.getElementById('country');
-            const citySelect = document.getElementById('city');
-            const selectedCountryIso2 = countrySelect.value;
+        const countrySelect = document.getElementById('country');
+        const citySelect = document.getElementById('city');
+        const selectedCountryIso2 = countrySelect.value;
 
-            citySelect.innerHTML = '<option value="">Sélectionnez une ville</option>';
+        citySelect.innerHTML = '<option value="">Sélectionnez une ville</option>';
 
-            if (!selectedCountryIso2) {
-                return;
-            }
-
-            const cities = countries[selectedCountryIso2];
-
-            if (cities) {
-                cities.forEach(city => {
-                    const option = document.createElement('option');
-                    option.value = city.name;
-                    option.textContent = city.name;
-                    citySelect.appendChild(option);
-                });
-            }
+        if (!selectedCountryIso2) {
+            return;
         }
+
+        const cities = countries[selectedCountryIso2];
+
+        if (cities) {
+            cities.forEach(city => {
+                const option = document.createElement('option');
+                option.value = city.name;
+                option.textContent = city.name;
+                citySelect.appendChild(option);
+            });
+        }
+    }
 </script>
 {% endblock %}

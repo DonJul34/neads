@@ -1057,7 +1057,6 @@ def api_map_search(request):
                 'gender': creator.get_gender_display(),
                 'domains': domains,
                 'can_invoice': creator.can_invoice,
-                'verified': creator.verified_by_neads,
                 'distance': round(distance, 1),
                 'thumbnail': thumbnail,
                 'latitude': float(creator.location.latitude),

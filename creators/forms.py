@@ -55,12 +55,6 @@ class CreatorFilterForm(forms.Form):
         ('livestream', 'Livestream')
     )
     
-    content_type = forms.ChoiceField(
-        choices=CONTENT_TYPE_CHOICES,
-        required=False,
-        widget=forms.Select(attrs={'class': 'form-select'})
-    )
-    
     # Les champs min_age et max_age ne sont plus des NumberInput
     # mais seront gérés par un curseur à double point (RangeSlider)
     # Les valeurs min_age et max_age seront définies dans le HTML

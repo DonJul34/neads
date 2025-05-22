@@ -61,10 +61,6 @@ class MapView(TemplateView):
             if data.get('gender'):
                 queryset = queryset.filter(gender=data['gender'])
             
-            # Filtrage par type de contenu
-            if data.get('content_type'):
-                queryset = queryset.filter(content_types__contains=[data['content_type']])
-            
             # Filtrage par âge
             if data.get('min_age'):
                 queryset = queryset.filter(age__gte=data['min_age'])
@@ -124,10 +120,6 @@ def map_data(request):
         # Filtrage par genre
         if data.get('gender'):
             creators = creators.filter(gender=data['gender'])
-        
-        # Filtrage par type de contenu
-        if data.get('content_type'):
-            creators = creators.filter(content_types__contains=[data['content_type']])
         
         # Filtrage par âge
         if data.get('min_age'):

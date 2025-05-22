@@ -140,13 +140,6 @@ class CreatorForm(forms.ModelForm):
         required=False
     )
     
-    content_types = forms.ModelMultipleChoiceField(
-        queryset=None,  # Sera défini dans __init__
-        widget=forms.CheckboxSelectMultiple(attrs={'class': 'content-types-checkbox'}),
-        required=False,
-        label="Types de contenu"
-    )
-    
     previous_clients = forms.CharField(
         widget=forms.Textarea(attrs={
             'class': 'form-control', 
@@ -568,7 +561,7 @@ class CreatorRegistrationForm(forms.Form):
     # Photo de profil
     featured_image = forms.ImageField(
         label="Photo de profil",
-        required=True,
+        required=False,
         widget=forms.FileInput(attrs={'class': 'form-control'})
     )
     
@@ -717,3 +710,5 @@ class CreatorRegistrationForm(forms.Form):
             self.add_error('full_address', "Veuillez sélectionner une adresse dans les suggestions pour permettre la géolocalisation.")
         
         return cleaned_data 
+    
+    # In your forms.py

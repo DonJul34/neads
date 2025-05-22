@@ -129,6 +129,7 @@ class Creator(models.Model):
     first_name = models.CharField(max_length=50)
     last_name = models.CharField(max_length=50)
     full_name = models.CharField(max_length=100, blank=True)  # Auto-généré
+    baseline = models.CharField(max_length=100, blank=True)
     age = models.PositiveIntegerField(validators=[MinValueValidator(13), MaxValueValidator(100)])
     gender = models.CharField(max_length=1, choices=GENDER_CHOICES)
     

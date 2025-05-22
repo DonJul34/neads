@@ -8,6 +8,8 @@ import json
 
 from neads.creators.models import Creator, Domain
 from neads.creators.forms import CreatorSearchForm
+from py_countries_states_cities_database import get_all_countries_and_cities_nested
+
 
 
 @login_required
@@ -46,6 +48,8 @@ def map_view(request):
     # Âge minimum et maximum des créateurs pour les filtres
     min_creator_age = Creator.objects.all().aggregate(Min('age'))['age__min'] or 18
     max_creator_age = Creator.objects.all().aggregate(Max('age'))['age__max'] or 80
+    all_countries = get_all_countries_and_cities_nested()
+
     
     context = {
         'form': form,
@@ -54,6 +58,11 @@ def map_view(request):
         'domains_json': domains_json,
         'min_creator_age': min_creator_age,
         'max_creator_age': max_creator_age,
+        'countries':all_countries,
+        'country_city_map': json.dumps({
+            entry["iso2"]: entry["cities"]
+            for entry in all_countries
+        })
     }
     
     return render(request, 'search/map.html', context)

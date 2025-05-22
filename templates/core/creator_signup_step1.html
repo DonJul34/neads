@@ -1,467 +1,820 @@
-{% extends "base.html" %}
-{% load static %}
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Devenir créateur de contenu UGC chez Neads</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/17.0.13/css/intlTelInput.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: Inter, system-ui, sans-serif;
+        }
+        
+        body {
+            background: #f6f7fb;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            color: #23263b;
+            font-family: 'Poppins', Inter, system-ui, sans-serif;
+            font-size: 16px;
+        }
+        
+        header {
+            background-color: #12112a;
+            padding: 20px 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .logo {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: white;
+            text-decoration: none;
+        }
 
-{% block title %}Devenir créateur de contenu UGC chez Neads - Étape 1{% endblock %}
+        .flag {
+            height: 20px;
+        }
+        
+        .hero {
+            background-color: #12112a;
+            color: white;
+            padding: 60px 0;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 40px;
+        }
+        
+        .hero h1 {
+            font-size: 48px !important;
+            font-weight: 700;
+            color: #fff;
+            margin-bottom: 20px !important;
+            letter-spacing: -0.2px;
+            font-family: 'Poppins', Inter, system-ui, sans-serif;
+        }
+        
+        .hero p {
+            margin-bottom: 8px;
+            font-size: 20px !important;
+            line-height: 1.5;
+            color: #fff !important;
+        }
 
-{% block extra_css %}
-<link rel="stylesheet" href="{% static 'css/creator_signup.css' %}">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.7.1/dist/leaflet.css" />
-<style>
-    .map-preview {
-        height: 200px;
-        margin-top: 10px;
-        border-radius: 4px;
-        display: none;
-    }
-    .address-suggestions {
-        position: absolute;
-        z-index: 1000;
-        background: white;
-        border: 1px solid #ddd;
-        border-radius: 4px;
-        max-height: 200px;
-        overflow-y: auto;
-        width: 100%;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    }
-    .suggestion-item {
-        padding: 8px 12px;
-        cursor: pointer;
-        border-bottom: 1px solid #eee;
-    }
-    .suggestion-item:hover {
-        background-color: #f5f5f5;
-    }
-    .suggestion-item:last-child {
-        border-bottom: none;
-    }
-    #loading-overlay {
-        display: none;
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background-color: rgba(0, 0, 0, 0.7);
-        z-index: 9999;
-        justify-content: center;
-        align-items: center;
-        flex-direction: column;
-    }
-    .spinner {
-        width: 50px;
-        height: 50px;
-        border: 5px solid #f3f3f3;
-        border-top: 5px solid #3498db;
-        border-radius: 50%;
-        animation: spin 1s linear infinite;
-        margin-bottom: 20px;
-    }
-    @keyframes spin {
-        0% { transform: rotate(0deg); }
-        100% { transform: rotate(360deg); }
-    }
-    .loading-text {
-        color: white;
-        font-size: 18px;
-    }
-    
-    /* Radio buttons styling */
-    #div_id_can_invoice .form-check {
-        display: inline-block;
-        margin-right: 20px;
-    }
-    #div_id_can_invoice .form-check-input {
-        margin-right: 5px;
-    }
-    #div_id_can_invoice .form-check-label {
-        font-weight: normal;
-    }
-</style>
-{% endblock %}
+        .wrapper {
+            background-color: #f5f6ff;
+            padding: 60px 0;
+        }
+        
+        .form-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 40px;
+        }
+        
+        form {
+            width: 100%;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 40px;
+            border-radius: 12px;
+        }
+        
+        .form-section {
+            margin-bottom: 24px;
+        }
+        
+        .form-section h2 {
+            font-size: 24px;
+            font-weight: 700;
+            color: #23263b;
+            margin-bottom: 20px !important;
+            letter-spacing: -0.2px;
+            font-family: 'Poppins', Inter, system-ui, sans-serif;
+        }
+        
+        .form-section > h2 + * {
+            margin-top: 18px !important;
+        }
+        
+        .form-row {
+            display: flex;
+            gap: 32px;
+            margin-bottom: 28px;
+            width: 100%;
+        }
+        
+        .form-group {
+            flex: 1;
+            min-width: 0;
+        }
 
-{% block content %}
-<div id="loading-overlay">
-    <div class="spinner"></div>
-    <div class="loading-text">Création de votre profil en cours...</div>
-</div>
+        .form-group p,
+        .form-check-label,
+        .char-counter,
+        .upload-note,
+        .footer-text,
+        .upload-area p,
+        .brand-tag,
+        label,
+        span,
+        .form-text {
+            font-size: 16px !important;
+            font-family: 'Poppins', Inter, system-ui, sans-serif !important;
+        }
+        
+        input, select, textarea {
+            width: 100%;
+            padding-left: 15px !important;
+            padding-right: 15px !important;
+            height: 45px !important;
+            border: 1px solid rgba(0, 0, 0, 0.25) !important;
+            border-radius: 3px !important;
+            font-size: 16px !important;
+            color: rgba(0, 0, 0, 0.7) !important;
+            background-color: #fff !important;
+            transition: border 0.15s, box-shadow 0.15s;
+            min-width: 0;
+            font-weight: 500;
+            box-shadow: none !important;
+            font-family: 'Poppins', Inter, system-ui, sans-serif !important;
+        }
 
-<div class="container my-5">
-    <div class="row">
-        <div class="col-lg-8 mx-auto">
-            <div class="card shadow-lg mb-4">
-                <div class="card-header bg-primary text-white py-4">
-                    <h1 class="h3 mb-0 text-center">Postule pour devenir créateur de contenu UGC chez Neads !</h1>
-                </div>
-                <div class="card-body p-4">
-                    <div class="mb-4 text-center">
-                        <p class="lead">Tu es passionné(e) par la création de contenu UGC sur les réseaux sociaux ?<br>
-                        Tu maîtrises parfaitement les codes et tendances de TikTok et Instagram ?</p>
-                        <p class="fs-5 fw-bold text-primary mb-5">Viens collaborer avec les plus belles marques !</p>
-                    </div>
-                    
-                    {% if messages %}
-                    <div class="messages">
-                        {% for message in messages %}
-                        <div class="alert alert-{{ message.tags }}">{{ message }}</div>
-                        {% endfor %}
-                    </div>
-                    {% endif %}
-                    
-                    <form method="post" enctype="multipart/form-data" id="creator-signup-form" class="needs-validation" novalidate>
-                        {% csrf_token %}
-                        <input type="hidden" name="step" value="1">
+        input::placeholder, select::placeholder, textarea::placeholder {
+            color: #b0b3c6;
+            font-size: 16px;
+            font-weight: 400;
+            font-family: 'Poppins', Inter, system-ui, sans-serif;
+        }
+
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: #7c3aed;
+            box-shadow: 0 0 0 3px rgba(124,58,237,0.08);
+        }
+        
+        select {
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg width='14' height='8' viewBox='0 0 14 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L7 7L13 1' stroke='rgba(0, 0, 0, 0.18)' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 18px center;
+            padding-right: 48px;
+        }
+        
+        textarea {
+            resize: vertical;
+            min-height: 140px;
+            line-height: 1.6;
+        }
+        
+        .radio-group {
+            display: flex;
+            gap: 20px;
+        }
+        
+        .radio-option {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .radio-option label {
+            font-size: 1.13rem;
+            color: #23263b;
+            font-weight: 500;
+        }
+        
+        .radio-option input {
+            width: 18px;
+            height: 18px;
+            margin: 0;
+        }
+        
+        .char-counter {
+            font-size: 0.97rem;
+            color: #a0a3b8;
+            margin-top: 8px;
+            font-weight: 400;
+        }
+        
+        .upload-area {
+            border: 2px dashed #e0e3ea;
+            padding: 40px;
+            text-align: center;
+            border-radius: 12px;
+            cursor: pointer;
+            background-color: #fff;
+            margin-top: 14px;
+            transition: border-color 0.2s, box-shadow 0.2s;
+            box-shadow: 0 1px 2px rgba(44,62,80,0.03);
+        }
+
+        .upload-area:hover {
+            border-color: #7c3aed;
+            box-shadow: 0 2px 8px rgba(124,58,237,0.07);
+        }
+        
+        .upload-area svg {
+            width: 36px;
+            height: 36px;
+            fill: #b0b3c6;
+            margin-bottom: 14px;
+        }
+
+        .upload-area p {
+            font-size: 1.13rem;
+            color: #23263b;
+            margin-bottom: 8px;
+            font-weight: 500;
+        }
+        
+        .upload-note {
+            font-size: 0.97rem;
+            color: #a0a3b8;
+            margin-top: 8px;
+        }
+        
+        .submit-btn {
+            background: linear-gradient(275deg, #992ec6 0%, #4f42ff 100%) !important;
+            border-radius: 0 !important;
+            padding: 1rem 1.75rem !important;
+            height: auto !important;
+            margin-top: 1rem !important;
+            color: #fff !important;
+            border: none !important;
+            font-size: 1.18rem;
+            cursor: pointer;
+            transition: opacity 0.2s, box-shadow 0.2s;
+            width: auto;
+            font-weight: 700;
+            box-shadow: 0 2px 8px rgba(124,58,237,0.07);
+        }
+        
+        .submit-btn:hover {
+            opacity: 0.93;
+            box-shadow: 0 4px 16px rgba(124,58,237,0.13);
+        }
+        
+        .brand-input {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .brand-input .btn-add {
+            background: none;
+            border: none;
+            color: #6366F1;
+            font-size: 20px;
+            cursor: pointer;
+            padding: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 28px;
+            height: 28px;
+        }
+
+        .brand-input .btn-add:hover {
+            color: #4F46E5;
+        }
+        
+        .phone-input {
+            display: flex;
+            gap: 12px;
+        }
+        
+        footer {
+            background-color: #18192b;
+            color: #fff;
+            padding: 28px 40px 20px 40px;
+            margin-top: auto;
+        }
+        
+        .footer-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .footer-text {
+            font-size: 1rem;
+            opacity: 0.8;
+        }
+        
+        .social-links {
+            display: flex;
+            gap: 28px;
+        }
+        
+        .social-links a {
+            color: #fff;
+            opacity: 0.8;
+            transition: opacity 0.2s;
+        }
+        
+        .social-links a:hover {
+            opacity: 1;
+        }
+        
+        .social-icon {
+            width: 22px;
+            height: 22px;
+        }
+
+        /* IntlTelInput Customization */
+        .iti {
+            width: 100%;
+        }
+        .iti__tel-input {
+            height: 45px !important;
+            padding-left: 52px !important;
+            padding-right: 15px !important;
+            font-size: 16px !important;
+            color: rgba(0, 0, 0, 0.7) !important;
+            border: none !important;
+            box-shadow: none !important;
+            font-family: 'Poppins', Inter, system-ui, sans-serif !important;
+        }
+        .iti--allow-dropdown .iti__flag-container, .iti--separate-dial-code .iti__flag-container {
+            left: 0px !important;
+        }
+        .iti--separate-dial-code .iti__selected-flag {
+            padding-left: 10px !important;
+            padding-right: 10px !important;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 0 12px;
+            }
+            
+            .hero h1 {
+                font-size: 1.5rem;
+            }
+            
+            .form-row {
+                flex-direction: column;
+                gap: 18px;
+            }
+            
+            .footer-content {
+                flex-direction: column;
+                gap: 18px;
+                text-align: center;
+            }
+
+            .form-container {
+                padding: 16px;
+            }
+
+            form {
+                padding: 16px;
+            }
+        }
+
+        @media (max-width: 992px) {
+            .hero h1 {
+                font-size: 32px !important;
+            }
+            .hero p {
+                font-size: 16px !important;
+            }
+            .hero .container {
+                padding-left: 24px;
+                padding-right: 24px;
+            }
+        }
+
+        @media (max-width: 600px) {
+            .hero h1 {
+                font-size: 32px !important;
+            }
+            .hero p {
+                font-size: 16px !important;
+            }
+            .hero .container {
+                padding-left: 20px;
+                padding-right: 20px;
+            }
+            .container.py-5 {
+                padding: 50px 20px !important;
+            }
+            .form-main-width {
+                padding: 0px !important;
+                width: 100% !important;
+            }
+            #creator-signup-form {
+                padding: 0px !important;
+            }
+        }
+
+        .form-check-input {
+            width: 18px;
+            height: 18px;
+            margin-top: 0.1em;
+            margin-right: 8px;
+            vertical-align: middle;
+            appearance: checkbox;
+            -webkit-appearance: checkbox;
+            box-shadow: none !important;
+            min-width: 18px;
+            min-height: 18px;
+        }
+        .form-check-label {
+            font-size: 1.13rem;
+            vertical-align: middle;
+            margin-left: 2px;
+            color: #23263b;
+            font-weight: 500;
+        }
+        .form-check {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* Specific fix for phone input padding */
+        #phone.form-control {
+            padding-left: 95px !important;
+        }
+
+        input[type="radio"] {
+            height: 18px !important;
+        }
+
+        /* Remove margin-bottom for the specific form-row under Statut pour facturer */
+        .form-row.no-margin-bottom {
+            margin-bottom: 0 !important;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <a href="#" class="logo">ne·ads</a>
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="12" fill="none" viewBox="0 0 36 24" class="flag"><g clip-path="url(#a)"><path fill="#F0F0F0" d="M36 0H0v23.995h36V0Z"/><path fill="#FF4B55" d="M36 0H24v23.996h12V0Z"/><path fill="#0052B4" d="M12 0H0v23.996h12V0Z"/></g><defs><clipPath id="a"><path fill="#fff" d="M0 0h36v23.996H0z"/></clipPath></defs></svg>
+    </header>
+
+    <section class="hero">
+        <div class="container">
+            <h1>Postule pour devenir créateur<br>de contenu UGC chez Neads !</h1>
+            <p>Tu es passionné(e) par la création de contenu UGC sur les réseaux sociaux ?</p>
+            <p>Tu maîtrises parfaitement les codes et tendances de TikTok et Instagram ?</p>
+            <p>Viens collaborer avec les plus belles marques !</p>
+        </div>
+    </section>
+
+    <div class="container py-5">
+        <div class="row justify-content-center" style="width:100%;margin:0;">
+            <div class="form-main-width" style="width:100%;">
+                <form id="creator-signup-form" class="needs-validation" novalidate>
+                    <!-- Contact Details Section -->
+                    <div class="form-section">
+                        <div class="form-header">
+                            <h2 class="h4 mb-0">Tes coordonnées</h2>
+                        </div>
                         
-                        <!-- Coordonnées -->
-                        <div class="card mb-4">
-                            <div class="card-header bg-light">
-                                <h3 class="h5 mb-0">Tes coordonnées</h3>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <input type="text" class="form-control" placeholder="Prénom*" required>
+                                <div class="invalid-feedback">Ce champ est requis.</div>
                             </div>
-                            <div class="card-body">
-                                <div class="row">
-                                    <div class="col-md-6 mb-3">
-                                        <label for="{{ form.first_name.id_for_label }}" class="form-label">Prénom *</label>
-                                        {{ form.first_name }}
-                                        <div class="invalid-feedback">
-                                            {% if form.first_name.errors %}{{ form.first_name.errors.0 }}{% else %}Ce champ est requis.{% endif %}
-                                        </div>
-                                    </div>
-                                    <div class="col-md-6 mb-3">
-                                        <label for="{{ form.last_name.id_for_label }}" class="form-label">Nom *</label>
-                                        {{ form.last_name }}
-                                        <div class="invalid-feedback">
-                                            {% if form.last_name.errors %}{{ form.last_name.errors.0 }}{% else %}Ce champ est requis.{% endif %}
-                                        </div>
-                                    </div>
-                                </div>
-                                
-                                <div class="row">
-                                    <div class="col-md-6 mb-3">
-                                        <label for="{{ form.gender.id_for_label }}" class="form-label">Genre *</label>
-                                        {{ form.gender }}
-                                        <div class="invalid-feedback">
-                                            {% if form.gender.errors %}{{ form.gender.errors.0 }}{% else %}Ce champ est requis.{% endif %}
-                                        </div>
-                                    </div>
-                                    <div class="col-md-6 mb-3">
-                                        <label for="{{ form.birth_year.id_for_label }}" class="form-label">Année de naissance *</label>
-                                        {{ form.birth_year }}
-                                        <div class="invalid-feedback">
-                                            {% if form.birth_year.errors %}{{ form.birth_year.errors.0 }}{% else %}Ce champ est requis.{% endif %}
-                                        </div>
-                                    </div>
-                                </div>
-                                
-                                <div class="row">
-                                    <div class="col-md-6 mb-3">
-                                        <label for="{{ form.email.id_for_label }}" class="form-label">E-mail *</label>
-                                        {{ form.email }}
-                                        <div class="invalid-feedback">
-                                            {% if form.email.errors %}{{ form.email.errors.0 }}{% else %}Ce champ est requis.{% endif %}
-                                        </div>
-                                    </div>
-                                    <div class="col-md-6 mb-3">
-                                        <label for="{{ form.phone.id_for_label }}" class="form-label">Téléphone *</label>
-                                        <div class="input-group">
-                                            <span class="input-group-text">France +33</span>
-                                            {{ form.phone }}
-                                        </div>
-                                        <div class="invalid-feedback">
-                                            {% if form.phone.errors %}{{ form.phone.errors.0 }}{% else %}Ce champ est requis.{% endif %}
-                                        </div>
-                                    </div>
-                                </div>
-                                
-                                <div class="row">
-                                    <div class="col-md-6 mb-3">
-                                        <label for="{{ form.password.id_for_label }}" class="form-label">Mot de passe *</label>
-                                        {{ form.password }}
-                                        <div class="form-text">{{ form.password.help_text }}</div>
-                                        <div class="invalid-feedback">
-                                            {% if form.password.errors %}{{ form.password.errors.0 }}{% else %}Ce champ est requis.{% endif %}
-                                        </div>
-                                    </div>
-                                    <div class="col-md-6 mb-3">
-                                        <label for="{{ form.password_confirm.id_for_label }}" class="form-label">Confirmer le mot de passe *</label>
-                                        {{ form.password_confirm }}
-                                        <div class="invalid-feedback">
-                                            {% if form.password_confirm.errors %}{{ form.password_confirm.errors.0 }}{% else %}Ce champ est requis.{% endif %}
-                                        </div>
-                                    </div>
-                                </div>
-                                
-                                <div class="mb-3">
-                                    <label for="{{ form.full_address.id_for_label }}" class="form-label">Adresse complète *</label>
-                                    {{ form.full_address }}
-                                    <div class="invalid-feedback">
-                                        {% if form.full_address.errors %}{{ form.full_address.errors.0 }}{% else %}Ce champ est requis.{% endif %}
-                                    </div>
-                                </div>
-                                
-                                {{ form.latitude }}
-                                {{ form.longitude }}
-                                
-                                <div id="map-preview" class="map-preview"></div>
+                            <div class="col-md-6 mb-3">
+                                <input type="text" class="form-control" placeholder="Nom*" required>
+                                <div class="invalid-feedback">Ce champ est requis.</div>
                             </div>
                         </div>
                         
-                        <!-- À propos de toi -->
-                        <div class="card mb-4">
-                            <div class="card-header bg-light">
-                                <h3 class="h5 mb-0">À propos de toi</h3>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <select class="form-select" required>
+                                    <option value="" disabled selected>Genre*</option>
+                                    <option value="M">Homme</option>
+                                    <option value="F">Femme</option>
+                                    <option value="O">Autre</option>
+                                </select>
+                                <div class="invalid-feedback">Ce champ est requis.</div>
                             </div>
-                            <div class="card-body">
-                                <div class="mb-3">
-                                    <label for="{{ form.baseline.id_for_label }}" class="form-label">Baseline *</label>
-                                    {{ form.baseline }}
-                                    <div class="character-counter" id="baseline-counter">Vous avez utilisé 0 caractères sur les 50 alloués. Il vous reste 50.</div>
-                                    <div class="invalid-feedback">
-                                        {% if form.baseline.errors %}{{ form.baseline.errors.0 }}{% else %}Ce champ est requis.{% endif %}
+                            <div class="col-md-6 mb-3">
+                                <select class="form-select" required id="birthYear">
+                                    <option value="" disabled selected>Année de naissance*</option>
+                                </select>
+                                <div class="invalid-feedback">Ce champ est requis.</div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <input type="email" class="form-control" placeholder="E-mail*" required>
+                                <div class="invalid-feedback">Veuillez entrer une adresse email valide.</div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <input type="tel" id="phone" class="form-control" placeholder="Téléphone*" required autocomplete="off" data-intl-tel-input-id="0">
+                                <div class="invalid-feedback">Ce champ est requis.</div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <input type="password" class="form-control" placeholder="Mot de passe*" required>
+                                <div class="form-text">8 caractères minimum, incluant majuscules, minuscules et chiffres.</div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <input type="password" class="form-control" placeholder="Confirmer le mot de passe*" required>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="form-section">
+                        <h2>Statut pour facturer *</h2>
+                        <div class="form-row no-margin-bottom">
+                            <div class="form-group">
+                                <div class="radio-group">
+                                    <div class="radio-option">
+                                        <input type="radio" id="status-yes" name="can_invoice" value="yes" required>
+                                        <label for="status-yes">Oui</label>
                                     </div>
-                                </div>
-                                
-                                <div class="mb-3">
-                                    <label for="{{ form.bio.id_for_label }}" class="form-label">A propos de toi *</label>
-                                    {{ form.bio }}
-                                    <div class="character-counter" id="bio-counter">Vous avez utilisé 0 caractères sur les 1000 alloués. Minimum requis: 400 caractères.</div>
-                                    <div class="invalid-feedback">
-                                        {% if form.bio.errors %}{{ form.bio.errors.0 }}{% else %}Ce champ doit contenir entre 400 et 1000 caractères.{% endif %}
-                                    </div>
-                                </div>
-                                
-                                <div class="row">
-                                    <div class="col-md-4 mb-3">
-                                        <label for="{{ form.tiktok_link.id_for_label }}" class="form-label">Compte TikTok</label>
-                                        {{ form.tiktok_link }}
-                                        <small class="text-muted">ex : https://www.tiktok.com/@neadsagency</small>
-                                        <div class="invalid-feedback">
-                                            {% if form.tiktok_link.errors %}{{ form.tiktok_link.errors.0 }}{% endif %}
-                                        </div>
-                                    </div>
-                                    <div class="col-md-4 mb-3">
-                                        <label for="{{ form.instagram_link.id_for_label }}" class="form-label">Compte Instagram</label>
-                                        {{ form.instagram_link }}
-                                        <small class="text-muted">ex : https://www.instagram.com/neadsagency</small>
-                                        <div class="invalid-feedback">
-                                            {% if form.instagram_link.errors %}{{ form.instagram_link.errors.0 }}{% endif %}
-                                        </div>
-                                    </div>
-                                    <div class="col-md-4 mb-3">
-                                        <label for="{{ form.youtube_link.id_for_label }}" class="form-label">Compte YouTube</label>
-                                        {{ form.youtube_link }}
-                                        <small class="text-muted">ex : https://www.youtube.com/@neadsagency</small>
-                                        <div class="invalid-feedback">
-                                            {% if form.youtube_link.errors %}{{ form.youtube_link.errors.0 }}{% endif %}
-                                        </div>
-                                    </div>
-                                </div>
-                                
-                                <div class="mb-3">
-                                    <label for="{{ form.featured_image.id_for_label }}" class="form-label">Photo de profil *</label>
-                                    <div class="upload-zone">
-                                        <div class="upload-prompt">
-                                            <i class="fas fa-cloud-upload-alt"></i>
-                                            <p>Cliquez ou déplacez un fichier dans cette zone pour le téléverser.</p>
-                                        </div>
-                                        {{ form.featured_image }}
-                                    </div>
-                                    <div class="invalid-feedback">
-                                        {% if form.featured_image.errors %}{{ form.featured_image.errors.0 }}{% else %}Ce champ est requis.{% endif %}
-                                    </div>
-                                </div>
-                                
-                                <div class="mb-3">
-                                    <label class="form-label">Domaines *</label>
-                                    <div class="domains-list">
-                                        {{ form.domains }}
-                                    </div>
-                                    <small class="text-muted">Sélectionne 5 domaines maximum</small>
-                                    <div class="invalid-feedback">
-                                        {% if form.domains.errors %}{{ form.domains.errors.0 }}{% else %}Veuillez sélectionner au moins un domaine.{% endif %}
-                                    </div>
-                                </div>
-                                
-                                <div class="mb-3">
-                                    <label for="{{ form.equipment.id_for_label }}" class="form-label">Matériel utilisé *</label>
-                                    {{ form.equipment }}
-                                    <div class="invalid-feedback">
-                                        {% if form.equipment.errors %}{{ form.equipment.errors.0 }}{% else %}Ce champ est requis.{% endif %}
-                                    </div>
-                                </div>
-                                
-                                <div class="mb-3">
-                                    <label for="{{ form.previous_clients.id_for_label }}" class="form-label">Marques avec lesquelles tu as travaillé *</label>
-                                    {{ form.previous_clients }}
-                                    <div class="invalid-feedback">
-                                        {% if form.previous_clients.errors %}{{ form.previous_clients.errors.0 }}{% else %}Ce champ est requis.{% endif %}
-                                    </div>
-                                </div>
-                                
-                                <div class="mb-3">
-                                    <label class="form-label">{{ form.can_invoice.label }} *</label>
-                                    <div class="d-flex">
-                                        {{ form.can_invoice }}
-                                    </div>
-                                    <div class="invalid-feedback">
-                                        {% if form.can_invoice.errors %}{{ form.can_invoice.errors.0 }}{% else %}Veuillez indiquer si vous pouvez facturer.{% endif %}
+                                    <div class="radio-option">
+                                        <input type="radio" id="status-no" name="can_invoice" value="no" required>
+                                        <label for="status-no">Non</label>
                                     </div>
                                 </div>
                             </div>
                         </div>
+                    </div>
+                    
+                    <!-- About You Section -->
+                    <div class="form-section">
+                        <div class="form-header">
+                            <h2 class="h4 mb-0">À propos de toi</h2>
+                        </div>
                         
-                        <!-- Conditions et envoi -->
-                        <div class="mb-4">
-                            <div class="form-check mb-3">
-                                {{ form.accept_terms }}
-                                <label class="form-check-label" for="{{ form.accept_terms.id_for_label }}">
-                                    {{ form.accept_terms.label }}
+                        <div class="mb-3">
+                            <input type="text" class="form-control" id="baseline" placeholder="Baseline* (ex : créateur de contenu UGC)" required>
+                            <div class="character-counter" id="baseline-counter">Vous avez utilisé 0 caractères sur les 90 alloués.</div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <textarea class="form-control" id="bio" rows="4" placeholder="À propos de toi* (min. 400 caractères, max. 1000)" required></textarea>
+                            <div class="character-counter" id="bio-counter">Vous avez utilisé 0 caractères sur les 1000 alloués. Minimum requis: 400 caractères.</div>
+                        </div>
+                        
+                        <div class="form-section">
+                            <h2>Photo de profil *</h2>
+                            <div class="upload-area">
+                                <input type="file" accept="image/*" id="profile-image" style="display:none;">
+                                <label for="profile-image" style="display:block;cursor:pointer;">
+                                    <svg viewBox="0 0 1024 1024" focusable="false" data-icon="inbox" width="50px" height="50px" fill="currentColor" aria-hidden="true">
+                                        <path d="M885.2 446.3l-.2-.8-112.2-285.1c-5-16.1-19.9-27.2-36.8-27.2H281.2c-17 0-32.1 11.3-36.9 27.6L139.4 443l-.3.7-.2.8c-1.3 4.9-1.7 9.9-1 14.8-.1 1.6-.2 3.2-.2 4.8V830a60.9 60.9 0 0 0 60.8 60.8h627.2c33.5 0 60.8-27.3 60.9-60.8V464.1c0-1.3 0-2.6-.1-3.7.4-4.9 0-9.6-1.3-14.1zm-295.8-43l-.3 15.7c-.8 44.9-31.8 75.1-77.1 75.1-22.1 0-41.1-7.1-54.8-20.6S436 441.2 435.6 419l-.3-15.7H229.5L309 210h399.2l81.7 193.3H589.4zm-375 76.8h157.3c24.3 57.1 76 90.8 140.4 90.8 33.7 0 65-9.4 90.3-27.2 22.2-15.6 39.5-37.4 50.7-63.6h156.5V814H214.4V480.1z"></path>
+                                    </svg>
+                                    <p>Cliquez ou déplacez un fichier dans cette zone pour le téléverser</p>
                                 </label>
-                                <div class="invalid-feedback">
-                                    {% if form.accept_terms.errors %}{{ form.accept_terms.errors.0 }}{% else %}Vous devez accepter les conditions d'utilisation.{% endif %}
-                                </div>
-                            </div>
-                            
-                            <div class="d-grid">
-                                <button type="submit" id="signup-submit-btn" class="btn btn-primary btn-lg">Continuer vers l'étape 2</button>
                             </div>
                         </div>
-                    </form>
-                </div>
+                    </div>
+                    
+                    <!-- Social Media Section -->
+                    <div class="form-section">
+                        <div class="form-header">
+                            <h2 class="h4 mb-0">Tes réseaux sociaux</h2>
+                        </div>
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <input type="text" class="form-control" placeholder="TikTok (ex : https://www.tiktok.com/@neadsagency)">
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <input type="text" class="form-control" placeholder="Instagram (ex : https://www.instagram.com/neadsagency)">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Equipment Section -->
+                    <div class="form-section">
+                        <div class="form-header">
+                            <h2 class="h4 mb-0">Ton matériel</h2>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <textarea class="form-control" id="equipment" rows="3" placeholder="Matériel utilisé*"></textarea>
+                        </div>
+                    </div>
+                    
+                    <!-- Brands Section -->
+                    <div class="form-section">
+                        <div class="form-header">
+                            <h2 class="h4 mb-0">Marques collaborées</h2>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <input type="text" class="form-control" id="brand-input" placeholder="Marques avec lesquelles tu as travaillé*">
+                            <div id="brand-tags-display" class="brand-tags mt-2"></div>
+                        </div>
+                    </div>
+
+                    <!-- Terms and Submit -->
+                    <div class="form-section">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" required>
+                            <span class="form-check-label">J'accepte les conditions d'utilisation et la politique de confidentialité</span>
+                        </div>
+                        
+                        
+                        
+                        <button type="submit" class="submit-btn">Postuler maintenant</button>
+                    </div>
+                </form>
             </div>
         </div>
     </div>
-</div>
-{% endblock %}
 
-{% block extra_js %}
-<script src="https://cdn.jsdelivr.net/npm/leaflet@1.7.1/dist/leaflet.js"></script>
-<script src="{% static 'js/location-autocomplete.js' %}"></script>
-<script>
-    // Initialiser la carte Leaflet
-    var map = L.map('map-preview').setView([48.8566, 2.3522], 13);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-    }).addTo(map);
-    
-    // Afficher la carte si des coordonnées existent
-    var latitudeInput = document.getElementById('id_latitude');
-    var longitudeInput = document.getElementById('id_longitude');
-    if (latitudeInput.value && longitudeInput.value) {
-        document.getElementById('map-preview').style.display = 'block';
-        map.setView([parseFloat(latitudeInput.value), parseFloat(longitudeInput.value)], 13);
-    }
-    
-    // Compteurs de caractères
-    document.addEventListener('DOMContentLoaded', function() {
-        // Bio counter
-        const bioTextarea = document.getElementById('id_bio');
-        const bioCounter = document.getElementById('bio-counter');
-        
-        // Baseline counter
-        const baselineInput = document.getElementById('id_baseline');
-        const baselineCounter = document.getElementById('baseline-counter');
-        
-        // Fonction pour mettre à jour les compteurs
-        function updateCharCounter(input, counter, max, min) {
-            const length = input.value.length;
-            let message;
-            
-            if (length < min) {
-                message = `Vous avez utilisé ${length} caractères sur les ${max} alloués. Minimum requis: ${min} caractères.`;
-                counter.style.color = '#dc3545'; // rouge
-            } else {
-                message = `Vous avez utilisé ${length} caractères sur les ${max} alloués. Il vous reste ${max - length}.`;
-                counter.style.color = length > (max * 0.8) ? '#ffc107' : '#212529'; // jaune si proche du max, sinon normal
+    <footer>
+        <div class="footer-content">
+            <div class="footer-text">
+                Mentions légales - Politique de confidentialité
+            </div>
+            <div class="social-links">
+                <a href="#" aria-label="TikTok">
+                    <svg class="social-icon" viewBox="0 0 24 24">
+                        <path fill="currentColor" d="M16.6,5.82C15.53,5.24 14.9,4.24 14.9,3h-3v11.87c0,1.13-0.92,2.05-2.05,2.05c-1.13,0-2.05-0.92-2.05-2.05s0.92-2.05,2.05-2.05c0.22,0,0.44,0.04,0.65,0.11v-3.1c-0.22-0.03-0.43-0.05-0.65-0.05c-2.84,0-5.15,2.31-5.15,5.15s2.31,5.15,5.15,5.15c2.84,0,5.15-2.31,5.15-5.15V9.38c1.17,0.83,2.55,1.32,4.02,1.32v-3C18.93,7.7,17.71,7.07,16.6,5.82z"/>
+                    </svg>
+                </a>
+                <a href="#" aria-label="Instagram">
+                    <svg class="social-icon" viewBox="0 0 24 24">
+                        <path fill="currentColor" d="M12,2.162c3.204,0,3.584,0.012,4.849,0.07c1.308,0.06,2.655,0.358,3.608,1.311c0.962,0.962,1.251,2.296,1.311,3.608c0.058,1.265,0.07,1.645,0.07,4.849c0,3.204-0.012,3.584-0.07,4.849c-0.059,1.301-0.364,2.661-1.311,3.608c-0.962,0.962-2.295,1.251-3.608,1.311c-1.265,0.058-1.645,0.07-4.849,0.07s-3.584-0.012-4.849-0.07c-1.291-0.059-2.669-0.371-3.608-1.311c-0.957-0.957-1.251-2.304-1.311-3.608c-0.058-1.265-0.07-1.645-0.07-4.849c0-3.204,0.012-3.584,0.07-4.849c0.059-1.296,0.367-2.664,1.311-3.608c0.96-0.96,2.299-1.251,3.608-1.311C8.416,2.174,8.796,2.162,12,2.162 M12,0C8.741,0,8.332,0.014,7.052,0.072C5.197,0.157,3.355,0.673,2.014,2.014C0.668,3.36,0.157,5.198,0.072,7.052C0.014,8.332,0,8.741,0,12c0,3.259,0.014,3.668,0.072,4.948c0.085,1.853,0.603,3.7,1.942,5.038c1.345,1.345,3.186,1.857,5.038,1.942C8.332,23.986,8.741,24,12,24c3.259,0,3.668-0.014,4.948-0.072c1.854-0.085,3.698-0.602,5.038-1.942c1.347-1.347,1.857-3.184,1.942-5.038C23.986,15.668,24,15.259,24,12c0-3.259-0.014-3.668-0.072-4.948c-0.085-1.855-0.602-3.698-1.942-5.038c-1.343-1.343-3.189-1.858-5.038-1.942C15.668,0.014,15.259,0,12,0z"/>
+                        <path fill="currentColor" d="M12,5.838c-3.403,0-6.162,2.759-6.162,6.162c0,3.403,2.759,6.162,6.162,6.162s6.162-2.759,6.162-6.162C18.162,8.597,15.403,5.838,12,5.838z M12,16c-2.209,0-4-1.791-4-4s1.791-4,4-4s4,1.791,4,4S14.209,16,12,16z"/>
+                        <circle fill="currentColor" cx="18.406" cy="5.594" r="1.44"/>
+                    </svg>
+                </a>
+                <a href="#" aria-label="LinkedIn">
+                    <svg class="social-icon" viewBox="0 0 24 24">
+                        <path fill="currentColor" d="M19,3H5C3.895,3,3,3.895,3,5v14c0,1.105,0.895,2,2,2h14c1.105,0,2-0.895,2-2V5C21,3.895,20.105,3,19,3z M9,17H6.477v-7H9V17z M7.694,8.717c-0.771,0-1.286-0.514-1.286-1.2s0.514-1.2,1.371-1.2c0.771,0,1.286,0.514,1.286,1.2S8.551,8.717,7.694,8.717z M18,17h-2.442v-3.826c0-1.058-0.651-1.302-0.895-1.302s-1.058,0.163-1.058,1.302c0,0.163,0,3.826,0,3.826h-2.523v-7h2.523v0.977C13.93,10.407,14.581,10,15.802,10C17.023,10,18,10.977,18,13.174V17z"/>
+                    </svg>
+                </a>
+                <a href="#" aria-label="YouTube">
+                    <svg class="social-icon" viewBox="0 0 24 24">
+                        <path fill="currentColor" d="M21.582,6.186c-0.23-0.86-0.908-1.538-1.768-1.768C18.254,4,12,4,12,4S5.746,4,4.186,4.418c-0.86,0.23-1.538,0.908-1.768,1.768C2,7.746,2,12,2,12s0,4.254,0.418,5.814c0.23,0.86,0.908,1.538,1.768,1.768C5.746,20,12,20,12,20s6.254,0,7.814-0.418c0.861-0.23,1.538-0.908,1.768-1.768C22,16.254,22,12,22,12S22,7.746,21.582,6.186z M10,15.464V8.536L16,12L10,15.464z"/>
+                    </svg>
+                </a>
+            </div>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/17.0.13/js/intlTelInput.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Birth year population
+            const birthYearSelect = document.getElementById('birthYear');
+            const currentYear = new Date().getFullYear();
+            for (let year = currentYear - 16; year >= currentYear - 70; year--) {
+                const option = document.createElement('option');
+                option.value = year;
+                option.textContent = year;
+                birthYearSelect.appendChild(option);
             }
+
+            // Equipment quick tags
+            const equipmentTextarea = document.getElementById('equipment');
+            const equipmentTags = document.querySelectorAll('.equipment-tag');
             
-            counter.textContent = message;
-        }
-        
-        // Initialiser les compteurs
-        if (bioTextarea) {
-            updateCharCounter(bioTextarea, bioCounter, 1000, 400);
-            bioTextarea.addEventListener('input', function() {
-                updateCharCounter(bioTextarea, bioCounter, 1000, 400);
+            equipmentTags.forEach(tag => {
+                tag.addEventListener('click', function() {
+                    const value = this.getAttribute('data-value');
+                    if (equipmentTextarea.value.length > 0 && !equipmentTextarea.value.endsWith(', ')) {
+                        equipmentTextarea.value += ', ';
+                    }
+                    equipmentTextarea.value += value;
+                });
             });
-        }
-        
-        if (baselineInput) {
-            updateCharCounter(baselineInput, baselineCounter, 50, 0);
-            baselineInput.addEventListener('input', function() {
-                updateCharCounter(baselineInput, baselineCounter, 50, 0);
-            });
-        }
-    });
-    
-    // Gestionnaire de soumission du formulaire
-    document.addEventListener('DOMContentLoaded', function() {
-        const form = document.getElementById('creator-signup-form');
-        const loadingOverlay = document.getElementById('loading-overlay');
-        const submitBtn = document.getElementById('signup-submit-btn');
-        
-        form.addEventListener('submit', function(e) {
-            e.preventDefault();
-            
-            // Vérification manuelle de la bio (400-1000 caractères)
-            const bioTextarea = document.getElementById('id_bio');
-            if (bioTextarea.value.length < 400) {
-                bioTextarea.classList.add('is-invalid');
-                document.querySelector('[for="id_bio"]').scrollIntoView({ behavior: 'smooth', block: 'center' });
-                return false;
-            }
-            
-            // Vérifier la validité du formulaire
-            if (!form.checkValidity()) {
-                e.stopPropagation();
-                form.classList.add('was-validated');
-                return false;
-            }
-            
-            // Afficher l'overlay de chargement
-            loadingOverlay.style.display = 'flex';
-            submitBtn.disabled = true;
-            
-            // Soumettre le formulaire via AJAX
-            const formData = new FormData(form);
-            
-            fetch(window.location.href, {
-                method: 'POST',
-                body: formData,
-                headers: {
-                    'X-Requested-With': 'XMLHttpRequest'
-                }
-            })
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error('Erreur lors de la soumission du formulaire');
-                }
-                return response.json();
-            })
-            .then(data => {
-                if (data.success) {
-                    console.log('Créateur créé avec succès, ID =', data.creator_id, 'Email =', data.email);
+
+            // Character counters
+            function setupCharCounter(inputId, counterId, maxChars, minChars = 0) {
+                const input = document.getElementById(inputId);
+                const counter = document.getElementById(counterId);
+
+                function updateCounter() {
+                    const length = input.value.length;
+                    let message = `Vous avez utilisé ${length} caractères sur les ${maxChars} alloués.`;
                     
-                    // Afficher une alerte avec les détails
-                    setTimeout(() => {
-                        alert(`Créateur créé avec succès!\nID: ${data.creator_id}\nEmail: ${data.email}`);
-                        
-                        // Rediriger vers l'étape 2
-                        window.location.href = data.redirect_url;
-                    }, 1000);
-                } else {
-                    throw new Error('Erreur lors de la création du créateur');
+                    if (minChars > 0) {
+                        message += ` Minimum requis: ${minChars} caractères.`;
+                    }
+
+                    counter.textContent = message;
+                    
+                    if (length < minChars || length > maxChars) {
+                        counter.style.color = '#dc3545';
+                    } else if (length > maxChars * 0.8) {
+                        counter.style.color = '#ffc107';
+                    } else {
+                        counter.style.color = '#6c757d';
+                    }
                 }
-            })
-            .catch(error => {
-                console.error('Erreur:', error);
-                loadingOverlay.style.display = 'none';
-                submitBtn.disabled = false;
-                
-                // Soumettre le formulaire normalement en cas d'erreur AJAX
-                form.removeEventListener('submit', arguments.callee);
-                form.submit();
+
+                input.addEventListener('input', updateCounter);
+                updateCounter();
+            }
+
+            setupCharCounter('baseline', 'baseline-counter', 90);
+            setupCharCounter('bio', 'bio-counter', 1000, 400);
+
+            // Brand tags
+            const brandInput = document.getElementById('brand-input');
+            const brandTagsDisplay = document.getElementById('brand-tags-display');
+            let brands = new Set();
+
+            function addBrandTag(brand) {
+                if (!brands.has(brand)) {
+                    brands.add(brand);
+                    const tag = document.createElement('span');
+                    tag.className = 'brand-tag';
+                    tag.innerHTML = `${brand} <span>&times;</span>`;
+                    
+                    tag.querySelector('span').addEventListener('click', () => {
+                        brands.delete(brand);
+                        tag.remove();
+                    });
+                    
+                    brandTagsDisplay.appendChild(tag);
+                }
+            }
+
+            brandInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' || e.key === ',') {
+                    e.preventDefault();
+                    const brand = brandInput.value.trim().replace(',', '');
+                    if (brand) {
+                        addBrandTag(brand);
+                        brandInput.value = '';
+                    }
+                }
             });
+
+            // Image upload preview
+            const uploadZone = document.querySelector('.upload-zone');
+            const imagePreview = document.getElementById('image-preview');
+            const uploadPrompt = document.querySelector('.upload-prompt');
+            const fileInput = document.getElementById('profile-image');
+
+            fileInput.addEventListener('change', function(e) {
+                if (this.files && this.files[0]) {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        imagePreview.style.display = 'block';
+                        imagePreview.src = e.target.result;
+                        uploadPrompt.style.display = 'none';
+                    }
+                    reader.readAsDataURL(this.files[0]);
+                }
+            });
+
+            // Form validation
+            const form = document.getElementById('creator-signup-form');
+            form.addEventListener('submit', function(e) {
+                if (!form.checkValidity()) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                }
+                form.classList.add('was-validated');
+            });
+
+            // Initialize intl-tel-input for phone field
+            const phoneInput = document.querySelector("#phone");
+            if (phoneInput) {
+                window.intlTelInput(phoneInput, {
+                    preferredCountries: ['fr', 'be', 'ch'],
+                    separateDialCode: true,
+                    utilsScript: "https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/17.0.13/js/utils.js",
+                });
+                // Add custom CSS to ensure the phone input takes full width
+                const style = document.createElement('style');
+                style.textContent = `
+                    .iti {
+                        width: 100%;
+                    }
+                    .iti__tel-input {
+                        width: 100%;
+                    }
+                `;
+                document.head.appendChild(style);
+            }
         });
-    });
-</script>
-{% endblock %} 
+    </script>
+</body>
+</html> 
