@@ -756,46 +756,6 @@
         </a>
         
         <div class="nav-action-buttons">
-          {% if user.is_authenticated %}
-          
-          {% if user.role == 'admin' %}
-          <!-- Liens pour les administrateurs -->
-          <a href="{% url 'home' %}" class="btn btn-sm btn-outline-light me-1">
-            <i class="fas fa-home me-1"></i> Accueil
-          </a>
-          <a href="{% url 'gallery_view' %}" class="btn btn-sm btn-outline-light me-1">
-            <i class="fas fa-th-large me-1"></i> Galerie créateurs
-          </a>
-          <a href="{% url 'management_dashboard' %}" class="btn btn-sm btn-outline-light me-1">
-            <i class="fas fa-cogs me-1"></i> Gestion NEADS
-          </a>
-          <a href="{% url 'admin:index' %}" class="btn btn-sm btn-outline-light me-1">
-            <i class="fas fa-users-cog me-1"></i> Gestion consultants
-          </a>
-          
-          {% elif user.role == 'consultant' %}
-          <!-- Liens pour les consultants -->
-          <a href="{% url 'home' %}" class="btn btn-sm btn-outline-light me-1">
-            <i class="fas fa-home me-1"></i> Accueil
-          </a>
-          <a href="{% url 'gallery_view' %}" class="btn btn-sm btn-outline-light me-1">
-            <i class="fas fa-th-large me-1"></i> Galerie créateurs
-          </a>
-          <a href="{% url 'management_dashboard' %}" class="btn btn-sm btn-outline-light me-1">
-            <i class="fas fa-cogs me-1"></i> Gestion NEADS
-          </a>
-          
-          {% elif user.role == 'client' %}
-          <!-- Liens pour les clients -->
-          <a href="{% url 'home' %}" class="btn btn-sm btn-outline-light me-1">
-            <i class="fas fa-home me-1"></i> Accueil
-          </a>
-          <a href="{% url 'gallery_view' %}" class="btn btn-sm btn-outline-light me-1">
-            <i class="fas fa-th-large me-1"></i> Galerie créateurs
-          </a>
-          
-          {% endif %}
-          {% endif %}
           
           <!-- Burger Menu -->
           <button id="burger-menu">

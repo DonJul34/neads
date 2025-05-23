@@ -398,9 +398,6 @@
 <div data-user-role="{{ user.role }}" id="user-role-info" class="d-none"></div>
 
 <!-- Page Header -->
-<div class="page-header flex justify-end" data-aos="fade-up">
-    <p class="page-description">{{ total_creators }} créateurs disponibles pour vos projets de contenu</p>
-</div>
 
 <div class="row">
     <!-- Sidebar de filtres -->
@@ -549,11 +546,14 @@
 
     <!-- Grille de créateurs -->
     <div class="col-lg-9" data-aos="fade-up" data-aos-delay="200">
-        <div class="d-flex justify-content-end align-items-center mb-4">
+        <div class="d-flex justify-content-between align-items-center flex-wrap mb-4" data-aos="fade-up">
+            <p class="page-description mb-0">
+                {{ total_creators }} créateurs disponibles pour vos projets de contenu
+            </p>
             <a href="{% url 'map_view' %}?{{ request.GET.urlencode }}" class="btn btn-outline-primary">
                 <i class="fas fa-map-marker-alt me-2"></i> Voir sur la carte
             </a>
-        </div>
+        </div>        
 
         {% if creators %}
         <div class="row" id="creators-grid">

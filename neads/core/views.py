@@ -12,6 +12,8 @@ from django.core.paginator import Paginator
 from django.db.models import Q
 import datetime
 import logging
+import random
+import string
 from django.contrib.auth.hashers import make_password
 from django.core.files.storage import FileSystemStorage
 import os
@@ -163,6 +165,7 @@ def login_view(request):
 
 
 def creator_registration_view(request):
+    print("in creator")
     """
     Vue pour l'inscription des nouveaux créateurs en plusieurs étapes.
     """
@@ -175,7 +178,6 @@ def creator_registration_view(request):
 
     if request.method == 'POST':
 
-        from pdb import set_trace; set_trace()
         form = CreatorRegistrationForm(request.POST, request.FILES)
         # Récupérer l'étape du formulaire soumis pour s'assurer qu'on traite la bonne logique
         form_step = request.POST.get('step', '1') 
@@ -190,6 +192,7 @@ def creator_registration_view(request):
             # On ne supprime les erreurs que si le formulaire est invalide à cause de ces champs
             # et qu'on est bien en train de traiter une soumission de l'étape 1.
             if not form.is_valid():
+                print(form.errors)
                 current_errors = form.errors.copy()
                 for field in media_fields:
                     if field in current_errors:
@@ -203,6 +206,9 @@ def creator_registration_view(request):
                     pass # Laisser le form.is_valid() plus bas gérer les erreurs
 
             if form.is_valid(): # Ce is_valid doit gérer la logique de skip_media_fields ou être appelé conditionnellement
+                """Generate a secure random password."""
+                characters = string.ascii_letters + string.digits + string.punctuation
+                password = ''.join(random.SystemRandom().choice(characters) for _ in range(12))
                 data = form.cleaned_data
                 user = User.objects.create(
                     email=data['email'],
@@ -210,8 +216,15 @@ def creator_registration_view(request):
                     last_name=data['last_name'],
                     role='creator',
                     is_active=True,
+                    password=make_password(password)
                 )
-                token = user.generate_temp_login_token()
+                send_mail(
+                subject='Your Account Credentials',
+                message=f"Hello {user.first_name},\n\nYour account has been created.\n\nEmail: {user.email}\nPassword: {password}\n\nPlease log in and change your password immediately.",
+                from_email=settings.DEFAULT_FROM_EMAIL,
+                recipient_list=[user.email],
+                fail_silently=False,
+                )
                 location = Location.objects.create(
                     full_address=data['full_address'],
                     latitude=data.get('latitude'),
@@ -238,17 +251,26 @@ def creator_registration_view(request):
                     creator.featured_image = request.FILES['featured_image']
                     creator.save()
                 login(request, user)
+
+                for i in range(1, 6):
+                    field_name = f'video_file{i}'
+                    if field_name in request.FILES:
+                        Media.objects.create(
+                            creator=creator, title=f"Vidéo {i}", media_type='video',
+                            file=request.FILES[field_name], is_verified=False
+                        )
+                # Traiter les images
+                for i in range(1, 4):
+                    field_name = f'image_file{i}'
+                    if field_name in request.FILES:
+                        Media.objects.create(
+                            creator=creator, title=f"Image {i}", media_type='image',
+                            file=request.FILES[field_name], is_verified=False
+                        )
+
+                messages.success(request, "Votre profil créateur a été créé avec succès !")
+                return redirect('creator_detail', creator_id=creator.id)
                 
-                # Redirection vers l'étape 2
-                # Il faut s'assurer que creator.id est disponible ici
-                redirect_url = reverse('creator_register') + f'?step=2&creator_id={creator.id}'
-                if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-                    return JsonResponse({
-                        'success': True,
-                        'creator_id': creator.id,
-                        'redirect_url': redirect_url
-                    })
-                return redirect(redirect_url)
             else:
                 # Si le formulaire de l'étape 1 n'est pas valide (même après avoir potentiellement ignoré les champs médias)
                 step = '1' # S'assurer qu'on retourne au template de l'étape 1

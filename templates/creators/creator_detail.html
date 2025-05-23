@@ -289,12 +289,6 @@
           {{ creator.age }} ans, {{ creator.get_gender_display }}
         </p>
 
-        <div class="d-flex flex-wrap mb-3">
-          {% for domain in creator.domains.all %}
-          <span class="domain-badge">{{ domain.name }}</span>
-          {% endfor %}
-        </div>
-
         <div class="star-rating mb-2">
           {% for i in "12345" %} {% if forloop.counter <= creator.average_rating %} <i class="fas fa-star"></i>
             {% elif forloop.counter <= creator.average_rating|add:0.5 %} <i class="fas fa-star-half-alt"></i>

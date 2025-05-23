@@ -15,6 +15,69 @@
             font-family: Inter, system-ui, sans-serif;
         }
         
+        .upload-zone {
+        border: 2px dashed #ddd;
+        border-radius: 4px;
+        padding: 20px;
+        text-align: center;
+        cursor: pointer;
+        transition: border-color 0.3s;
+    }
+    .upload-zone:hover {
+        border-color: #0d6efd;
+    }
+    .upload-prompt {
+        margin-bottom: 10px;
+    }
+    .upload-prompt i {
+        font-size: 2rem;
+        color: #0d6efd;
+    }
+    .preview-container {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-top: 10px;
+    }
+    .preview-item {
+        position: relative;
+        width: 150px;
+        height: 150px;
+        border-radius: 4px;
+        overflow: hidden;
+    }
+    .preview-item img, .preview-item video {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+    .preview-item .remove-btn {
+        position: absolute;
+        top: 5px;
+        right: 5px;
+        background: rgba(255, 255, 255, 0.8);
+        border: none;
+        border-radius: 50%;
+        width: 24px;
+        height: 24px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+    }
+    .progress-bar {
+        height: 4px;
+        background-color: #e9ecef;
+        border-radius: 2px;
+        margin-top: 5px;
+        overflow: hidden;
+    }
+    .progress-bar .progress {
+        height: 100%;
+        background-color: #0d6efd;
+        width: 0%;
+        transition: width 0.3s;
+    }
         body {
             background: #f6f7fb;
             min-height: 100vh;
@@ -310,29 +373,40 @@
             margin: 0 auto;
         }
         
-        .footer-text {
-            font-size: 1rem;
-            opacity: 0.8;
+        .footer-left {
+            flex: 1;
+            text-align: left;
+            font-weight: bold;
+            color: #fff;
+        }
+        
+        .footer-center {
+            flex: 1;
+            text-align: center;
+            color: #fff;
+            font-size: 14px;
+        }
+        
+        .footer-right {
+            flex: 1;
+            text-align: right;
         }
         
         .social-links {
             display: flex;
-            gap: 28px;
-        }
-        
-        .social-links a {
-            color: #fff;
-            opacity: 0.8;
-            transition: opacity 0.2s;
-        }
-        
-        .social-links a:hover {
-            opacity: 1;
+            gap: 15px;
+            justify-content: flex-end;
         }
         
         .social-icon {
-            width: 22px;
-            height: 22px;
+            width: 24px;
+            height: 24px;
+            color: #fff;
+            transition: color 0.3s;
+        }
+        
+        .social-icon:hover {
+            color: #666;
         }
 
         /* IntlTelInput Customization */
@@ -454,7 +528,7 @@
 
         input[type="radio"] {
             height: 18px !important;
-        }
+        }   
 
         /* Remove margin-bottom for the specific form-row under Statut pour facturer */
         .form-row.no-margin-bottom {
@@ -550,9 +624,18 @@
                                 <input type="tel" id="phone" name="phone" class="form-control" placeholder="Téléphone*" required autocomplete="off" data-intl-tel-input-id="0">
                                 <div class="invalid-feedback">Ce champ est requis.</div>
                             </div>
+                            </div>
                         </div>
-                    </div>
-                    
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <input type="text" name="full_address" class="form-control" placeholder="Adresse complète (ex : 10 Rue de la Paix, 75002 Paris, France)*" required>
+                                <div class="invalid-feedback">Ce champ est requis.</div>
+                            </div>
+                        </div>
+                        
+                        
+                        
                     <div class="form-section">
                         <h2>Statut pour facturer *</h2>
                         <div class="form-row no-margin-bottom">
@@ -561,7 +644,7 @@
                                     <div class="radio-option">
                                         <input type="radio" id="status-yes" name="can_invoice" value="yes" required>
                                         <label for="status-yes">Oui</label>
-                                    </div>
+                            </div>
                                     <div class="radio-option">
                                         <input type="radio" id="status-no" name="can_invoice" value="no" required>
                                         <label for="status-no">Non</label>
@@ -601,6 +684,24 @@
                         </div>
                     </div>
                     
+                    <div class="mb-3">
+                        {{ form.domains.label_tag }}
+                    
+                        {{ form.domains }}
+                    
+                        {% if form.domains.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.domains.errors.0 }}
+                            </div>
+                        {% endif %}
+                    
+                        {% if form.domains.help_text %}
+                            <small class="form-text text-muted">{{ form.domains.help_text }}</small>
+                        {% endif %}
+                    </div>
+                    
+                    
+                    
                     <!-- Social Media Section -->
                     <div class="form-section">
                         <div class="form-header">
@@ -617,6 +718,11 @@
                                 <input type="text" name="instagram" class="form-control" placeholder="Instagram (ex : https://www.instagram.com/neadsagency)">
                             </div>
                         </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <input type="text" name="youtube" class="form-control" placeholder="YouTube (ex : https://www.youtube.com/@neadsagency)">
+                            </div>
+                        </div>
                     </div>
                     
                     <!-- Equipment Section -->
@@ -624,7 +730,7 @@
                         <div class="form-header">
                             <h2 class="h4 mb-0">Ton matériel</h2>
                         </div>
-
+                        
                         <div class="mb-3">
                             <label class="form-label d-block">Sélectionne le matériel utilisé*</label>
 
@@ -669,13 +775,121 @@
                             <div id="brand-tags-display" class="brand-tags mt-2"></div>
                             <!-- Hidden input to store the brands data -->
                             <input type="hidden" name="brands" id="brands-data">
+                            </div>
                         </div>
-                    </div>
 
+
+                        <div class="card mb-4">
+                            <div class="card-header bg-light">
+                                <h3 class="h5 mb-0">Vidéos UGC (3 maximum)</h3>
+                            </div>
+                            <div class="card-body">
+                                <div class="mb-3">
+                                    <label class="form-label">Vidéo 1 *</label>
+                                    <div class="upload-zone" id="video-upload-zone-1">
+                                        <div class="upload-prompt">
+                                            <i class="fas fa-video"></i>
+                                            <p>Cliquez ou déplacez un fichier vidéo dans cette zone</p>
+                                        </div>
+                                        <input type="file" name="video_file1" id="video_file1" accept="video/*" class="d-none">
+                                    </div>
+                                    <div class="progress-bar d-none" id="video-progress-1">
+                                        <div class="progress"></div>
+                                    </div>
+                                    <div class="preview-container" id="video-preview-1"></div>
+                                    <div class="invalid-feedback">Veuillez ajouter au moins une vidéo.</div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label class="form-label">Vidéo 2</label>
+                                    <div class="upload-zone" id="video-upload-zone-2">
+                                        <div class="upload-prompt">
+                                            <i class="fas fa-video"></i>
+                                            <p>Cliquez ou déplacez un fichier vidéo dans cette zone</p>
+                                        </div>
+                                        <input type="file" name="video_file2" id="video_file2" accept="video/*" class="d-none">
+                                    </div>
+                                    <div class="progress-bar d-none" id="video-progress-2">
+                                        <div class="progress"></div>
+                                    </div>
+                                    <div class="preview-container" id="video-preview-2"></div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label class="form-label">Vidéo 3</label>
+                                    <div class="upload-zone" id="video-upload-zone-3">
+                                        <div class="upload-prompt">
+                                            <i class="fas fa-video"></i>
+                                            <p>Cliquez ou déplacez un fichier vidéo dans cette zone</p>
+                                        </div>
+                                        <input type="file" name="video_file3" id="video_file3" accept="video/*" class="d-none">
+                                    </div>
+                                    <div class="progress-bar d-none" id="video-progress-3">
+                                        <div class="progress"></div>
+                                    </div>
+                                    <div class="preview-container" id="video-preview-3"></div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Images -->
+                        <div class="card mb-4">
+                            <div class="card-header bg-light">
+                                <h3 class="h5 mb-0">Images UGC (3 maximum)</h3>
+                            </div>
+                            <div class="card-body">
+                                <div class="mb-3">
+                                    <label class="form-label">Image 1 *</label>
+                                    <div class="upload-zone" id="image-upload-zone-1">
+                                        <div class="upload-prompt">
+                                            <i class="fas fa-image"></i>
+                                            <p>Cliquez ou déplacez un fichier image dans cette zone</p>
+                                        </div>
+                                        <input type="file" name="image_file1" id="image_file1" accept="image/*" class="d-none">
+                                    </div>
+                                    <div class="progress-bar d-none" id="image-progress-1">
+                                        <div class="progress"></div>
+                                    </div>
+                                    <div class="preview-container" id="image-preview-1"></div>
+                                    <div class="invalid-feedback">Veuillez ajouter au moins une image.</div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label class="form-label">Image 2</label>
+                                    <div class="upload-zone" id="image-upload-zone-2">
+                                        <div class="upload-prompt">
+                                            <i class="fas fa-image"></i>
+                                            <p>Cliquez ou déplacez un fichier image dans cette zone</p>
+                                        </div>
+                                        <input type="file" name="image_file2" id="image_file2" accept="image/*" class="d-none">
+                                    </div>
+                                    <div class="progress-bar d-none" id="image-progress-2">
+                                        <div class="progress"></div>
+                                    </div>
+                                    <div class="preview-container" id="image-preview-2"></div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label class="form-label">Image 3</label>
+                                    <div class="upload-zone" id="image-upload-zone-3">
+                                        <div class="upload-prompt">
+                                            <i class="fas fa-image"></i>
+                                            <p>Cliquez ou déplacez un fichier image dans cette zone</p>
+                                        </div>
+                                        <input type="file" name="image_file3" id="image_file3" accept="image/*" class="d-none">
+                                    </div>
+                                    <div class="progress-bar d-none" id="image-progress-3">
+                                        <div class="progress"></div>
+                                    </div>
+                                    <div class="preview-container" id="image-preview-3"></div>
+                                </div>
+                            </div>
+                        </div>
+                    
                     <!-- Terms and Submit -->
                     <div class="form-section">
                         <div class="form-check">
-                            <input class="form-check-input" type="checkbox" name="terms_accepted" id="terms" required>
+                            <input class="form-check-input" type="checkbox" name="accept_terms" id="terms" required>
                             <span class="form-check-label">J'accepte les conditions d'utilisation et la politique de confidentialité</span>
                         </div>
                         
@@ -688,32 +902,37 @@
 
     <footer>
         <div class="footer-content">
-            <div class="footer-text">
+            <div class="footer-left">
+                ne/ads
+            </div>
+            <div class="footer-center">
                 Mentions légales - Politique de confidentialité
             </div>
-            <div class="social-links">
-                <a href="#" aria-label="TikTok">
-                    <svg class="social-icon" viewBox="0 0 24 24">
-                        <path fill="currentColor" d="M16.6,5.82C15.53,5.24 14.9,4.24 14.9,3h-3v11.87c0,1.13-0.92,2.05-2.05,2.05c-1.13,0-2.05-0.92-2.05-2.05s0.92-2.05,2.05-2.05c0.22,0,0.44,0.04,0.65,0.11v-3.1c-0.22-0.03-0.43-0.05-0.65-0.05c-2.84,0-5.15,2.31-5.15,5.15s2.31,5.15,5.15,5.15c2.84,0,5.15-2.31,5.15-5.15V9.38c1.17,0.83,2.55,1.32,4.02,1.32v-3C18.93,7.7,17.71,7.07,16.6,5.82z"/>
-                    </svg>
-                </a>
-                <a href="#" aria-label="Instagram">
-                    <svg class="social-icon" viewBox="0 0 24 24">
-                        <path fill="currentColor" d="M12,2.162c3.204,0,3.584,0.012,4.849,0.07c1.308,0.06,2.655,0.358,3.608,1.311c0.962,0.962,1.251,2.296,1.311,3.608c0.058,1.265,0.07,1.645,0.07,4.849c0,3.204-0.012,3.584-0.07,4.849c-0.059,1.301-0.364,2.661-1.311,3.608c-0.962,0.962-2.295,1.251-3.608,1.311c-1.265,0.058-1.645,0.07-4.849,0.07s-3.584-0.012-4.849-0.07c-1.291-0.059-2.669-0.371-3.608-1.311c-0.957-0.957-1.251-2.304-1.311-3.608c-0.058-1.265-0.07-1.645-0.07-4.849c0-3.204,0.012-3.584,0.07-4.849c0.059-1.296,0.367-2.664,1.311-3.608c0.96-0.96,2.299-1.251,3.608-1.311C8.416,2.174,8.796,2.162,12,2.162 M12,0C8.741,0,8.332,0.014,7.052,0.072C5.197,0.157,3.355,0.673,2.014,2.014C0.668,3.36,0.157,5.198,0.072,7.052C0.014,8.332,0,8.741,0,12c0,3.259,0.014,3.668,0.072,4.948c0.085,1.853,0.603,3.7,1.942,5.038c1.345,1.345,3.186,1.857,5.038,1.942C8.332,23.986,8.741,24,12,24c3.259,0,3.668-0.014,4.948-0.072c1.854-0.085,3.698-0.602,5.038-1.942c1.347-1.347,1.857-3.184,1.942-5.038C23.986,15.668,24,15.259,24,12c0-3.259-0.014-3.668-0.072-4.948c-0.085-1.855-0.602-3.698-1.942-5.038c-1.343-1.343-3.189-1.858-5.038-1.942C15.668,0.014,15.259,0,12,0z"/>
-                        <path fill="currentColor" d="M12,5.838c-3.403,0-6.162,2.759-6.162,6.162c0,3.403,2.759,6.162,6.162,6.162s6.162-2.759,6.162-6.162C18.162,8.597,15.403,5.838,12,5.838z M12,16c-2.209,0-4-1.791-4-4s1.791-4,4-4s4,1.791,4,4S14.209,16,12,16z"/>
-                        <circle fill="currentColor" cx="18.406" cy="5.594" r="1.44"/>
-                    </svg>
-                </a>
-                <a href="#" aria-label="LinkedIn">
-                    <svg class="social-icon" viewBox="0 0 24 24">
-                        <path fill="currentColor" d="M19,3H5C3.895,3,3,3.895,3,5v14c0,1.105,0.895,2,2,2h14c1.105,0,2-0.895,2-2V5C21,3.895,20.105,3,19,3z M9,17H6.477v-7H9V17z M7.694,8.717c-0.771,0-1.286-0.514-1.286-1.2s0.514-1.2,1.371-1.2c0.771,0,1.286,0.514,1.286,1.2S8.551,8.717,7.694,8.717z M18,17h-2.442v-3.826c0-1.058-0.651-1.302-0.895-1.302s-1.058,0.163-1.058,1.302c0,0.163,0,3.826,0,3.826h-2.523v-7h2.523v0.977C13.93,10.407,14.581,10,15.802,10C17.023,10,18,10.977,18,13.174V17z"/>
-                    </svg>
-                </a>
-                <a href="#" aria-label="YouTube">
-                    <svg class="social-icon" viewBox="0 0 24 24">
-                        <path fill="currentColor" d="M21.582,6.186c-0.23-0.86-0.908-1.538-1.768-1.768C18.254,4,12,4,12,4S5.746,4,4.186,4.418c-0.86,0.23-1.538,0.908-1.768,1.768C2,7.746,2,12,2,12s0,4.254,0.418,5.814c0.23,0.86,0.908,1.538,1.768,1.768C5.746,20,12,20,12,20s6.254,0,7.814-0.418c0.861-0.23,1.538-0.908,1.768-1.768C22,16.254,22,12,22,12S22,7.746,21.582,6.186z M10,15.464V8.536L16,12L10,15.464z"/>
-                    </svg>
-                </a>
+            <div class="footer-right">
+                <div class="social-links">
+                    <a href="#" aria-label="TikTok">
+                        <svg class="social-icon" viewBox="0 0 24 24">
+                            <path fill="currentColor" d="M16.6,5.82C15.53,5.24 14.9,4.24 14.9,3h-3v11.87c0,1.13-0.92,2.05-2.05,2.05c-1.13,0-2.05-0.92-2.05-2.05s0.92-2.05,2.05-2.05c0.22,0,0.44,0.04,0.65,0.11v-3.1c-0.22-0.03-0.43-0.05-0.65-0.05c-2.84,0-5.15,2.31-5.15,5.15s2.31,5.15,5.15,5.15c2.84,0,5.15-2.31,5.15-5.15V9.38c1.17,0.83,2.55,1.32,4.02,1.32v-3C18.93,7.7,17.71,7.07,16.6,5.82z"/>
+                        </svg>
+                    </a>
+                    <a href="#" aria-label="Instagram">
+                        <svg class="social-icon" viewBox="0 0 24 24">
+                            <path fill="currentColor" d="M12,2.162c3.204,0,3.584,0.012,4.849,0.07c1.308,0.06,2.655,0.358,3.608,1.311c0.962,0.962,1.251,2.296,1.311,3.608c0.058,1.265,0.07,1.645,0.07,4.849c0,3.204-0.012,3.584-0.07,4.849c-0.059,1.301-0.364,2.661-1.311,3.608c-0.962,0.962-2.295,1.251-3.608,1.311c-1.265,0.058-1.645,0.07-4.849,0.07s-3.584-0.012-4.849-0.07c-1.291-0.059-2.669-0.371-3.608-1.311c-0.957-0.957-1.251-2.304-1.311-3.608c-0.058-1.265-0.07-1.645-0.07-4.849c0-3.204,0.012-3.584,0.07-4.849c0.059-1.296,0.367-2.664,1.311-3.608c0.96-0.96,2.299-1.251,3.608-1.311C8.416,2.174,8.796,2.162,12,2.162 M12,0C8.741,0,8.332,0.014,7.052,0.072C5.197,0.157,3.355,0.673,2.014,2.014C0.668,3.36,0.157,5.198,0.072,7.052C0.014,8.332,0,8.741,0,12c0,3.259,0.014,3.668,0.072,4.948c0.085,1.853,0.603,3.7,1.942,5.038c1.345,1.345,3.186,1.857,5.038,1.942C8.332,23.986,8.741,24,12,24c3.259,0,3.668-0.014,4.948-0.072c1.854-0.085,3.698-0.602,5.038-1.942c1.347-1.347,1.857-3.184,1.942-5.038C23.986,15.668,24,15.259,24,12c0-3.259-0.014-3.668-0.072-4.948c-0.085-1.855-0.602-3.698-1.942-5.038c-1.343-1.343-3.189-1.858-5.038-1.942C15.668,0.014,15.259,0,12,0z"/>
+                            <path fill="currentColor" d="M12,5.838c-3.403,0-6.162,2.759-6.162,6.162c0,3.403,2.759,6.162,6.162,6.162s6.162-2.759,6.162-6.162C18.162,8.597,15.403,5.838,12,5.838z M12,16c-2.209,0-4-1.791-4-4s1.791-4,4-4s4,1.791,4,4S14.209,16,12,16z"/>
+                            <circle fill="currentColor" cx="18.406" cy="5.594" r="1.44"/>
+                        </svg>
+                    </a>
+                    <a href="#" aria-label="LinkedIn">
+                        <svg class="social-icon" viewBox="0 0 24 24">
+                            <path fill="currentColor" d="M19,3H5C3.895,3,3,3.895,3,5v14c0,1.105,0.895,2,2,2h14c1.105,0,2-0.895,2-2V5C21,3.895,20.105,3,19,3z M9,17H6.477v-7H9V17z M7.694,8.717c-0.771,0-1.286-0.514-1.286-1.2s0.514-1.2,1.371-1.2c0.771,0,1.286,0.514,1.286,1.2S8.551,8.717,7.694,8.717z M18,17h-2.442v-3.826c0-1.058-0.651-1.302-0.895-1.302s-1.058,0.163-1.058,1.302c0,0.163,0,3.826,0,3.826h-2.523v-7h2.523v0.977C13.93,10.407,14.581,10,15.802,10C17.023,10,18,10.977,18,13.174V17z"/>
+                        </svg>
+                    </a>
+                    <a href="#" aria-label="YouTube">
+                        <svg class="social-icon" viewBox="0 0 24 24">
+                            <path fill="currentColor" d="M21.582,6.186c-0.23-0.86-0.908-1.538-1.768-1.768C18.254,4,12,4,12,4S5.746,4,4.186,4.418c-0.86,0.23-1.538,0.908-1.768,1.768C2,7.746,2,12,2,12s0,4.254,0.418,5.814c0.23,0.86,0.908,1.538,1.768,1.768C5.746,20,12,20,12,20s6.254,0,7.814-0.418c0.861-0.23,1.538-0.908,1.768-1.768C22,16.254,22,12,22,12S22,7.746,21.582,6.186z M10,15.464V8.536L16,12L10,15.464z"/>
+                        </svg>
+                    </a>
+                </div>
             </div>
         </div>
     </footer>
@@ -848,14 +1067,14 @@
             });
 
             // Form validation
-            const form = document.getElementById('creator-signup-form');
+const form = document.getElementById('creator-signup-form');
             form.addEventListener('submit', function(e) {
                 if (!form.checkValidity()) {
-                    e.preventDefault();
-                    e.stopPropagation();
+    e.preventDefault();
+        e.stopPropagation();
                 }
-                form.classList.add('was-validated');
-            });
+        form.classList.add('was-validated');
+});
 
             // Initialize intl-tel-input for phone field
             const phoneInput = document.querySelector("#phone");
@@ -884,6 +1103,138 @@
                 document.head.appendChild(style);
             }
         });
+
+        document.addEventListener('DOMContentLoaded', function() {
+    // Gestion des zones de dépôt pour les vidéos
+    for (let i = 1; i <= 3; i++) {
+        const uploadZone = document.getElementById(`video-upload-zone-${i}`);
+        const fileInput = document.getElementById(`video_file${i}`);
+        const previewContainer = document.getElementById(`video-preview-${i}`);
+        const progressBar = document.getElementById(`video-progress-${i}`);
+        
+        setupUploadZone(uploadZone, fileInput, previewContainer, progressBar, 'video');
+    }
+    
+    // Gestion des zones de dépôt pour les images
+    for (let i = 1; i <= 3; i++) {
+        const uploadZone = document.getElementById(`image-upload-zone-${i}`);
+        const fileInput = document.getElementById(`image_file${i}`);
+        const previewContainer = document.getElementById(`image-preview-${i}`);
+        const progressBar = document.getElementById(`image-progress-${i}`);
+        
+        setupUploadZone(uploadZone, fileInput, previewContainer, progressBar, 'image');
+    }
+    
+    function setupUploadZone(uploadZone, fileInput, previewContainer, progressBar, type) {
+        // Gestion du clic sur la zone
+        uploadZone.addEventListener('click', () => fileInput.click());
+        
+        // Gestion du drag & drop
+        uploadZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadZone.style.borderColor = '#0d6efd';
+        });
+        
+        uploadZone.addEventListener('dragleave', () => {
+            uploadZone.style.borderColor = '#ddd';
+        });
+        
+        uploadZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadZone.style.borderColor = '#ddd';
+            if (e.dataTransfer.files.length) {
+                fileInput.files = e.dataTransfer.files;
+                handleFileSelect(fileInput, previewContainer, progressBar, type);
+            }
+        });
+        
+        // Gestion de la sélection de fichier
+        fileInput.addEventListener('change', () => {
+            handleFileSelect(fileInput, previewContainer, progressBar, type);
+        });
+    }
+    
+    function handleFileSelect(fileInput, previewContainer, progressBar, type) {
+        const file = fileInput.files[0];
+        if (!file) return;
+        
+        // Vérification de la taille du fichier (max 100MB)
+        if (file.size > 100 * 1024 * 1024) {
+            alert('Le fichier est trop volumineux. Maximum 100MB autorisé.');
+            return;
+        }
+        
+        // Vérification du type de fichier
+        if (type === 'video' && !file.type.startsWith('video/')) {
+            alert('Veuillez sélectionner un fichier vidéo.');
+            return;
+        }
+        if (type === 'image' && !file.type.startsWith('image/')) {
+            alert('Veuillez sélectionner un fichier image.');
+            return;
+        }
+        
+        // Création de la prévisualisation
+        const previewItem = document.createElement('div');
+        previewItem.className = 'preview-item';
+        
+        const mediaElement = type === 'video' ? document.createElement('video') : document.createElement('img');
+        mediaElement.controls = type === 'video';
+        mediaElement.src = URL.createObjectURL(file);
+        
+        const removeBtn = document.createElement('button');
+        removeBtn.className = 'remove-btn';
+        removeBtn.innerHTML = '×';
+        removeBtn.onclick = () => {
+            previewContainer.removeChild(previewItem);
+            fileInput.value = '';
+        };
+        
+        previewItem.appendChild(mediaElement);
+        previewItem.appendChild(removeBtn);
+        
+        // Nettoyage de la prévisualisation précédente
+        previewContainer.innerHTML = '';
+        previewContainer.appendChild(previewItem);
+        
+        // Upload du fichier
+        uploadFile(file, progressBar);
+    }
+    
+    function uploadFile(file, progressBar) {
+        const formData = new FormData();
+        formData.append('file', file);
+        
+        progressBar.classList.remove('d-none');
+        const progress = progressBar.querySelector('.progress');
+        
+        fetch('/upload-media/', {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                progress.style.width = '100%';
+                setTimeout(() => {
+                    progressBar.classList.add('d-none');
+                    progress.style.width = '0%';
+                }, 1000);
+            } else {
+                throw new Error(data.error || 'Erreur lors de l\'upload');
+            }
+        })
+        .catch(error => {
+            console.error('Erreur:', error);
+            alert('Erreur lors de l\'upload du fichier. Veuillez réessayer.');
+            progressBar.classList.add('d-none');
+            progress.style.width = '0%';
+        });
+    }
+});
     </script>
 </body>
-</html>
+</html> 

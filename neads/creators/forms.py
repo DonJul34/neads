@@ -479,7 +479,6 @@ class CreatorRegistrationForm(forms.Form):
         label="À propos de toi",
         widget=forms.Textarea(attrs={
             'class': 'form-control', 
-            'rows': 5,
             'placeholder': 'Parlez de vous, de votre expérience...',
             'minlength': '400',
             'maxlength': '1000'
@@ -488,13 +487,6 @@ class CreatorRegistrationForm(forms.Form):
         help_text="min. 400 caractères, max. 1000"
     )
     
-    def clean_bio(self):
-        bio = self.cleaned_data.get('bio')
-        if bio and len(bio) < 400:
-            raise ValidationError("Votre biographie doit contenir au moins 400 caractères.")
-        if bio and len(bio) > 1000:
-            raise ValidationError("Votre biographie ne peut pas dépasser 1000 caractères.")
-        return bio
     
     equipment = forms.CharField(
         label="Matériel utilisé",
@@ -513,14 +505,14 @@ class CreatorRegistrationForm(forms.Form):
             'rows': 3,
             'placeholder': 'Listez les marques...'
         }),
-        required=True
+        required=False
     )
     
     # Options
     can_invoice = forms.ChoiceField(
         choices=[
-            ('true', "Oui"),
-            ('false', "Non")
+            ('yes', "Oui"),
+            ('no', "Non")
         ],
         label="Statut pour facturer",
         widget=forms.RadioSelect(attrs={'class': 'form-check-input'}),
@@ -530,12 +522,14 @@ class CreatorRegistrationForm(forms.Form):
     
     # Domaines d'expertise
     domains = forms.ModelMultipleChoiceField(
-        queryset=Domain.objects.all().order_by('name'),
-        widget=forms.CheckboxSelectMultiple(attrs={'class': 'domains-checkbox'}),
-        required=True,
-        label="Domaines",
-        help_text="Sélectionne 5 domaines maximum"
-    )
+    queryset=Domain.objects.all().order_by('name'),
+    widget=forms.SelectMultiple(attrs={
+        'class': 'form-control',
+    }),
+    required=True,
+    label="Domaines",
+    help_text="Sélectionne jusqu’à 5 domaines"
+)
     
     # Photo de profil
     featured_image = forms.ImageField(
@@ -657,36 +651,8 @@ class CreatorRegistrationForm(forms.Form):
             raise ValidationError("Un compte avec cet email existe déjà. Veuillez vous connecter.")
         return email
         
-    def clean_password_confirm(self):
-        password = self.cleaned_data.get('password')
-        password_confirm = self.cleaned_data.get('password_confirm')
-        
-        if password and password_confirm and password != password_confirm:
-            raise ValidationError("Les mots de passe ne correspondent pas.")
-        
-        return password_confirm
-    
-    def clean_password(self):
-        password = self.cleaned_data.get('password')
-        if password:
-            # Vérifier la complexité du mot de passe
-            if len(password) < 8:
-                raise ValidationError("Le mot de passe doit contenir au moins 8 caractères.")
-            if not any(c.isdigit() for c in password):
-                raise ValidationError("Le mot de passe doit contenir au moins un chiffre.")
-            if not any(c.isalpha() for c in password):
-                raise ValidationError("Le mot de passe doit contenir au moins une lettre.")
-        return password
-        
     def clean(self):
         cleaned_data = super().clean()
-        full_address = cleaned_data.get('full_address')
-        latitude = cleaned_data.get('latitude')
-        longitude = cleaned_data.get('longitude')
-        
-        # Si l'adresse est fournie mais pas les coordonnées
-        if full_address and (not latitude or not longitude):
-            self.add_error('full_address', "Veuillez sélectionner une adresse dans les suggestions pour permettre la géolocalisation.")
         
         return cleaned_data 
     
